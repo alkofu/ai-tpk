@@ -17,7 +17,6 @@ Keep AI tool configurations version-controlled and portable across machines. The
 ```
 .
 ├── claude/          # Claude Code configurations
-│   └── settings.local.json
 ├── cursor/          # Cursor configurations (coming soon)
 └── install.sh       # Installation script
 ```

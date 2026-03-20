@@ -24,8 +24,9 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Install AI dotfiles to your home directory."
       echo ""
-      echo "Claude Code: installs only whitelisted paths from claude/ into ~/.claude/:"
-      echo "  settings.json, skills/, agents/"
+      echo "Claude Code:"
+      echo "  - Whitelisted paths: settings.json, skills/, agents/"
+      echo "  - Plugins: superpowers@claude-plugins-official (auto-installed)"
       echo ""
       echo "Options:"
       echo "  --copy    Copy files instead of creating symlinks (default: symlink)"
@@ -129,7 +130,51 @@ install_claude_whitelist() {
   done
 }
 
+# Install Claude plugins
+install_claude_plugins() {
+  # Check if claude command is available
+  if ! command -v claude &> /dev/null; then
+    echo -e "${YELLOW}Claude command not found, skipping plugin installation${NC}"
+    echo -e "${YELLOW}Install Claude Code first, then run this script again${NC}"
+    return
+  fi
+
+  local marketplace="claude-plugins-official"
+  local plugin="superpowers@${marketplace}"
+
+  # Add marketplace if not already configured
+  if ! claude plugin marketplace list 2>/dev/null | grep -q "${marketplace}"; then
+    echo -e "${BLUE}Adding marketplace: ${marketplace}${NC}"
+    local marketplace_output
+    marketplace_output=$(claude plugin marketplace add "anthropics/${marketplace}" 2>&1)
+    if echo "$marketplace_output" | grep -qE "(Successfully added|already on disk)"; then
+      echo -e "${GREEN}✓ Marketplace ${marketplace} configured${NC}"
+    else
+      echo -e "${RED}Failed to add marketplace${NC}"
+      echo -e "${YELLOW}You can add it manually with: claude plugin marketplace add anthropics/${marketplace}${NC}"
+      return
+    fi
+  fi
+
+  # Check if plugin is already installed
+  if claude plugin list 2>/dev/null | grep -q "${plugin}"; then
+    echo -e "${GREEN}Plugin ${plugin} is already installed${NC}"
+  else
+    echo -e "${BLUE}Installing plugin: ${plugin}${NC}"
+    local plugin_output
+    plugin_output=$(claude plugin install "$plugin" 2>&1)
+    if echo "$plugin_output" | grep -qE "(Successfully installed|already installed)"; then
+      echo -e "${GREEN}✓ Successfully installed ${plugin}${NC}"
+    else
+      echo -e "${RED}Failed to install ${plugin}${NC}"
+      echo "$plugin_output"
+      echo -e "${YELLOW}You can install it manually with: claude plugin install ${plugin}${NC}"
+    fi
+  fi
+}
+
 install_claude_whitelist
+install_claude_plugins
 install_dir "cursor" ".cursor"
 
 echo ""

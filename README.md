@@ -49,6 +49,15 @@ Copies the same whitelisted Claude paths into `~/.claude/` and `~/.cursor/` when
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp.
 
+## Claude Plugins
+
+The installation script automatically:
+1. Adds the **claude-plugins-official** marketplace (if not already configured)
+2. Installs the following plugins:
+   - **superpowers@claude-plugins-official** - Enhanced Claude Code capabilities
+
+If Claude Code is not installed when you run the script, plugin installation will be skipped. You can re-run the script later after installing Claude Code to install the plugins.
+
 ## Updating
 
 ```bash

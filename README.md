@@ -17,7 +17,12 @@ Keep AI tool configurations version-controlled and portable across machines. The
 ```
 .
 ├── claude/          # Claude Code configs (whitelist: settings.json, skills/, agents/)
+│   ├── settings.json    # Plugin config, hooks, marketplace settings
+│   ├── agents/          # Specialized AI assistants (e.g., Quill for docs)
+│   └── skills/          # Reusable capabilities
 ├── cursor/          # Cursor configurations (coming soon)
+├── docs/            # Documentation
+│   └── CONFIGURATION.md # Detailed configuration guide
 └── install.sh       # Installation script
 ```
 
@@ -58,6 +63,8 @@ The installation script automatically:
 
 If Claude Code is not installed when you run the script, plugin installation will be skipped. You can re-run the script later after installing Claude Code to install the plugins.
 
+For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
+
 ## Updating
 
 ```bash
@@ -68,6 +75,17 @@ git pull
 **With symlinks:** Changes take effect immediately.
 **With copy:** Re-run `./install.sh --copy` after pulling updates.
 
+## Features
+
+### Automated Documentation Checks
+A hook automatically runs when you end a Claude session to check if code changes require documentation updates. This helps maintain documentation quality without manual effort.
+
+### Specialized Agents
+**Quill** - Documentation specialist agent that creates and updates project documentation, API specs, and architecture guides.
+
+### Skills Library
+Reusable capabilities including skill creation, commit message generation, and pull request automation.
+
 ## Contributing
 
 When updating configurations:
@@ -75,6 +93,8 @@ When updating configurations:
 2. Test the configurations
 3. Commit and push changes
 4. Pull on other machines to sync
+
+When adding new hooks, agents, or skills, update the relevant documentation in `/docs/CONFIGURATION.md`.
 
 ## License
 

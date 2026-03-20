@@ -16,10 +16,12 @@ Keep AI tool configurations version-controlled and portable across machines. The
 
 ```
 .
-├── claude/          # Claude Code configurations
+├── claude/          # Claude Code configs (whitelist: settings.json, skills/, agents/)
 ├── cursor/          # Cursor configurations (coming soon)
 └── install.sh       # Installation script
 ```
+
+The installer only installs these paths from `claude/` into `~/.claude/`: `settings.json`, `skills/`, and `agents/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
 
 ## Installation
 
@@ -36,14 +38,14 @@ Run the installation script:
 ./install.sh
 ```
 
-Creates symbolic links to `~/.claude/` and `~/.cursor/`. Changes sync automatically with the repository.
+Creates symbolic links for the whitelisted Claude paths (`settings.json`, `skills/`, `agents/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
 
 ### Option 2: Copy Files
 ```bash
 ./install.sh --copy
 ```
 
-Copies files to `~/.claude/` and `~/.cursor/`. Manual sync required (see Updating below).
+Copies the same whitelisted Claude paths into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp.
 

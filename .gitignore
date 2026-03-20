@@ -1,0 +1,7 @@
+# Match install.sh whitelist: only settings.json, skills/, agents/ are tracked under claude/
+claude/**
+!claude/settings.json
+!claude/skills/
+!claude/skills/**
+!claude/agents/
+!claude/agents/**

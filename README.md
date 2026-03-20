@@ -17,45 +17,46 @@ Keep AI tool configurations version-controlled and portable across machines. The
 ```
 .
 ├── claude/          # Claude Code configurations
-│   ├── settings.json
-│   └── ...
-└── cursor/          # Cursor configurations
-    └── ...
+│   └── settings.local.json
+├── cursor/          # Cursor configurations (coming soon)
+└── install.sh       # Installation script
 ```
 
 ## Installation
 
-### Option 1: Manual Copy
+Clone the repository:
 ```bash
-# Clone this repository
 git clone git@github.com:alkofu/ai-dotfiles.git
 cd ai-dotfiles
-
-# Copy configurations to home directory
-cp -r claude ~/.claude
-cp -r cursor ~/.cursor
 ```
 
-### Option 2: Symlinks (Recommended)
+Run the installation script:
+
+### Option 1: Symlinks (Recommended)
 ```bash
-# Clone this repository
-git clone git@github.com:alkofu/ai-dotfiles.git ~/ai-dotfiles
-
-# Create symlinks
-ln -s ~/ai-dotfiles/claude ~/.claude
-ln -s ~/ai-dotfiles/cursor ~/.cursor
+./install.sh
 ```
 
-Using symlinks keeps your configurations in sync with this repository automatically.
+Creates symbolic links to `~/.claude/` and `~/.cursor/`. Changes sync automatically with the repository.
+
+### Option 2: Copy Files
+```bash
+./install.sh --copy
+```
+
+Copies files to `~/.claude/` and `~/.cursor/`. Manual sync required (see Updating below).
+
+**Note:** The installer automatically backs up any existing configurations with a timestamp.
 
 ## Updating
 
 ```bash
-cd ~/ai-dotfiles
-git pull origin main
+cd ai-dotfiles
+git pull
 ```
 
-If using symlinks, changes take effect immediately. If using manual copy, re-run the copy commands.
+**With symlinks:** Changes take effect immediately.
+**With copy:** Re-run `./install.sh --copy` after pulling updates.
 
 ## Contributing
 

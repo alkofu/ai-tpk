@@ -8,12 +8,14 @@ This document provides a comprehensive guide to the specialized agents available
 |-------|---------|-------------------|-------|
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 |
+| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 |
 
 ## When to Use Which Agent
 
 ```
 Documentation needs → Quill
 Security review → Riskmancer
+Planning work → Pathfinder
 ```
 
 ## Detailed Agent Profiles
@@ -103,4 +105,62 @@ Security review → Riskmancer
 **Best Practice:** Invoke Riskmancer before production deployments or when reviewing security-sensitive code changes. The read-only nature ensures no accidental modifications during security audits.
 
 **Configuration File:** `/claude/agents/riskmancer.md`
+
+---
+
+### Pathfinder - Planning Consultant
+
+**Core Mission:** Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/*.md`.
+
+**Invoke when:**
+- Starting a new feature or major change
+- Need to break down complex work into actionable steps
+- Want structured requirements gathering
+- Creating implementation strategy
+- Need decision-making support (consensus mode)
+
+**Key Capabilities:**
+- Structured interview workflow (one question at a time)
+- Codebase research delegation to explore agents
+- Plan generation with 3-6 actionable steps
+- Consensus mode with RALPLAN-DR (principles, decision drivers, options, ADR)
+- Open questions tracking
+- Verifiable acceptance criteria for each step
+
+**Available Tools:**
+- Research: Read, Grep, Glob
+- Plan creation: Write
+- Investigation: Bash
+- Delegation: Agent (explore agents)
+
+**Typical Workflow:**
+1. Reframes user request as "create a work plan for X"
+2. Delegates codebase research to explore agents
+3. Interviews user one question at a time about preferences/priorities
+4. Synthesizes findings into structured plan
+5. Gets user confirmation before finalizing
+6. Saves plan to `plans/{feature-name}.md`
+
+**Plan Structure:**
+- Context and Objectives
+- Guardrails (Must Have / Must NOT Have)
+- Task Flow (3-6 steps with checkboxes and acceptance criteria)
+- Success Criteria
+
+**Consensus Mode:**
+Activate with `--consensus` flag for enhanced decision support:
+- 3-5 guiding principles
+- Top 3 decision drivers
+- 2+ viable options with trade-offs
+- Architecture Decision Record format
+- Pre-mortem analysis (for high-risk work)
+- Expanded testing strategy
+
+**Output Location:**
+- Plans: `plans/{feature-name}.md`
+- Open questions: `plans/open-questions.md`
+
+**Best Practice:** Invoke Pathfinder before starting significant work to ensure clear requirements, structured approach, and stakeholder alignment. The agent explicitly does NOT implement code - it creates plans for others to execute.
+
+**Configuration File:** `/claude/agents/pathfinder.md`
 

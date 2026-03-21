@@ -5,3 +5,9 @@ claude/**
 !claude/skills/**
 !claude/agents/
 !claude/agents/**
+
+# Git worktrees
+.worktrees/
+
+# Superpowers working files
+docs/superpowers/

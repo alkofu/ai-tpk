@@ -5,3 +5,6 @@ claude/**
 !claude/skills/**
 !claude/agents/
 !claude/agents/**
+
+# Git worktrees
+.worktrees/

@@ -9,6 +9,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 |
+| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 |
 
 ## When to Use Which Agent
 
@@ -16,6 +17,7 @@ This document provides a comprehensive guide to the specialized agents available
 Documentation needs → Quill
 Security review → Riskmancer
 Planning work → Pathfinder
+Complexity reduction → Knotcutter
 ```
 
 ## Detailed Agent Profiles
@@ -163,4 +165,66 @@ Activate with `--consensus` flag for enhanced decision support:
 **Best Practice:** Invoke Pathfinder before starting significant work to ensure clear requirements, structured approach, and stakeholder alignment. The agent explicitly does NOT implement code - it creates plans for others to execute.
 
 **Configuration File:** `/claude/agents/pathfinder.md`
+
+---
+
+### Knotcutter - Complexity Elimination Specialist
+
+**Core Mission:** Ruthlessly simplify systems by removing non-essential components until only vital elements remain. Operating on the principle that "complexity is the enemy of progress," this agent untangles over-engineered solutions and advocates for minimal viable approaches.
+
+**Invoke when:**
+- Codebases are bloated with unnecessary abstractions
+- Systems feel needlessly complex or over-engineered
+- Need to reduce technical debt through simplification
+- Premature optimization or speculative features proliferate
+- Maintenance burden is high due to complexity
+- Looking to improve code clarity and reduce cognitive load
+
+**Key Capabilities:**
+- Systematic complexity cataloging and analysis
+- Necessity questioning for each component
+- YAGNI (You Aren't Gonna Need It) enforcement
+- Identification of minimal viable core functionality
+- Over-engineering pattern detection
+- Abstraction cost-benefit analysis
+- Aggressive scope reduction (targeting 50%+ reduction)
+- Inline premature abstractions
+
+**Available Tools:**
+- Research: Read, Grep, Glob
+- Simplification: Edit, Write
+- Validation: Bash
+
+**Typical Workflow:**
+1. Catalogs all components, abstractions, dependencies, and features
+2. Questions necessity of each element ("What happens if we remove this?")
+3. Identifies absolute minimum required for core functionality
+4. Applies central question: "What's the simplest thing that could possibly work?"
+5. Proposes measurable reductions with before/after comparison
+6. Documents learnings about actual vs. assumed necessity
+
+**Guiding Principles:**
+- **YAGNI First**: Prove necessity before building
+- **Concrete Over General**: Solve specific problems, not hypothetical ones
+- **Duplication Threshold**: Require 3+ instances before abstracting
+- **Data Over Logic**: Prefer data structures that eliminate complex conditionals
+- **Working Beats Perfect**: Simple and working beats perfect and broken
+
+**Output Format:**
+- Removed components list with elimination rationale
+- Simplified code with reduction explanations
+- Before/after complexity metrics (lines, files, dependencies)
+- "What we learned" section on actual necessity
+- Dependency reduction report
+
+**Success Criteria:**
+- Achieved 50%+ reduction in components/abstractions/features
+- Eliminated unnecessary dependencies
+- Replaced general frameworks with specific solutions
+- Maintained or improved core functionality
+- Reduced cognitive load for maintainers
+
+**Best Practice:** Invoke Knotcutter when you sense over-engineering or when systems have accumulated complexity through "just in case" additions. The agent treats every removal as a learning opportunity and victory over complexity.
+
+**Configuration File:** `/claude/agents/knotcutter.md`
 

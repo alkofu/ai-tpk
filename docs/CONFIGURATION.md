@@ -6,12 +6,6 @@ This document explains the Claude Code configurations included in this repositor
 
 The settings file configures Claude Code's behavior, including plugins, marketplaces, and hooks.
 
-### Plugins
-
-The configuration automatically enables:
-
-- **superpowers@claude-plugins-official** - Enhanced Claude Code capabilities including advanced features and integrations
-
 ### Marketplaces
 
 Pre-configured marketplaces for plugin discovery:

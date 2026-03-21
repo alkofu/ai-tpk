@@ -45,32 +45,14 @@ This hook helps maintain documentation quality by catching missing updates befor
 
 Agents are specialized AI assistants that help with specific tasks. They are automatically available in Claude Code.
 
-### Quill - Documentation Specialist
+**Available agents:**
+- **Quill** - Documentation specialist for README files, API specs, and architecture guides
+- **Riskmancer** - Security reviewer for vulnerability detection, secrets scanning, and OWASP analysis
 
-**Purpose:** Create and update project documentation
+**Invoking an agent:**
+Simply @-mention the agent by name (e.g., `@quill` or `@riskmancer`) in your Claude conversation to activate it.
 
-**Use when:**
-- Adding major features
-- Making API changes
-- Onboarding new developers
-- Documentation is out of sync with code
-
-**Capabilities:**
-- Generate README files
-- Create API specifications (including OpenAPI/YAML)
-- Write architecture guides
-- Develop user manuals
-- Audit existing documentation for gaps
-
-**Available tools:** File operations (Read, Write, Edit), search (Grep, Glob), and Bash commands
-
-**Workflow:**
-1. Analyzes codebase and existing documentation
-2. Identifies gaps and outdated content
-3. Creates structured documentation with examples
-4. Validates technical accuracy
-
-Invoke Quill proactively after completing features rather than waiting for documentation to become severely outdated.
+For complete agent capabilities, workflows, use cases, and best practices, see [docs/AGENTS.md](/docs/AGENTS.md).
 
 ## Skills (`claude/skills/`)
 

@@ -81,7 +81,7 @@ git pull
 A hook automatically runs when you end a Claude session to check if code changes require documentation updates. This helps maintain documentation quality without manual effort.
 
 ### Specialized Agents
-**Quill** - Documentation specialist agent that creates and updates project documentation, API specs, and architecture guides.
+Specialized AI assistants are available for documentation (Quill) and security reviews (Riskmancer). See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog.
 
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation.

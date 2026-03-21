@@ -8,3 +8,6 @@ claude/**
 
 # Git worktrees
 .worktrees/
+
+# Superpowers working files
+docs/superpowers/

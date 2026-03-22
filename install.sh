@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       echo "Usage: $0 [--copy]"
       echo ""
-      echo "Install AI dotfiles to your home directory."
+      echo "Install AI TPK to your home directory."
       echo ""
       echo "Claude Code:"
       echo "  - Whitelisted paths: settings.json, skills/, agents/"
@@ -47,7 +47,7 @@ done
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo -e "${BLUE}AI Dotfiles Installer${NC}"
+echo -e "${BLUE}AI TPK Installer${NC}"
 echo -e "${BLUE}=====================${NC}"
 echo ""
 echo "Installation method: ${GREEN}${INSTALL_METHOD}${NC}"

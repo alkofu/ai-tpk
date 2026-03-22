@@ -13,6 +13,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 |
 | **Ruinor** | Final quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 |
 | **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 |
+| **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 |
 
 ## When to Use Which Agent
 
@@ -24,6 +25,7 @@ Planning work → Pathfinder
 Complexity reduction → Knotcutter
 Quality gate / go-no-go verdict → Ruinor
 Performance review → Windwarden
+Code implementation / execution  → Bitsmith
 ```
 
 ## Detailed Agent Profiles
@@ -32,7 +34,7 @@ Performance review → Windwarden
 
 <img src="avatars/dungeonmaster.png" alt="Dungeon Master Avatar" width="300">
 
-**Core Mission:** Coordinate multi-step software development work by delegating planning to Pathfinder and execution to general-purpose or specialist agents. Serves as the central coordinator for complex tasks requiring multiple steps, agents, or system interactions.
+**Core Mission:** Coordinate multi-step software development work by delegating planning to Pathfinder and execution to Bitsmith or specialist agents. Serves as the central coordinator for complex tasks requiring multiple steps, agents, or system interactions.
 
 **Invoke when:**
 - Working on multi-step or complex software development tasks
@@ -44,7 +46,7 @@ Performance review → Windwarden
 
 **Key Capabilities:**
 - Planning delegation to Pathfinder for complex or ambiguous tasks
-- Execution delegation to general-purpose or specialist agents
+- Execution delegation to Bitsmith or specialist agents
 - Progress tracking against established plans
 - Validation of outputs against plan requirements
 - Risk identification and follow-up tracking
@@ -64,7 +66,7 @@ Performance review → Windwarden
   - Risk of rework without explicit plan
   - User asks for design, scope, decomposition, or approach
 
-- **Delegates to general-purpose when:**
+- **Delegates to Bitsmith when:**
   - Plan exists and execution is needed
   - Code changes, file edits, refactoring
   - Debugging, test creation, running commands
@@ -79,7 +81,7 @@ Performance review → Windwarden
 6. Once plan approved, converts plan into concrete execution tasks
 7. Delegates each task to appropriate agent
 8. After implementation, delegates code to 4 reviewers in parallel
-9. If issues found, delegates fixes back to execution agents
+9. If issues found, delegates fixes back to Bitsmith
 10. Validates results against plan after all reviews pass
 11. Before finishing, confirms outcome achieved and summarizes work
 
@@ -103,11 +105,11 @@ Performance review → Windwarden
 
 *Example 1: Multi-step feature*
 - User: "Add OAuth login, update the API, and add tests"
-- Action: Delegates to Pathfinder for decomposition → delegates implementation to general-purpose → validates against plan → returns status
+- Action: Delegates to Pathfinder for decomposition → delegates implementation to Bitsmith → validates against plan → returns status
 
 *Example 2: Trivial task*
 - User: "Rename this variable in one file"
-- Action: Skips Pathfinder → delegates directly to general-purpose → returns brief summary
+- Action: Skips Pathfinder → delegates directly to Bitsmith → returns brief summary
 
 **Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents.
 
@@ -456,3 +458,64 @@ Activate with `--consensus` flag for enhanced decision support:
 **Best Practice:** Invoke Windwarden during both plan review (to catch design issues before coding) and implementation review (to catch actual performance problems). The agent focuses on user-facing and resource-critical paths, distinguishing between premature optimization and necessary optimization.
 
 **Configuration File:** `/claude/agents/windwarden.md`
+
+---
+
+### Bitsmith - The Forge Executor
+
+<img src="avatars/bitsmith.png" alt="Bitsmith Avatar" width="300">
+
+**Core Mission:** Take a plan from Pathfinder and forge it into working code — no more, no less. Implements with precision, minimal diffs, and zero LSP errors. Does not plan, design, or review. Builds.
+
+**Invoke when:**
+- A plan already exists and needs to be executed
+- Implementing targeted code changes with minimal diff requirements
+- Making surgical edits that must match existing codebase patterns
+- Need incremental, verified implementation with build and test validation
+- Want guaranteed escalation when a problem exceeds scope or attempts
+
+**Key Capabilities:**
+- Task complexity classification (trivial / scoped / complex)
+- Codebase pattern discovery before writing a single line
+- Atomic, incremental implementation with per-step verification
+- LSP diagnostics validation across all modified files
+- Full build and test suite execution after every change
+- Escalation to Pathfinder after 3 failed attempts (mandatory)
+- Debug/scaffolding code removal before completion
+- Max 3 concurrent read-only exploration sub-agents
+
+**Available Tools:**
+- File operations: Read, Write, Edit
+- Search: Grep, Glob
+- Build/test/verify: Bash
+- Delegation: Agent (read-only exploration sub-agents only)
+
+**Typical Workflow (The Forge Protocol):**
+1. **Classify** — Label the task as trivial / scoped / complex
+2. **Identify** — Read the plan; list all target files before touching anything
+3. **Explore** — Discover naming conventions, patterns, utilities, and existing solutions
+4. **Style** — Match indentation, imports, error handling, and test structure exactly
+5. **Plan** — Break work into atomic, ordered, verifiable TodoWrite items
+6. **Implement** — One step at a time; verify with LSP + build + tests after each change
+7. **Verify** — Fresh full build and test suite; confirm zero LSP errors, zero debug code, minimum diff
+
+**Escalation Protocol:**
+- After **3 failed attempts** on any issue: escalate to Pathfinder (mandatory, not optional)
+- **Immediate escalation** when: plan requires architecture decisions, task conflicts with surrounding systems, or codebase reality invalidates the plan's approach
+- Report: what was attempted, what failed, what was discovered, what decision is needed
+
+**The Smith's Creed:**
+> "The most common failure mode is doing too much, not too little."
+> "Match the grain of the metal. A foreign alloy introduced carelessly will crack under load."
+> "Three failed strikes means something is wrong with the design. Escalate."
+
+**Failure Patterns Avoided:**
+- Over-engineering — adds nothing the plan did not ask for
+- Scope creep — surfaces adjacent problems, does not absorb them
+- Premature completion — always runs fresh verification before declaring done
+- Pattern blindness — new code matches the style of everything around it
+- Rewriting instead of editing — targeted edits over full-file rewrites
+
+**Best Practice:** Invoke Bitsmith after Pathfinder has produced a plan and the Dungeon Master is ready to execute. Bitsmith is the executor of the party — she turns blueprints into shipped code with the smallest viable change and the highest craft standard.
+
+**Configuration File:** `/claude/agents/bitsmith.md`

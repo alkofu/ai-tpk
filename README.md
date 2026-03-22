@@ -79,6 +79,91 @@ Specialized AI assistants are available for orchestration (Dungeon Master), docu
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation.
 
+## Agent Orchestration Workflow
+
+When you invoke the Dungeon Master agent (`claude --agent dungeonmaster`), it orchestrates a multi-phase workflow with quality gates:
+
+### High-Level Overview
+
+```mermaid
+flowchart LR
+    Start([User Request]) --> DM[Dungeon Master<br/>Orchestrator]
+    DM --> Phase1[📋 Planning Phase]
+    Phase1 --> Phase2[⚙️ Implementation Phase]
+    Phase2 --> Complete([✅ Complete])
+
+    style DM fill:#e1f5ff
+    style Phase1 fill:#fff4e6
+    style Phase2 fill:#e8f5e9
+    style Complete fill:#d4edda
+```
+
+### Planning Phase Detail
+
+```mermaid
+flowchart TD
+    Start([DM: Need Planning?]) --> DelegateP[DM Delegates to<br/>Pathfinder]
+    DelegateP --> PF[Pathfinder<br/>Creates Plan]
+    PF --> SavePlan[Save to<br/>plans/*.md]
+    SavePlan --> DelegateR[DM Delegates to<br/>3 Reviewers]
+
+    DelegateR --> ReviewGate
+
+    subgraph ReviewGate["🔍 Plan Review Gate (Parallel)"]
+        R1[Ruinor<br/>Quality & Feasibility]
+        K1[Knotcutter<br/>Complexity Analysis]
+        RS1[Riskmancer<br/>Security Gaps]
+    end
+
+    ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
+
+    Assess -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Feedback --> PF
+    Assess -->|ACCEPT| Next([To Implementation<br/>Phase])
+
+    style DelegateP fill:#e1f5ff
+    style DelegateR fill:#e1f5ff
+    style ReviewGate fill:#fff4e6
+    style Next fill:#e8f5e9
+```
+
+### Implementation Phase Detail
+
+```mermaid
+flowchart TD
+    Start([Approved Plan]) --> DelegateE[DM Delegates to<br/>General Agent]
+    DelegateE --> Impl[General Agent<br/>Implements Code]
+    Impl --> DelegateR[DM Delegates to<br/>3 Reviewers]
+
+    DelegateR --> ReviewGate
+
+    subgraph ReviewGate["🔍 Implementation Review Gate (Parallel)"]
+        R2[Ruinor<br/>Code Quality]
+        K2[Knotcutter<br/>Simplification]
+        RS2[Riskmancer<br/>Security Vulnerabilities]
+    end
+
+    ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
+
+    Assess -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Feedback --> Fix[General Agent<br/>Fixes Issues]
+    Fix --> DelegateR
+    Assess -->|ACCEPT| Complete([✅ Complete])
+
+    style DelegateE fill:#e1f5ff
+    style DelegateR fill:#e1f5ff
+    style ReviewGate fill:#fff4e6
+    style Complete fill:#d4edda
+```
+
+**Key Principles:**
+- **Plans are artifacts** - Saved to `plans/*.md` for visibility and version control
+- **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files
+- **Quality gates enforce quality** - No execution without approved plan, no completion without approved implementation
+- **Parallel reviews** - All three reviewers run simultaneously for efficiency
+- **Revision loops** - Plans and code iterate until all reviewers accept
+- **DM never implements** - All work is delegated to specialized agents
+
 ## Contributing
 
 When updating configurations:

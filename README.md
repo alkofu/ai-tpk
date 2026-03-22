@@ -1,6 +1,8 @@
-# AI Dotfiles
+# AI TPK
 
 Configuration files for AI coding assistants, managed centrally and deployed to your home directory.
+
+**TPK** stands for **Total Party Kill** - a D&D term for when the entire adventuring party is wiped out. This repository is inspired by tabletop roleplaying games, featuring AI agents with D&D-themed roles like Dungeon Master (orchestrator), Riskmancer (security), and Pathfinder (planning). Just as a well-prepared party survives the dungeon, well-configured AI tools help you survive the codebase.
 
 ## Overview
 
@@ -32,8 +34,8 @@ The installer only installs these paths from `claude/` into `~/.claude/`: `setti
 
 Clone the repository:
 ```bash
-git clone git@github.com:alkofu/ai-dotfiles.git
-cd ai-dotfiles
+git clone git@github.com:alkofu/ai-tpk.git
+cd ai-tpk
 ```
 
 Run the installation script:
@@ -59,7 +61,7 @@ For detailed information about hooks, agents, and other configuration options, s
 ## Updating
 
 ```bash
-cd ai-dotfiles
+cd ai-tpk
 git pull
 ```
 

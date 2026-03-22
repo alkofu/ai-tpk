@@ -6,6 +6,7 @@ This document provides a comprehensive guide to the specialized agents available
 
 | Agent | Purpose | Primary Use Cases | Model |
 |-------|---------|-------------------|-------|
+| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 |
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 |
@@ -14,6 +15,7 @@ This document provides a comprehensive guide to the specialized agents available
 ## When to Use Which Agent
 
 ```
+Multi-step coordination → Dungeon Master
 Documentation needs → Quill
 Security review → Riskmancer
 Planning work → Pathfinder
@@ -21,6 +23,86 @@ Complexity reduction → Knotcutter
 ```
 
 ## Detailed Agent Profiles
+
+### Dungeon Master - Orchestrator
+
+**Core Mission:** Coordinate multi-step software development work by delegating planning to Pathfinder and execution to general-purpose or specialist agents. Serves as the central coordinator for complex tasks requiring multiple steps, agents, or system interactions.
+
+**Invoke when:**
+- Working on multi-step or complex software development tasks
+- Requirements are ambiguous and need structured planning
+- Multiple files, systems, or components are involved
+- Need to coordinate work across different agents
+- Task requires both planning and execution tracking
+- Want structured progress validation and status summaries
+
+**Key Capabilities:**
+- Planning delegation to Pathfinder for complex or ambiguous tasks
+- Execution delegation to general-purpose or specialist agents
+- Progress tracking against established plans
+- Validation of outputs against plan requirements
+- Risk identification and follow-up tracking
+- Concise status summaries with actionable next steps
+- Decision-making on when to continue, retry, or adjust approach
+
+**Available Tools:**
+- Research: Read, Grep, Glob
+- Delegation: Task (calls other agents)
+- Validation: Bash
+
+**Delegation Policy:**
+- **Delegates to Pathfinder when:**
+  - Request is ambiguous or underspecified
+  - Work spans multiple files, systems, or steps
+  - Architectural or sequencing decisions needed
+  - Risk of rework without explicit plan
+  - User asks for design, scope, decomposition, or approach
+
+- **Delegates to general-purpose when:**
+  - Plan exists and execution is needed
+  - Code changes, file edits, refactoring
+  - Debugging, test creation, running commands
+  - Multi-step repository operations
+
+**Typical Workflow:**
+1. Clarifies user goal in one sentence
+2. Assesses whether a plan already exists
+3. If no plan exists, delegates to Pathfinder for planning
+4. Reviews plan for completeness and sequencing
+5. Converts plan into concrete execution tasks
+6. Delegates each task to appropriate agent
+7. Validates results against plan after each step
+8. Before finishing, confirms outcome achieved and summarizes work
+
+**Output Format:**
+- Goal statement
+- Plan status
+- Execution status
+- Validation results
+- Risks and follow-ups
+
+**Important Constraints:**
+- Does not invent plans when Pathfinder should provide them
+- Does not perform large implementation work directly
+- Only declares completion when results match both plan and user request
+- If execution reveals plan is invalid, loops back to planning
+- Minimizes unnecessary back-and-forth with decisive delegation
+
+**Example Scenarios:**
+
+*Example 1: Multi-step feature*
+- User: "Add OAuth login, update the API, and add tests"
+- Action: Delegates to Pathfinder for decomposition → delegates implementation to general-purpose → validates against plan → returns status
+
+*Example 2: Trivial task*
+- User: "Rename this variable in one file"
+- Action: Skips Pathfinder → delegates directly to general-purpose → returns brief summary
+
+**Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents.
+
+**Configuration File:** `/claude/agents/orchestrator.md`
+
+---
 
 ### Quill - Documentation Specialist
 

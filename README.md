@@ -72,7 +72,7 @@ git pull
 A hook automatically runs when you end a Claude session to check if code changes require documentation updates. This helps maintain documentation quality without manual effort.
 
 ### Specialized Agents
-Specialized AI assistants are available for documentation (Quill) and security reviews (Riskmancer). See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog.
+Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), and complexity reduction (Knotcutter). See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog.
 
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation.

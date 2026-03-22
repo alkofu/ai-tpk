@@ -45,6 +45,8 @@ Agents are specialized AI assistants that help with specific tasks. They are aut
 - **Riskmancer** - Security reviewer for vulnerability detection, secrets scanning, and OWASP analysis
 - **Pathfinder** - Planning consultant for work plans, requirement gathering, and implementation strategy
 - **Knotcutter** - Complexity elimination specialist for simplifying bloated code and removing over-engineering
+- **Ruinor** - Quality gate reviewer for plan/code review with multi-perspective analysis and go/no-go verdicts
+- **Windwarden** - Performance & scalability reviewer for bottleneck detection and algorithmic complexity analysis
 
 **Invoking an agent:**
 Simply @-mention the agent by name (e.g., `@quill` or `@riskmancer`) in your Claude conversation to activate it.

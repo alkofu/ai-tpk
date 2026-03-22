@@ -12,6 +12,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 |
 | **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 |
 | **Ruinor** | Final quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 |
+| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 |
 
 ## When to Use Which Agent
 
@@ -21,7 +22,8 @@ Documentation needs → Quill
 Security review → Riskmancer
 Planning work → Pathfinder
 Complexity reduction → Knotcutter
-Quality gate / go-no-go verdict  -> Ruinor
+Quality gate / go-no-go verdict → Ruinor
+Performance review → Windwarden
 ```
 
 ## Detailed Agent Profiles
@@ -72,17 +74,22 @@ Quality gate / go-no-go verdict  -> Ruinor
 1. Clarifies user goal in one sentence
 2. Assesses whether a plan already exists
 3. If no plan exists, delegates to Pathfinder for planning
-4. Reviews plan for completeness and sequencing
-5. Converts plan into concrete execution tasks
-6. Delegates each task to appropriate agent
-7. Validates results against plan after each step
-8. Before finishing, confirms outcome achieved and summarizes work
+4. Delegates plan to 4 reviewers in parallel (Ruinor, Knotcutter, Riskmancer, Windwarden)
+5. If reviewers identify issues, sends consolidated feedback back to Pathfinder
+6. Once plan approved, converts plan into concrete execution tasks
+7. Delegates each task to appropriate agent
+8. After implementation, delegates code to 4 reviewers in parallel
+9. If issues found, delegates fixes back to execution agents
+10. Validates results against plan after all reviews pass
+11. Before finishing, confirms outcome achieved and summarizes work
 
 **Output Format:**
 - Goal statement
-- Plan status
+- Plan status (created, reviewed, approved/revised)
+- Plan review summary (4 reviewer verdicts)
 - Execution status
-- Validation results
+- Implementation review summary (4 reviewer verdicts)
+- Final validation
 - Risks and follow-ups
 
 **Important Constraints:**
@@ -366,3 +373,86 @@ Activate with `--consensus` flag for enhanced decision support:
 **Best Practice:** Invoke Ruinor after Pathfinder produces a plan and before the Dungeon Master begins execution. Also invoke after significant code changes before merging. The read-only nature ensures no accidental modifications during review.
 
 **Configuration File:** `/claude/agents/ruinor.md`
+
+---
+
+### Windwarden - Performance & Scalability Reviewer
+
+<img src="avatars/windwarden.png" alt="Windwarden Avatar" width="300">
+
+**Core Mission:** Swift as the wind, sharp as an arrow. Hunt performance bottlenecks and scalability issues before they reach production. Review plans for inefficient designs and implementations for actual performance problems. Operate under the principle that performance is a feature, not an afterthought.
+
+**Invoke when:**
+- Reviewing plans or code for performance concerns
+- Assessing scalability of proposed designs
+- Detecting algorithmic complexity issues
+- Validating database query efficiency
+- Checking for N+1 query patterns or missing indexes
+- Reviewing caching and optimization strategies
+- Pre-deployment performance validation
+
+**Key Capabilities:**
+- Algorithmic complexity analysis (identifying O(n²) where O(n) is possible)
+- Database performance review (N+1 queries, missing indexes, full table scans)
+- Scalability pattern validation (pagination, rate limiting, backpressure)
+- Caching strategy assessment
+- Resource usage analysis (memory leaks, unnecessary allocations)
+- Performance severity classification (CRITICAL, HIGH, MEDIUM, LOW)
+- Optimization recommendations with before/after comparisons
+
+**Available Tools:**
+- Read-only access: Read, Grep, Glob
+- Bash (for performance analysis: EXPLAIN queries, profiling tools, benchmarks)
+- Write/Edit tools are explicitly blocked
+
+**Review Gates:**
+
+1. **Plan Review Gate** - Before implementation begins
+   - Identifies algorithmic complexity issues in planned approach
+   - Flags potential N+1 query patterns or inefficient data access
+   - Challenges designs that don't scale (unbounded loops, missing pagination)
+   - Assesses caching strategy and load considerations
+   - Spots missing indexing or query optimization steps
+
+2. **Implementation Review Gate** - After code is written
+   - Profiles actual code for performance hotspots
+   - Detects memory leaks, unbounded loops, inefficient queries
+   - Validates database indexing and query performance
+   - Checks for proper pagination, rate limiting, and backpressure
+   - Assesses caching implementation and TTL strategies
+
+**Typical Workflow:**
+1. Identifies performance-critical features and hot paths
+2. Analyzes algorithmic complexity of the approach
+3. Checks for scalability patterns (pagination, caching, indexes)
+4. Profiles execution paths and database queries
+5. Assesses resource usage (memory, CPU, I/O)
+6. Prioritizes findings by user impact
+7. Issues verdict with optimization recommendations
+
+**Output Format:** Performance review including:
+- Performance review summary with verdict and impact level
+- Performance analysis overview
+- Detailed findings with ID, severity, category, location, evidence, impact, and optimization
+- Performance gaps identified
+- Benchmark recommendations
+- Verdict rationale
+
+**Performance Severity Levels:**
+- **CRITICAL**: Will cause system failure or unacceptable UX under expected load (unbounded loops, missing pagination)
+- **HIGH**: Significant performance degradation impacting user experience (N+1 queries, missing indexes)
+- **MEDIUM**: Noticeable but not critical impact (missing caching, inefficient data structures)
+- **LOW**: Minor inefficiency with negligible impact (small allocations in loops)
+
+**Common Anti-Patterns Detected:**
+- N+1 query patterns
+- SELECT * when specific columns suffice
+- Missing database indexes on frequently queried columns
+- Unbounded loops or recursion
+- Synchronous blocking calls in request handlers
+- Large objects loaded entirely when streaming would work
+- Missing connection pooling or resource reuse
+
+**Best Practice:** Invoke Windwarden during both plan review (to catch design issues before coding) and implementation review (to catch actual performance problems). The agent focuses on user-facing and resource-critical paths, distinguishing between premature optimization and necessary optimization.
+
+**Configuration File:** `/claude/agents/windwarden.md`

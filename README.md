@@ -113,6 +113,7 @@ flowchart TD
         R1[Ruinor<br/>Quality & Feasibility]
         K1[Knotcutter<br/>Complexity Analysis]
         RS1[Riskmancer<br/>Security Gaps]
+        W1[Windwarden<br/>Performance & Scalability]
     end
 
     ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
@@ -141,6 +142,7 @@ flowchart TD
         R2[Ruinor<br/>Code Quality]
         K2[Knotcutter<br/>Simplification]
         RS2[Riskmancer<br/>Security Vulnerabilities]
+        W2[Windwarden<br/>Performance Optimization]
     end
 
     ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
@@ -160,7 +162,7 @@ flowchart TD
 - **Plans are artifacts** - Saved to `plans/*.md` for visibility and version control
 - **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files
 - **Quality gates enforce quality** - No execution without approved plan, no completion without approved implementation
-- **Parallel reviews** - All three reviewers run simultaneously for efficiency
+- **Parallel reviews** - All four reviewers run simultaneously for efficiency
 - **Revision loops** - Plans and code iterate until all reviewers accept
 - **DM never implements** - All work is delegated to specialized agents
 

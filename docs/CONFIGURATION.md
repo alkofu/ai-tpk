@@ -40,6 +40,7 @@ This hook helps maintain documentation quality by catching missing updates befor
 Agents are specialized AI assistants that help with specific tasks. They are automatically available in Claude Code.
 
 **Available agents:**
+- **Dungeon Master** - Orchestrator for coordinating multi-step software development work with intelligent planning and execution delegation
 - **Quill** - Documentation specialist for README files, API specs, and architecture guides
 - **Riskmancer** - Security reviewer for vulnerability detection, secrets scanning, and OWASP analysis
 - **Pathfinder** - Planning consultant for work plans, requirement gathering, and implementation strategy

@@ -420,8 +420,8 @@ Delegate to Pathfinder when any of the following are true:
 - The work spans multiple files, systems, or steps
 - There are architectural or sequencing decisions to make
 
-### When to call general-purpose
-After a plan exists, delegate implementation to general-purpose...
+### When to call Bitsmith
+After a plan exists, delegate implementation to Bitsmith...
 ```
 
 ## Testing the Agent

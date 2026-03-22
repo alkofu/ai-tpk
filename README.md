@@ -132,8 +132,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Start([Approved Plan]) --> DelegateE[DM Delegates to<br/>General Agent]
-    DelegateE --> Impl[General Agent<br/>Implements Code]
+    Start([Approved Plan]) --> DelegateE[DM Delegates to<br/>Bitsmith]
+    DelegateE --> Impl[Bitsmith<br/>Implements Code]
     Impl --> DelegateR[DM Delegates to<br/>3 Reviewers]
 
     DelegateR --> ReviewGate
@@ -148,7 +148,7 @@ flowchart TD
     ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
 
     Assess -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
-    Feedback --> Fix[General Agent<br/>Fixes Issues]
+    Feedback --> Fix[Bitsmith<br/>Fixes Issues]
     Fix --> DelegateR
     Assess -->|ACCEPT| Complete([✅ Complete])
 

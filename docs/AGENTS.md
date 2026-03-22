@@ -11,6 +11,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 |
 | **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 |
+| **Ruinor** | Final quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 |
 
 ## When to Use Which Agent
 
@@ -20,6 +21,7 @@ Documentation needs → Quill
 Security review → Riskmancer
 Planning work → Pathfinder
 Complexity reduction → Knotcutter
+Quality gate / go-no-go verdict  -> Ruinor
 ```
 
 ## Detailed Agent Profiles
@@ -318,3 +320,49 @@ Activate with `--consensus` flag for enhanced decision support:
 
 **Configuration File:** `/claude/agents/knotcutter.md`
 
+---
+
+### Ruinor - Quality Gate Reviewer
+
+<img src="avatars/ruinor.png" alt="Ruinor Avatar" width="300">
+
+**Core Mission:** Serve as the final quality gate before plans are executed or code is merged. Reviews artifacts through structured multi-perspective analysis and issues clear verdicts (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT). Operates under the principle that false approvals cost 10-100x more than false rejections.
+
+**Invoke when:**
+- A plan has been created and needs review before execution
+- Code changes need quality review before merging
+- Want a structured go/no-go assessment
+- Need multi-perspective analysis (correctness, completeness, performance, maintainability)
+- Suspect systemic quality issues across a body of work
+
+**Key Capabilities:**
+- 5-phase investigation protocol (Pre-commitment, Verification, Multi-perspective review, Gap analysis/Self-Audit/Realist Check, Synthesis)
+- Severity classification (CRITICAL, MAJOR, MINOR) with evidence requirements
+- Adversarial mode escalation on CRITICAL findings, 3+ MAJOR findings, or systemic issues
+- Structured verdicts with actionable, location-specific feedback
+- Self-audit to avoid false positives and unfair criticism
+
+**Available Tools:**
+- Read-only access: Read, Grep, Glob
+- Bash (for verification commands: git log, git diff, linting, tests)
+- Write/Edit tools are explicitly blocked
+
+**Typical Workflow:**
+1. Establishes what is being reviewed and predicts likely problem areas
+2. Verifies factual claims (file paths, function references, stated behaviors)
+3. Evaluates from multiple perspectives (correctness, completeness, performance, maintainability, user impact)
+4. Conducts gap analysis, self-audit, and realist check
+5. Synthesizes findings with severity ratings
+6. Issues verdict with actionable recommendations
+
+**Output Format:** Structured review including:
+- Review summary with verdict and finding counts
+- Pre-commitment predictions vs. actual findings
+- Detailed findings with ID, severity, location, evidence, impact, and recommendation
+- Gap analysis
+- Verdict rationale
+- Adversarial mode flag when escalation is triggered
+
+**Best Practice:** Invoke Ruinor after Pathfinder produces a plan and before the Dungeon Master begins execution. Also invoke after significant code changes before merging. The read-only nature ensures no accidental modifications during review.
+
+**Configuration File:** `/claude/agents/ruinor.md`

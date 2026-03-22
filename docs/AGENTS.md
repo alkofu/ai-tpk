@@ -26,6 +26,8 @@ Complexity reduction → Knotcutter
 
 ### Dungeon Master - Orchestrator
 
+<img src="avatars/dungeonmaster.png" alt="Dungeon Master Avatar" width="300">
+
 **Core Mission:** Coordinate multi-step software development work by delegating planning to Pathfinder and execution to general-purpose or specialist agents. Serves as the central coordinator for complex tasks requiring multiple steps, agents, or system interactions.
 
 **Invoke when:**
@@ -146,6 +148,8 @@ Complexity reduction → Knotcutter
 
 ### Riskmancer - Security Reviewer
 
+<img src="avatars/riskmancer.png" alt="Riskmancer Avatar" width="300">
+
 **Core Mission:** Identify and prioritize vulnerabilities before production deployment, focusing on OWASP Top 10 analysis, secrets detection, input validation, and authentication checks.
 
 **Invoke when:**
@@ -193,6 +197,8 @@ Complexity reduction → Knotcutter
 ---
 
 ### Pathfinder - Planning Consultant
+
+<img src="avatars/pathfinder.png" alt="Pathfinder Avatar" width="300">
 
 **Core Mission:** Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/*.md`.
 
@@ -251,6 +257,8 @@ Activate with `--consensus` flag for enhanced decision support:
 ---
 
 ### Knotcutter - Complexity Elimination Specialist
+
+<img src="avatars/knotcutter.png" alt="Knotcutter Avatar" width="300">
 
 **Core Mission:** Ruthlessly simplify systems by removing non-essential components until only vital elements remain. Operating on the principle that "complexity is the enemy of progress," this agent untangles over-engineered solutions and advocates for minimal viable approaches.
 

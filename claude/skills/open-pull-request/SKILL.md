@@ -158,6 +158,8 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 
 ## Pre-flight checklist
 
+- [ ] **GitHub account**: Extract `{owner}/{repo}` from `git remote get-url origin`. Run `gh api repos/{owner}/{repo}` as a harmless probe. If it succeeds, the current account has access — proceed. If it fails, run `gh auth switch` to cycle to the next authenticated account and probe again. Repeat until access is confirmed or all accounts are exhausted. If all accounts fail, abort and report. Do not push or open the PR until the probe succeeds.
+- [ ] **Commit author**: Once the correct account is confirmed, verify `git config user.email` belongs to that account (cross-check with `gh api user --jq '.email'` if unsure). Fix with `git config user.email "correct@email.com"` if wrong.
 - [ ] **Branch has no existing PR**: Verified that the current branch has no open or merged PR—if one exists, switched to main, fetched latest, and created a new branch
 - [ ] **Before push**: all tracked changes (and intended new files) are **committed**—`git status` shows nothing that still needs committing for work going into the PR
 - [ ] History is **compact**: prefer `--amend` / `--fixup` + autosquash; new commits only when scope or topic differs

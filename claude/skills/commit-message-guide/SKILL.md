@@ -123,6 +123,7 @@ Created with `git commit --fixup=<commit-hash>` for automatic squashing during r
 
 Before creating a commit, verify:
 
+- [ ] **GitHub account**: Extract `{owner}/{repo}` from `git remote get-url origin`. Run `gh api repos/{owner}/{repo}` as a harmless probe. If it succeeds, the current account has access — proceed. If it fails, run `gh auth switch` to cycle to the next authenticated account and probe again. Repeat until access is confirmed or all accounts are exhausted. If all accounts fail, abort and report.
 - [ ] Code builds successfully
 - [ ] All tests pass
 - [ ] Code is formatted (run formatter)

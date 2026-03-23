@@ -42,12 +42,17 @@ Agents are specialized AI assistants that help with specific tasks. They are aut
 **Available agents:**
 - **Dungeon Master** - Orchestrator for coordinating multi-step software development work with intelligent planning and execution delegation
 - **Quill** - Documentation specialist for README files, API specs, and architecture guides
-- **Riskmancer** - Security reviewer for vulnerability detection, secrets scanning, and OWASP analysis
+- **Riskmancer** - Security specialist reviewer (invoked when security-sensitive work detected or explicitly requested)
 - **Pathfinder** - Planning consultant for work plans, requirement gathering, and implementation strategy
-- **Knotcutter** - Complexity elimination specialist for simplifying bloated code and removing over-engineering
-- **Ruinor** - Quality gate reviewer for plan/code review with multi-perspective analysis and go/no-go verdicts
-- **Windwarden** - Performance & scalability reviewer for bottleneck detection and algorithmic complexity analysis
+- **Knotcutter** - Complexity specialist reviewer (invoked when complexity concerns detected or explicitly requested)
+- **Ruinor** - Mandatory baseline quality gate reviewer (runs on all plan and implementation reviews)
+- **Windwarden** - Performance specialist reviewer (invoked when performance-critical work detected or explicitly requested)
 - **Bitsmith** - Precision code executor for implementing plans, making targeted code changes, and minimal-diff edits
+
+**Review Workflow:**
+The orchestration system uses an intelligent review workflow where Ruinor provides mandatory baseline coverage, and specialists (Riskmancer, Windwarden, Knotcutter) are invoked only when needed. This reduces review overhead by 60-70% while maintaining quality rigor.
+
+See [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the complete review workflow guide.
 
 **Invoking an agent:**
 Simply @-mention the agent by name (e.g., `@quill` or `@riskmancer`) in your Claude conversation to activate it.

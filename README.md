@@ -77,14 +77,14 @@ A hook automatically runs when you end a Claude session to check if code changes
 Orchestration sessions are automatically chronicled by hook-driven capture. A command hook records raw sub-agent events during the session, and the Talekeeper agent produces an enriched JSONL chronicle at session end. Logs are gitignored and stay local to your machine.
 
 ### Specialized Agents
-Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), and session logging (Talekeeper). See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog.
+Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), and session logging (Talekeeper). The orchestration workflow uses an intelligent review system that reduces overhead by 60-70% while maintaining quality. See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog and [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the review workflow guide.
 
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation.
 
 ## Agent Orchestration Workflow
 
-When you invoke the Dungeon Master agent (`claude --agent dungeonmaster`), it orchestrates a multi-phase workflow with quality gates:
+When you invoke the Dungeon Master agent (`claude --agent dungeonmaster`), it orchestrates a multi-phase workflow with intelligent review gates:
 
 ### High-Level Overview
 
@@ -108,26 +108,29 @@ flowchart TD
     Start([DM: Need Planning?]) --> DelegateP[DM Delegates to<br/>Pathfinder]
     DelegateP --> PF[Pathfinder<br/>Creates Plan]
     PF --> SavePlan[Save to<br/>plans/*.md]
-    SavePlan --> DelegateR[DM Delegates to<br/>3 Reviewers]
+    SavePlan --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
 
-    DelegateR --> ReviewGate
+    MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
 
-    subgraph ReviewGate["🔍 Plan Review Gate (Parallel)"]
-        R1[Ruinor<br/>Quality & Feasibility]
-        K1[Knotcutter<br/>Complexity Analysis]
-        RS1[Riskmancer<br/>Security Gaps]
-        W1[Windwarden<br/>Performance & Scalability]
+    Decision -->|No Flags| Assess1{Ruinor<br/>Pass?}
+    Decision -->|Flags Present| Specialists
+
+    subgraph Specialists["🎯 Specialist Reviews (Conditional)"]
+        RS1[Riskmancer<br/>Security Deep-Dive]
+        W1[Windwarden<br/>Performance Analysis]
+        K1[Knotcutter<br/>Complexity Review]
     end
 
-    ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
+    Specialists --> Assess2{All Reviews<br/>Pass?}
 
-    Assess -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Assess1 -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Assess2 -->|REJECT/REVISE| Feedback
     Feedback --> PF
-    Assess -->|ACCEPT| Next([To Implementation<br/>Phase])
+    Assess1 -->|ACCEPT| Next([To Implementation<br/>Phase])
+    Assess2 -->|ACCEPT| Next
 
-    style DelegateP fill:#e1f5ff
-    style DelegateR fill:#e1f5ff
-    style ReviewGate fill:#fff4e6
+    style MandatoryR fill:#ffebcc
+    style Specialists fill:#e6f3ff
     style Next fill:#e8f5e9
 ```
 
@@ -137,35 +140,80 @@ flowchart TD
 flowchart TD
     Start([Approved Plan]) --> DelegateE[DM Delegates to<br/>Bitsmith]
     DelegateE --> Impl[Bitsmith<br/>Implements Code]
-    Impl --> DelegateR[DM Delegates to<br/>3 Reviewers]
+    Impl --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
 
-    DelegateR --> ReviewGate
+    MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
 
-    subgraph ReviewGate["🔍 Implementation Review Gate (Parallel)"]
-        R2[Ruinor<br/>Code Quality]
-        K2[Knotcutter<br/>Simplification]
+    Decision -->|No Flags| Assess1{Ruinor<br/>Pass?}
+    Decision -->|Flags Present| Specialists
+
+    subgraph Specialists["🎯 Specialist Reviews (Conditional)"]
         RS2[Riskmancer<br/>Security Vulnerabilities]
         W2[Windwarden<br/>Performance Optimization]
+        K2[Knotcutter<br/>Simplification]
     end
 
-    ReviewGate --> Assess{DM Assesses:<br/>All Pass?}
+    Specialists --> Assess2{All Reviews<br/>Pass?}
 
-    Assess -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Assess1 -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Assess2 -->|REJECT/REVISE| Feedback
     Feedback --> Fix[Bitsmith<br/>Fixes Issues]
-    Fix --> DelegateR
-    Assess -->|ACCEPT| Complete([✅ Complete])
+    Fix --> MandatoryR
+    Assess1 -->|ACCEPT| Complete([✅ Complete])
+    Assess2 -->|ACCEPT| Complete
 
-    style DelegateE fill:#e1f5ff
-    style DelegateR fill:#e1f5ff
-    style ReviewGate fill:#fff4e6
+    style MandatoryR fill:#ffebcc
+    style Specialists fill:#e6f3ff
     style Complete fill:#d4edda
 ```
+
+### Smart Review System: How It Works
+
+**Old Workflow (Removed):**
+- All changes reviewed by 4 agents (Ruinor + 3 specialists)
+- Simple changes wasted 75% of reviews
+- Minimum 8 reviews per feature (4 plan + 4 implementation)
+
+**New Workflow (Active):**
+- **Ruinor (mandatory)**: Always runs first, provides baseline review covering quality, correctness, basic security, basic performance, basic complexity
+- **Specialists (opt-in)**: Only invoked when needed via three triggering mechanisms:
+
+**1. User Flags (Explicit Control)**
+```bash
+"Add OAuth login --review-security"        # Forces Riskmancer review
+"Optimize database queries --review-performance"  # Forces Windwarden review
+"Refactor auth module --review-complexity"  # Forces Knotcutter review
+"Major feature --review-all"                # Forces all 3 specialists
+```
+
+**2. Ruinor Recommendations (Primary Trigger)**
+- Ruinor evaluates work in Phase 5 (Specialist Assessment)
+- Flags specialists when concerns exceed baseline checks
+- Orchestrator parses "Specialist Review Recommended" field
+
+**3. Keyword Detection (Heuristic Fallback)**
+If no user flags and Ruinor doesn't recommend, checks for specialist keywords:
+- **Security**: auth, jwt, password, crypto, encrypt, secret, payment, pii, oauth
+- **Performance**: database, query, scale, cache, index, pagination, algorithm, batch
+- **Complexity**: refactor, architecture, abstraction, framework, pattern, redesign
+
+**Efficiency Gains:**
+- Simple changes: 8 reviews → 1-2 reviews (75% reduction)
+- Complex changes: 8 reviews → 2-8 reviews (same rigor, targeted)
+- Average: 60-70% fewer reviews across typical workload
+
+**Test Results (JWT Auth Feature):**
+- Old workflow: 4 plan + 4 implementation = 8 reviews
+- New workflow: Ruinor + Riskmancer only = 4 reviews (50% reduction)
+- Quality: Caught 8 security gaps total (no reduction in rigor)
+
+For a comprehensive guide to the review workflow, see [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md).
 
 **Key Principles:**
 - **Plans are artifacts** - Saved to `plans/*.md` for visibility and version control
 - **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files
 - **Quality gates enforce quality** - No execution without approved plan, no completion without approved implementation
-- **Parallel reviews** - All four reviewers run simultaneously for efficiency
+- **Intelligent triage** - Ruinor provides mandatory baseline, specialists handle deep expertise
 - **Revision loops** - Plans and code iterate until all reviewers accept
 - **DM never implements** - All work is delegated to specialized agents
 

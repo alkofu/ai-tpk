@@ -4,17 +4,17 @@ This document provides a comprehensive guide to the specialized agents available
 
 ## Quick Reference
 
-| Agent | Purpose | Primary Use Cases | Model |
-|-------|---------|-------------------|-------|
-| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 |
-| **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 |
-| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 |
-| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 |
-| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 |
-| **Ruinor** | Final quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 |
-| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 |
-| **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 |
-| **Talekeeper** | Session chronicle agent | Automatic hook-driven session logging, JSONL chronicle of agent activity | (default) |
+| Agent | Purpose | Primary Use Cases | Model | Review Type |
+|-------|---------|-------------------|-------|-------------|
+| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
+| **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 | N/A |
+| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 | Specialist (opt-in) |
+| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 | N/A |
+| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 | Specialist (opt-in) |
+| **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 | Mandatory baseline |
+| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 | Specialist (opt-in) |
+| **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
+| **Talekeeper** | Session chronicle agent | Automatic hook-driven session logging, JSONL chronicle of agent activity | (default) | N/A |
 
 ## When to Use Which Agent
 
@@ -74,25 +74,40 @@ Session logging / audit trail    → Talekeeper (automatic via hooks, never invo
   - Debugging, test creation, running commands
   - Multi-step repository operations
 
+**Review Workflow (Intelligent Triage):**
+- **Ruinor (mandatory)**: Always runs first for baseline quality, correctness, basic security, basic performance, basic complexity
+- **Specialists (opt-in)**: Only invoked when:
+  - Ruinor flags specialist concerns in its review, OR
+  - User explicitly requests with flags (--review-security, --review-performance, --review-complexity, --review-all), OR
+  - Plan/code contains specialist-level keywords (fallback heuristic)
+
+**Specialist Triggering:**
+- **Riskmancer**: Invoked for auth/jwt/crypto/payment/pii/security-sensitive features
+- **Windwarden**: Invoked for database/query/scale/cache/performance-critical features
+- **Knotcutter**: Invoked for refactor/architecture/abstraction/complexity concerns
+
 **Typical Workflow:**
 1. Clarifies user goal in one sentence
 2. Assesses whether a plan already exists
 3. If no plan exists, delegates to Pathfinder for planning
-4. Delegates plan to 4 reviewers in parallel (Ruinor, Knotcutter, Riskmancer, Windwarden)
-5. If reviewers identify issues, sends consolidated feedback back to Pathfinder
-6. Once plan approved, converts plan into concrete execution tasks
-7. Delegates each task to appropriate agent
-8. After implementation, delegates code to 4 reviewers in parallel
-9. If issues found, delegates fixes back to Bitsmith
-10. Validates results against plan after all reviews pass
-11. Before finishing, confirms outcome achieved and summarizes work
+4. **Plan Review Gate**: Delegates plan to Ruinor (mandatory baseline reviewer)
+5. If Ruinor flags specialists or user requested them, invokes specialists in parallel (Riskmancer/Windwarden/Knotcutter)
+6. If reviewers identify issues, sends consolidated feedback back to Pathfinder
+7. Once plan approved, converts plan into concrete execution tasks
+8. Delegates each task to appropriate agent
+9. **Implementation Review Gate**: Delegates code to Ruinor (mandatory baseline reviewer)
+10. If Ruinor flags specialists or user requested them, invokes specialists in parallel
+11. If issues found, delegates fixes back to Bitsmith
+12. Validates results against plan after all reviews pass
+13. Before finishing, confirms outcome achieved and summarizes work
 
 **Output Format:**
 - Goal statement
 - Plan status (created, reviewed, approved/revised)
-- Plan review summary (4 reviewer verdicts)
+- Plan review summary (Ruinor verdict + any specialist verdicts)
+- Specialist invocation reason (Ruinor recommendation, user flag, or keyword detection)
 - Execution status
-- Implementation review summary (4 reviewer verdicts)
+- Implementation review summary (Ruinor verdict + any specialist verdicts)
 - Final validation
 - Risks and follow-ups
 
@@ -163,15 +178,25 @@ Session logging / audit trail    → Talekeeper (automatic via hooks, never invo
 
 <img src="avatars/riskmancer.png" alt="Riskmancer Avatar" width="300">
 
-**Core Mission:** Identify and prioritize vulnerabilities before production deployment, focusing on OWASP Top 10 analysis, secrets detection, input validation, and authentication checks.
+**Agent Type:** Specialist Reviewer (invoked only when security-sensitive work detected or explicitly requested)
+
+**Trigger Conditions:**
+- Ruinor flags security concerns beyond baseline checks, OR
+- User explicitly requests security review (--review-security flag), OR
+- Plan/code contains security keywords (auth, jwt, crypto, payment, pii, oauth, etc.)
+
+**Not invoked for:** Simple UI changes, configuration updates, documentation, or features with no security implications. Ruinor handles baseline security for all reviews.
+
+**Core Mission:** Identify and prioritize vulnerabilities before production deployment, focusing on OWASP Top 10 analysis, secrets detection, input validation, and authentication checks. Provides deep security expertise beyond Ruinor's baseline checks.
 
 **Invoke when:**
-- Conducting pre-deployment security reviews
-- Auditing code for security vulnerabilities
-- Reviewing authentication or authorization changes
-- Checking for exposed secrets or credentials
-- Validating input handling and sanitization
-- Running dependency vulnerability checks
+- Conducting pre-deployment security reviews for sensitive features
+- Auditing authentication, authorization, or access control changes
+- Reviewing cryptography, encryption, or key management
+- Checking for exposed secrets or credentials in security-critical contexts
+- Validating input handling for potential injection vectors
+- Reviewing payment processing, PII handling, or sensitive data
+- Running dependency vulnerability checks for security-sensitive features
 
 **Key Capabilities:**
 - OWASP Top 10 vulnerability evaluation
@@ -273,15 +298,25 @@ Activate with `--consensus` flag for enhanced decision support:
 
 <img src="avatars/knotcutter.png" alt="Knotcutter Avatar" width="300">
 
-**Core Mission:** Ruthlessly simplify systems by removing non-essential components until only vital elements remain. Operating on the principle that "complexity is the enemy of progress," this agent untangles over-engineered solutions and advocates for minimal viable approaches.
+**Agent Type:** Specialist Reviewer (invoked only when complexity-sensitive work detected or explicitly requested)
+
+**Trigger Conditions:**
+- Ruinor flags complexity concerns beyond baseline checks, OR
+- User explicitly requests complexity review (--review-complexity flag), OR
+- Plan/code contains complexity keywords (refactor, architecture, abstraction, framework, pattern, redesign, etc.)
+
+**Not invoked for:** Simple features, bug fixes, small changes, or work already following established patterns. Ruinor handles baseline complexity checks (obvious YAGNI violations) for all reviews.
+
+**Core Mission:** Ruthlessly simplify systems by removing non-essential components until only vital elements remain. Operating on the principle that "complexity is the enemy of progress," this agent untangles over-engineered solutions and advocates for minimal viable approaches. Provides deep complexity analysis beyond Ruinor's baseline checks.
 
 **Invoke when:**
-- Codebases are bloated with unnecessary abstractions
+- Major refactoring across multiple files or systems
+- New abstractions, frameworks, or architectural patterns are being introduced
 - Systems feel needlessly complex or over-engineered
-- Need to reduce technical debt through simplification
+- Need to reduce technical debt through radical simplification
 - Premature optimization or speculative features proliferate
-- Maintenance burden is high due to complexity
-- Looking to improve code clarity and reduce cognitive load
+- Maintenance burden is high due to unjustified complexity
+- Looking to improve code clarity and reduce cognitive load for complex systems
 
 **Key Capabilities:**
 - Systematic complexity cataloging and analysis
@@ -337,17 +372,23 @@ Activate with `--consensus` flag for enhanced decision support:
 
 <img src="avatars/ruinor.png" alt="Ruinor Avatar" width="300">
 
-**Core Mission:** Serve as the final quality gate before plans are executed or code is merged. Reviews artifacts through structured multi-perspective analysis and issues clear verdicts (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT). Operates under the principle that false approvals cost 10-100x more than false rejections.
+**Agent Type:** Mandatory Baseline Reviewer (always runs for all plan and implementation reviews)
+
+**Core Mission:** Serve as the mandatory quality gate before plans are executed or code is merged. Reviews artifacts through structured multi-perspective analysis and issues clear verdicts (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT). Provides baseline coverage of quality, correctness, basic security, basic performance, and basic complexity. Flags specialists when deeper expertise is needed. Operates under the principle that false approvals cost 10-100x more than false rejections.
 
 **Invoke when:**
-- A plan has been created and needs review before execution
-- Code changes need quality review before merging
+- A plan has been created and needs review before execution (automatic via orchestration)
+- Code changes need quality review before merging (automatic via orchestration)
 - Want a structured go/no-go assessment
-- Need multi-perspective analysis (correctness, completeness, performance, maintainability)
+- Need multi-perspective baseline analysis before specialist reviews
 - Suspect systemic quality issues across a body of work
 
 **Key Capabilities:**
-- 5-phase investigation protocol (Pre-commitment, Verification, Multi-perspective review, Gap analysis/Self-Audit/Realist Check, Synthesis)
+- 6-phase investigation protocol (Pre-commitment, Verification, Multi-perspective review, Gap analysis/Self-Audit/Realist Check, Specialist Assessment, Synthesis)
+- Baseline security checks (obvious injection, exposed secrets, basic OWASP)
+- Baseline performance checks (N+1 queries, obvious inefficiencies, missing indexes)
+- Baseline complexity checks (obvious over-engineering, YAGNI violations)
+- Specialist triage (flags Riskmancer/Windwarden/Knotcutter when deeper review needed)
 - Severity classification (CRITICAL, MAJOR, MINOR) with evidence requirements
 - Adversarial mode escalation on CRITICAL findings, 3+ MAJOR findings, or systemic issues
 - Structured verdicts with actionable, location-specific feedback
@@ -384,16 +425,25 @@ Activate with `--consensus` flag for enhanced decision support:
 
 <img src="avatars/windwarden.png" alt="Windwarden Avatar" width="300">
 
-**Core Mission:** Swift as the wind, sharp as an arrow. Hunt performance bottlenecks and scalability issues before they reach production. Review plans for inefficient designs and implementations for actual performance problems. Operate under the principle that performance is a feature, not an afterthought.
+**Agent Type:** Specialist Reviewer (invoked only when performance-critical work detected or explicitly requested)
+
+**Trigger Conditions:**
+- Ruinor flags performance concerns beyond baseline checks, OR
+- User explicitly requests performance review (--review-performance flag), OR
+- Plan/code contains performance keywords (database, query, scale, cache, index, pagination, algorithm, batch, etc.)
+
+**Not invoked for:** Simple CRUD operations, UI changes, configuration updates, or features with trivial performance implications. Ruinor handles baseline performance checks for all reviews.
+
+**Core Mission:** Swift as the wind, sharp as an arrow. Hunt performance bottlenecks and scalability issues before they reach production. Review plans for inefficient designs and implementations for actual performance problems. Operate under the principle that performance is a feature, not an afterthought. Provides deep performance expertise beyond Ruinor's baseline checks.
 
 **Invoke when:**
-- Reviewing plans or code for performance concerns
-- Assessing scalability of proposed designs
-- Detecting algorithmic complexity issues
-- Validating database query efficiency
-- Checking for N+1 query patterns or missing indexes
-- Reviewing caching and optimization strategies
-- Pre-deployment performance validation
+- Reviewing database schema changes, query optimization, or data-heavy operations
+- Assessing scalability of algorithmic work (sorting, searching large datasets)
+- Detecting algorithmic complexity issues beyond basic checks
+- Validating real-time or high-throughput features
+- Checking for N+1 query patterns or complex joins in performance-critical paths
+- Reviewing caching strategies, background jobs, batch processing
+- Pre-deployment performance validation for scalability-sensitive features
 
 **Key Capabilities:**
 - Algorithmic complexity analysis (identifying O(n²) where O(n) is possible)

@@ -119,7 +119,7 @@ install_claude_whitelist() {
   fi
 
   local name
-  for name in skills agents; do
+  for name in skills agents hooks; do
     local sub_src="${claude_src}/${name}"
     if [[ -d "$sub_src" ]]; then
       install_path "$sub_src" "${HOME}/.claude/${name}"

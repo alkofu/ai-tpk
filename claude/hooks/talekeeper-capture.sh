@@ -1,0 +1,33 @@
+#!/bin/bash
+# Talekeeper fast-path: capture raw SubagentStop event data
+# Invoked as a command hook -- no LLM, millisecond latency
+# Reads event JSON from stdin, appends timestamped entry to raw log
+
+LOG_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/logs"
+LOG_FILE="$LOG_DIR/talekeeper-raw.jsonl"
+
+mkdir -p "$LOG_DIR"
+
+# Read stdin (hook event JSON) with a timeout to avoid hanging
+# Use bash built-in read with -t for macOS compatibility (not `timeout` command)
+STDIN_DATA=""
+read -r -t 2 STDIN_DATA 2>/dev/null || true
+
+# If stdin was empty, use empty object
+if [ -z "$STDIN_DATA" ]; then
+  STDIN_DATA='{}'
+fi
+
+# Construct a JSONL line: wrap stdin data with a capture timestamp
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Use jq if available, else fall back to a minimal entry
+if command -v jq &>/dev/null; then
+  echo "$STDIN_DATA" | jq -c --arg ts "$TIMESTAMP" '. + {"_captured_at": $ts}' >> "$LOG_FILE" 2>/dev/null
+else
+  # Fallback: write a minimal JSON line with timestamp only
+  printf '{"_captured_at":"%s","_raw_unavailable":true}\n' "$TIMESTAMP" >> "$LOG_FILE" 2>/dev/null
+fi
+
+# Always exit 0 -- logging must never block the session
+exit 0

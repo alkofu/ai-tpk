@@ -14,6 +14,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Ruinor** | Final quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 |
 | **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 |
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 |
+| **Talekeeper** | Session chronicle agent | Automatic hook-driven session logging, JSONL chronicle of agent activity | (default) |
 
 ## When to Use Which Agent
 
@@ -26,6 +27,7 @@ Complexity reduction → Knotcutter
 Quality gate / go-no-go verdict → Ruinor
 Performance review → Windwarden
 Code implementation / execution  → Bitsmith
+Session logging / audit trail    → Talekeeper (automatic via hooks, never invoked directly)
 ```
 
 ## Detailed Agent Profiles
@@ -519,3 +521,13 @@ Activate with `--consensus` flag for enhanced decision support:
 **Best Practice:** Invoke Bitsmith after Pathfinder has produced a plan and the Dungeon Master is ready to execute. Bitsmith is the executor of the party — she turns blueprints into shipped code with the smallest viable change and the highest craft standard.
 
 **Configuration File:** `/claude/agents/bitsmith.md`
+
+---
+
+### Talekeeper - Session Chronicler
+
+> *"Every deed deserves its verse."*
+
+**Configuration:** `claude/agents/talekeeper.md`
+
+Talekeeper is a background agent invoked automatically by Claude Code hooks — it is never called directly. At session end, it reads the raw event log captured during the session and enriches each entry with a one-sentence summary and reviewer verdict. It operates with `Read` and `Write` tools only and treats all log content as untrusted data.

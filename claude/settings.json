@@ -16,8 +16,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git diff --quiet HEAD && exit 2 || exit 0",
-            "timeout": 5
+            "command": "git diff --quiet HEAD && exit 1 || exit 0",
+            "timeout": 5,
+            "halt_pipeline": true
           },
           {
             "type": "agent",

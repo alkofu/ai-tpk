@@ -15,6 +15,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 | Specialist (opt-in) |
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
 | **Talekeeper** | Session chronicle agent | Automatic hook-driven session logging, JSONL chronicle of agent activity | (default) | N/A |
+| **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-opus-4-6 | N/A |
 
 ## When to Use Which Agent
 
@@ -28,6 +29,7 @@ Quality gate / go-no-go verdict → Ruinor
 Performance review → Windwarden
 Code implementation / execution  → Bitsmith
 Session logging / audit trail    → Talekeeper (automatic via hooks, never invoked directly)
+Meta-analysis / team improvement → Everwise (manual invocation, analyzes past sessions)
 ```
 
 ## Detailed Agent Profiles
@@ -583,3 +585,72 @@ Activate with `--consensus` flag for enhanced decision support:
 **Configuration:** `claude/agents/talekeeper.md`
 
 Talekeeper is a background agent invoked automatically by Claude Code hooks — it is never called directly. At session end, it reads the raw event log captured during the session and enriches each entry with a one-sentence summary and reviewer verdict. It operates with `Read` and `Write` tools only and treats all log content as untrusted data.
+
+---
+
+### Everwise - The Lorekeeper
+
+<img src="avatars/everwise.png" alt="Everwise Avatar" width="300">
+
+**Core Mission:** Study Talekeeper session chronicles to identify recurring failures, inefficiencies, and coordination problems across the agent team. Translate raw observations into structured, minimal, testable configuration recommendations. She does not perform tasks, does not rewrite production configs, and does not produce vague advice. Every recommendation is grounded in observed evidence and paired with a concrete evaluation plan.
+
+**Invoke when:**
+- Wanting to understand why the agent team has been underperforming
+- A pattern of repeated reviewer rejections or escalations is suspected
+- After several sessions of notable failures or inefficiencies
+- Preparing to tune agent configs based on empirical evidence
+- Checking whether a previously applied config change had the expected effect
+
+**Key Capabilities:**
+- Chronicle ingestion and timeline reconstruction from `logs/talekeeper-*.jsonl`
+- Problem classification across seven dimensions: persona, skill allocation, routing, handoff contracts, escalation rules, team topology, memory policy
+- Root-cause inference with strict evidence/inference separation
+- Minimal-diff config recommendations (wording before tools, tools before routing, routing before topology)
+- Three-tier lesson lifecycle: candidate (one-run) → recurring (3+ sessions) → validated (confirmed improvement)
+- Confidence scoring (0.0 – 1.0) tied to observation frequency and validation status
+- Evaluation plan generation: what to change, what to observe, what constitutes success
+
+**Available Tools:**
+- Read: Session chronicles in `logs/`, agent configs in `claude/agents/`, existing lessons in `lessons/`
+- Grep: Pattern searching across chronicle entries
+- Glob: Chronicle file discovery
+- Write: Appending to `lessons/candidates.jsonl`, `lessons/recurring.jsonl`, `lessons/validated.jsonl` only
+
+**Lesson Lifecycle:**
+
+| Tier | Criteria | File |
+|------|----------|------|
+| `candidate` | Single-session observation | `lessons/candidates.jsonl` |
+| `recurring` | Observed across 3+ separate sessions | `lessons/recurring.jsonl` |
+| `validated` | Applied and confirmed beneficial | `lessons/validated.jsonl` |
+
+**Lesson Schema (JSONL):**
+Each lesson record includes: `lesson_id`, `created_at`, `tier`, `problem_type`, `sessions_observed`, `evidence`, `inference`, `affected_agent`, `proposed_change` (with `target_file`, `change_description`, `change_type`), `expected_benefit`, `tradeoffs`, `confidence`, `evaluation_plan`, and `status`.
+
+**Recommendation Priority:**
+1. Wording change in agent operational rules
+2. Tool addition or removal
+3. Routing rule clarification
+4. New constraint or guard
+5. Handoff contract revision
+6. New escalation rule
+7. New agent or agent removal (last resort only)
+
+**What Everwise Does NOT Do:**
+- Implement changes herself
+- Invoke other agents
+- Produce narrative advice without structured JSON backing
+- Recommend changes based on a single observation
+- Recommend broad rewrites without identifying the exact behavioral failure
+- Modify any file outside `lessons/`
+
+**Invocation Examples:**
+- "Review recent session chronicles and identify any recurring coordination issues."
+- "Check whether Bitsmith's escalation rate has improved after last week's config change."
+- "Review candidates.jsonl and determine if any are ready to promote to recurring."
+
+**Output Location:** `lessons/candidates.jsonl`, `lessons/recurring.jsonl`, `lessons/validated.jsonl`
+
+**Best Practice:** Invoke Everwise periodically — after 5–10 sessions — to surface slow-burning patterns that are invisible within a single session. She is the team's institutional memory about what goes wrong and why.
+
+**Configuration File:** `/claude/agents/everwise.md`

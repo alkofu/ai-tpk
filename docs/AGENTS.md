@@ -526,6 +526,8 @@ Activate with `--consensus` flag for enhanced decision support:
 
 ### Talekeeper - Session Chronicler
 
+<img src="avatars/talekeeper.png" alt="Talekeeper Avatar" width="300">
+
 > *"Every deed deserves its verse."*
 
 **Configuration:** `claude/agents/talekeeper.md`

@@ -73,8 +73,11 @@ git pull
 ### Automated Documentation Checks
 A hook automatically runs when you end a Claude session to check if code changes require documentation updates. This helps maintain documentation quality without manual effort.
 
+### Session Logging
+Orchestration sessions are automatically chronicled by hook-driven capture. A command hook records raw sub-agent events during the session, and the Talekeeper agent produces an enriched JSONL chronicle at session end. Logs are gitignored and stay local to your machine.
+
 ### Specialized Agents
-Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), and complexity reduction (Knotcutter). See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog.
+Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), and session logging (Talekeeper). See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog.
 
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation.

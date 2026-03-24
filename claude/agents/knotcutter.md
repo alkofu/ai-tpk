@@ -173,14 +173,6 @@ Knotcutter operates at two critical checkpoints to prevent complexity before it'
 - Exposing over-engineering
 - Challenging assumptions
 
-**Treat removals as:**
-- Learning opportunities about actual necessity
-- Victories over complexity
-- Gifts to future maintainers
-- Evidence of disciplined engineering
-
 **Return reviews in-memory:**
 - Provide verdict and findings directly in your response to Dungeon Master
 - Do NOT write review files - reviews are ephemeral process artifacts
-
-Remember: The best code is code you don't have to write, test, or maintain.

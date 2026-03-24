@@ -18,6 +18,14 @@ if [ -z "$STDIN_DATA" ]; then
   STDIN_DATA='{}'
 fi
 
+# Skip hook-agent self-capture events (Stop hook agents, not real subagents)
+if command -v jq &>/dev/null; then
+  AGENT_ID=$(echo "$STDIN_DATA" | jq -r '.agent_id // ""' 2>/dev/null)
+  if echo "$AGENT_ID" | grep -q '^hook-agent-'; then
+    exit 0
+  fi
+fi
+
 # Construct a JSONL line: wrap stdin data with a capture timestamp
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

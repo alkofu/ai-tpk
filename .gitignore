@@ -19,3 +19,4 @@ logs/
 
 # Planning documents (local only, not for version control)
 plans/
+!plans/open-questions.md

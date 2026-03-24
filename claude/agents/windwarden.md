@@ -1,7 +1,7 @@
 ---
 name: windwarden
 description: "Performance and scalability reviewer. Reviews plans and code for performance bottlenecks, inefficient algorithms, scalability issues, and resource optimization opportunities. Operates read-only with blocked write/edit capabilities."
-model: claude-opus-4-6
+model: claude-sonnet-4-6
 level: 3
 disallowedTools: Write, Edit
 mandatory: false

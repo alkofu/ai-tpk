@@ -39,6 +39,7 @@
       }
     ]
   },
+  "defaultMode": "dontAsk",
   "enabledPlugins": {},
   "extraKnownMarketplaces": {
     "claude-plugins-official": {

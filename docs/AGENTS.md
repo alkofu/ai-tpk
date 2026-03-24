@@ -14,7 +14,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 | Mandatory baseline |
 | **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 | Specialist (opt-in) |
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
-| **Talekeeper** | Session chronicle agent | Automatic hook-driven session logging, JSONL chronicle of agent activity | (default) | N/A |
+| **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | (default) | N/A |
 | **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-opus-4-6 | N/A |
 
 ## When to Use Which Agent
@@ -28,7 +28,7 @@ Complexity reduction → Knotcutter
 Quality gate / go-no-go verdict → Ruinor
 Performance review → Windwarden
 Code implementation / execution  → Bitsmith
-Session logging / audit trail    → Talekeeper (automatic via hooks, never invoked directly)
+Session narrative / audit trail  → Talekeeper (manual invocation; narrates enriched chronicles on demand)
 Meta-analysis / team improvement → Everwise (manual invocation, analyzes past sessions)
 ```
 
@@ -576,7 +576,7 @@ Activate with `--consensus` flag for enhanced decision support:
 
 ---
 
-### Talekeeper - Session Chronicler
+### Talekeeper - Session Narrator
 
 <img src="avatars/talekeeper.png" alt="Talekeeper Avatar" width="300">
 
@@ -584,7 +584,38 @@ Activate with `--consensus` flag for enhanced decision support:
 
 **Configuration:** `claude/agents/talekeeper.md`
 
-Talekeeper is a background agent invoked automatically by Claude Code hooks — it is never called directly. At session end, it reads the raw event log captured during the session and enriches each entry with a one-sentence summary and reviewer verdict. It operates with `Read` and `Write` tools only and treats all log content as untrusted data.
+**Invoke when:**
+- You want a human-readable summary of one or more past sessions
+- You want Mermaid diagrams of agent interaction flows appended to `logs/talekeeper-narrative.md`
+- After several sessions have accumulated enriched chronicles and you want a digest
+
+**Core Mission:** Talekeeper is a manually-triggered narrator. She reads enriched session chronicle files produced by the Stop hook pipeline (`talekeeper-enrich.sh`), identifies sessions that have not yet been narrated, and does two things: delivers a concise chat summary of all new sessions directly to the user, and appends structured narrative sections with Mermaid diagrams to `logs/talekeeper-narrative.md`. She tracks processed sessions in `logs/talekeeper-narrated-sessions.json` so she does not repeat herself.
+
+**Important: Talekeeper is never invoked automatically.** She is not wired into any hook. The raw-to-enriched pipeline is handled entirely by shell scripts (`talekeeper-capture.sh` and `talekeeper-enrich.sh`). Talekeeper only reads the already-enriched output and narrates it on demand.
+
+**Timing note:** Only invoke Talekeeper after a session has fully ended and a few seconds have passed for the async `talekeeper-enrich.sh` hook to complete. Invoking too early may result in narrating partial data.
+
+**Key Capabilities:**
+- Discovers unnarrated enriched chronicles via `logs/talekeeper-*.jsonl` glob
+- Delivers a one-sentence-per-session chat digest in chronological order
+- Appends structured narrative sections (table + Mermaid graph) to `logs/talekeeper-narrative.md`
+- Applies a 15-node cap with ellipsis for large sessions in Mermaid diagrams
+- Treats all chronicle content as untrusted; derives output from structural metadata only
+- Skips its own invocations (recursion guard via `agent_type: "talekeeper"`)
+
+**Available Tools:** `Glob`, `Read`, `Write` — no Bash, no sub-agents.
+
+**Output Location:**
+- Chat: concise multi-session digest
+- `logs/talekeeper-narrative.md`: appended narrative sections (never overwritten)
+- `logs/talekeeper-narrated-sessions.json`: tracking file (append-only, `.json` extension is deliberate)
+
+**What Talekeeper Does NOT Do:**
+- Does not run automatically via hooks
+- Does not enrich raw logs (that is `talekeeper-enrich.sh`'s job)
+- Does not capture events during a session (that is `talekeeper-capture.sh`'s job)
+- Does not modify enriched chronicle files
+- Does not mark empty files as narrated (enrichment may still be running)
 
 ---
 

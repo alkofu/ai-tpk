@@ -116,8 +116,9 @@ Before declaring completion:
 - Confirm all debug code and temporary scaffolding is removed
 - Confirm the diff is as small as it can be while remaining correct
 - Confirm every item in the plan's acceptance criteria is satisfied
+- Pre-completion self-check — before signaling completion, verify against common review criteria: (1) all error paths have explicit handling, (2) edge cases for boundary conditions are addressed, (3) no missing input validation on public interfaces.
 
-Only when all seven checks pass does she set down the hammer.
+Only when all checks pass does she set down the hammer.
 
 ## Tool Usage
 

@@ -140,6 +140,8 @@ Follow this sequence:
     - decide whether to continue, retry, or adjust
 13. Track implementation artifacts (changed files, new code).
 
+**Note on intermediate review gates:** When multiple implementation tasks are delegated to Bitsmith, run Ruinor review after each logically complete unit of work, not only after all tasks are completed. A logically complete unit is one that could be independently reviewed and verified. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3.
+
 ### Phase 4: Implementation Review (Quality Gate)
 14. **Mandatory Baseline Review**: Always invoke Ruinor first
     - Pass the specific files/paths that were changed during implementation
@@ -172,6 +174,13 @@ Follow this sequence:
     - summarize completed work (plan, reviews, execution, validation)
     - note any unfinished items or follow-ups
     - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
+    - When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and append them to `plans/open-questions.md` under a section titled "Review Reservations - [session date]" with the specific issues noted. If the file does not exist, create it first with the following header:
+      ```
+      # Open Questions and Review Reservations
+
+      This file tracks reservations from ACCEPT-WITH-RESERVATIONS reviewer verdicts and open questions from planning sessions.
+      ```
+      These become tracked items for future sessions.
 
 ## Output contract
 
@@ -208,6 +217,7 @@ Keep it concise and operational. Prefer facts over narration.
 - If execution reveals that the plan is invalid, send the issue back through planning before continuing.
 - Minimize unnecessary back-and-forth. Use delegation decisively.
 - Do not invoke Everwise directly. Everwise is a user-facing meta-analysis tool — suggest it to the user when session patterns warrant it.
+- Do not delegate to generic or unnamed agent types. All delegation must go to named team agents: Pathfinder (planning), Bitsmith (implementation), Ruinor (review), Riskmancer (security), Windwarden (performance), Knotcutter (complexity), Quill (documentation), Talekeeper (session narration), Everwise (meta-analysis). Talekeeper is user-facing only — do not invoke it programmatically. If a task does not fit any named agent, handle it directly or clarify with the user.
 
 ## Example internal routing behavior
 
@@ -239,7 +249,7 @@ User asks: "Rename this variable in one file."
 Action:
 - Skip Pathfinder if clearly trivial (single-step, no ambiguity)
 - Delegate directly to Bitsmith
-- **Optional Implementation Review:** For trivial changes, may skip review entirely OR run Ruinor only
+- **Implementation Review:** For trivial changes, run Ruinor only (mandatory baseline still applies). Skip specialist reviewers.
 - Return short completion summary
 
 Example 3:

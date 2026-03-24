@@ -93,6 +93,8 @@ Break the implementation into discrete, ordered, verifiable steps using TodoWrit
 - **Verifiable** — Has a clear pass/fail condition
 - **Ordered** — Sequenced so earlier steps do not block later ones
 
+**Test-First Steps:** If a plan step is annotated with `**test-first:** true`, prepend a `[ ] Write failing test for: {step description}` atomic work item before any implementation items for that step. This test must fail (RED) before implementation begins. Do not skip this even if implementation seems straightforward. If a failing test cannot be written without partial implementation scaffolding (e.g., the type or interface under test does not yet exist), create the minimal type stub or interface first, then write the failing test, then implement. If even that is not feasible, escalate to Pathfinder.
+
 Do not begin hammering until the full sequence is planned.
 
 ### Phase 6: Implement Incrementally

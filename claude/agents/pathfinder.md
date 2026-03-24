@@ -65,6 +65,7 @@ Once requirements are clear and research is complete:
 3. Avoid over-specification (not 30 micro-steps)
 4. Avoid vagueness (not "step 1: implement")
 5. Get explicit user confirmation before finalizing
+6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created").
 
 ### 5. Save Plan
 
@@ -120,6 +121,8 @@ Objectives:
 ## Task Flow
 
 ### Step 1: {Component Name}
+- **test-first:** true
+<!-- Remove test-first line for steps with purely structural acceptance criteria -->
 - [ ] {Specific actionable task}
 - [ ] {Another specific task}
 - **Acceptance:** {Clear success criteria}

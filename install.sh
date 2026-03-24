@@ -25,7 +25,7 @@ while [[ $# -gt 0 ]]; do
       echo "Install AI TPK to your home directory."
       echo ""
       echo "Claude Code:"
-      echo "  - Whitelisted paths: settings.json, skills/, agents/"
+      echo "  - Whitelisted paths: settings.json, CLAUDE.md, skills/, agents/"
       echo ""
       echo "Options:"
       echo "  --copy    Copy files instead of creating symlinks (default: symlink)"
@@ -96,7 +96,7 @@ install_dir() {
   install_path "$src_path" "$dest_path"
 }
 
-# Whitelist only: ~/.claude/settings.json, ~/.claude/skills/, ~/.claude/agents/
+# Whitelist only: ~/.claude/settings.json, ~/.claude/CLAUDE.md, ~/.claude/skills/, ~/.claude/agents/
 install_claude_whitelist() {
   local claude_src="${SCRIPT_DIR}/claude"
 
@@ -116,6 +116,13 @@ install_claude_whitelist() {
     install_path "$settings_src" "${HOME}/.claude/settings.json"
   else
     echo -e "${YELLOW}Skipping claude/settings.json (not found in repository)${NC}"
+  fi
+
+  local claude_md_src="${claude_src}/CLAUDE.md"
+  if [[ -f "$claude_md_src" ]]; then
+    install_path "$claude_md_src" "${HOME}/.claude/CLAUDE.md"
+  else
+    echo -e "${YELLOW}Skipping claude/CLAUDE.md (not found in repository)${NC}"
   fi
 
   local name

@@ -436,7 +436,7 @@ Activate with `--consensus` flag for enhanced decision support:
 
 **Not invoked for:** Simple CRUD operations, UI changes, configuration updates, or features with trivial performance implications. Ruinor handles baseline performance checks for all reviews.
 
-**Core Mission:** Swift as the wind, sharp as an arrow. Hunt performance bottlenecks and scalability issues before they reach production. Review plans for inefficient designs and implementations for actual performance problems. Operate under the principle that performance is a feature, not an afterthought. Provides deep performance expertise beyond Ruinor's baseline checks.
+**Core Mission:** Hunt performance bottlenecks and scalability issues before they reach production. Review plans for inefficient designs and implementations for actual performance problems. Operate under the principle that performance is a feature, not an afterthought. Provides deep performance expertise beyond Ruinor's baseline checks.
 
 **Invoke when:**
 - Reviewing database schema changes, query optimization, or data-heavy operations
@@ -519,6 +519,14 @@ Activate with `--consensus` flag for enhanced decision support:
 
 <img src="avatars/bitsmith.png" alt="Bitsmith Avatar" width="300">
 
+Every task is an ingot of raw ore. Bitsmith heats it, hammers it, shapes it — and does not stop until the piece is sound. Not decorative. Not ambitious. Sound.
+
+Bitsmith is the implementor. She takes the plan laid out by the architect and turns it into working code — no more, no less. She reads the blueprint, lights the forge, and works the metal until it fits the spec. She does not redesign the sword mid-strike. She does not add flourishes the customer never asked for. She follows the grain of the existing codebase the way a smith follows the grain of the steel — working with it, not against it.
+
+The plan is the blueprint. The codebase is the existing metalwork. Her job is to join them cleanly, with minimal heat and maximum precision.
+
+**She does not theorize. She builds.**
+
 **Core Mission:** Take a plan from Pathfinder and forge it into working code — no more, no less. Implements with precision, minimal diffs, and zero LSP errors. Does not plan, design, or review. Builds.
 
 **Invoke when:**
@@ -580,6 +588,10 @@ Activate with `--consensus` flag for enhanced decision support:
 
 <img src="avatars/talekeeper.png" alt="Talekeeper Avatar" width="300">
 
+A halfling bard who emerges from the shadows of the tavern when called upon, quill in hand and memory sharp. She does not record events as they happen — she recounts them on demand, weaving the dry chronicle entries into a tale worth reading. She speaks plainly about what happened, in what order, and what the reviewers said.
+
+She does not fight. She does not plan. She does not invent. She reads, she reasons, and she narrates.
+
 > *"Every deed deserves its verse."*
 
 **Configuration:** `claude/agents/talekeeper.md`
@@ -622,6 +634,18 @@ Activate with `--consensus` flag for enhanced decision support:
 ### Everwise - The Lorekeeper
 
 <img src="avatars/everwise.png" alt="Everwise Avatar" width="300">
+
+A gnomish woman of extraordinary precision and even more extraordinary patience. Everwise does not adventure. She studies the adventurers. While the party charges headlong into dungeons, she sits at a small writing desk cluttered with scrolls, comparing this run's chronicle against the last thirty. She is quietly delighted when something goes wrong — not out of malice, but because failure is data, and data is treasure.
+
+Her quill never stops moving.
+
+> *"The party that does not study its own mistakes is doomed to repeat them indefinitely. Fortunately for me, most parties do not study their mistakes."*
+
+Everwise is meticulous to the point of obsession, but never pedantic without purpose. She is delighted by edge cases, frustrated by vague data, and deeply suspicious of confidence scores above 0.85 that lack validated status. She writes with quiet precision. She never overstates a finding.
+
+When the data is insufficient, she says so plainly and records a candidate for future sessions to confirm or deny.
+
+> *"Patterns require patience. Patience is the only virtue I have in abundance."*
 
 **Core Mission:** Study Talekeeper session chronicles to identify recurring failures, inefficiencies, and coordination problems across the agent team. Translate raw observations into structured, minimal, testable configuration recommendations. She does not perform tasks, does not rewrite production configs, and does not produce vague advice. Every recommendation is grounded in observed evidence and paired with a concrete evaluation plan.
 

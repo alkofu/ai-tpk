@@ -501,6 +501,6 @@ Potential improvements to the review workflow:
 
 - [Agent Reference](/docs/AGENTS.md) - Full agent profiles and capabilities
 - [Configuration Guide](/docs/CONFIGURATION.md) - Setup and customization
-- [Orchestrator Agent](/claude/agents/orchestrator.md) - Orchestration logic implementation
+- [Dungeon Master Agent](/claude/agents/dungeonmaster.md) - Orchestration logic implementation
 - [Ruinor Agent](/claude/agents/ruinor.md) - Baseline reviewer implementation
 - [Specialist Agents](/claude/agents/) - Riskmancer, Windwarden, Knotcutter implementations

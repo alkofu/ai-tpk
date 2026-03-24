@@ -132,7 +132,7 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 
 **Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents.
 
-**Configuration File:** `/claude/agents/orchestrator.md`
+**Configuration File:** `/claude/agents/dungeonmaster.md`
 
 ---
 

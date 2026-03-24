@@ -63,6 +63,15 @@ Processes the raw sub-agent event log captured during the session into a structu
 - Timeout: 60 seconds
 - Requires `jq`; exits silently if unavailable or raw log is empty
 
+## User-Global Instructions (claude/CLAUDE.md)
+
+`CLAUDE.md` is loaded by Claude Code at session start for every project. It mandates two skills that apply globally across all work:
+
+- **`commit-message-guide`** — required for all git commits; conventional commit format is enforced, no exceptions
+- **`open-pull-request`** — required for all pull requests and merge requests; no other PR creation method is allowed
+
+These mandates are active for every project. Project-level `.claude/CLAUDE.md` files can provide additional instructions; however, skill mandate enforcement depends on Claude Code's instruction precedence behavior.
+
 ## Agents (`claude/agents/`)
 
 Agents are specialized AI assistants that help with specific tasks. They are automatically available in Claude Code.

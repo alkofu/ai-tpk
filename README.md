@@ -18,8 +18,9 @@ Keep AI tool configurations version-controlled and portable across machines. The
 
 ```
 .
-├── claude/          # Claude Code configs (whitelist: settings.json, skills/, agents/)
-│   ├── settings.json    # Plugin config, hooks, marketplace settings
+├── claude/          # Claude Code configs (whitelist: settings.json, CLAUDE.md, skills/, agents/)
+│   ├── CLAUDE.md         # User-global instructions (skill mandates)
+│   ├── settings.json     # Plugin config, hooks, marketplace settings
 │   ├── agents/          # Specialized AI assistants (e.g., Quill for docs)
 │   └── skills/          # Reusable capabilities
 ├── cursor/          # Cursor configurations (coming soon)
@@ -28,7 +29,7 @@ Keep AI tool configurations version-controlled and portable across machines. The
 └── install.sh       # Installation script
 ```
 
-The installer only installs these paths from `claude/` into `~/.claude/`: `settings.json`, `skills/`, and `agents/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
+The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, and `agents/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
 
 ## Installation
 
@@ -45,14 +46,14 @@ Run the installation script:
 ./install.sh
 ```
 
-Creates symbolic links for the whitelisted Claude paths (`settings.json`, `skills/`, `agents/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
+Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
 
 ### Option 2: Copy Files
 ```bash
 ./install.sh --copy
 ```
 
-Copies the same whitelisted Claude paths into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
+Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`) into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp.
 
@@ -82,7 +83,7 @@ When you want a human-readable summary of past sessions, invoke the Talekeeper n
 Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), session narration (Talekeeper), and team meta-analysis (Everwise). The orchestration workflow uses an intelligent review system that reduces overhead by 60-70% while maintaining quality. See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog and [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the review workflow guide.
 
 ### Skills Library
-Reusable capabilities including skill creation, commit message generation, and pull request automation.
+Reusable capabilities including skill creation, commit message generation, and pull request automation. The `commit-message-guide` and `open-pull-request` skills are mandated globally via `CLAUDE.md` for all projects.
 
 ## Agent Orchestration Workflow
 

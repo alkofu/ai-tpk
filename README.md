@@ -18,18 +18,19 @@ Keep AI tool configurations version-controlled and portable across machines. The
 
 ```
 .
-├── claude/          # Claude Code configs (whitelist: settings.json, CLAUDE.md, skills/, agents/)
+├── claude/          # Claude Code configs (whitelist: settings.json, CLAUDE.md, skills/, agents/, commands/)
 │   ├── CLAUDE.md         # User-global instructions (skill mandates)
 │   ├── settings.json     # Plugin config, hooks, marketplace settings
 │   ├── agents/          # Specialized AI assistants (e.g., Quill for docs)
-│   └── skills/          # Reusable capabilities
+│   ├── skills/          # Reusable capabilities
+│   └── commands/        # Slash commands for Claude Code
 ├── cursor/          # Cursor configurations (coming soon)
 ├── docs/            # Documentation
 │   └── CONFIGURATION.md # Detailed configuration guide
 └── install.sh       # Installation script
 ```
 
-The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, and `agents/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
+The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, `agents/`, and `commands/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
 
 ## Installation
 
@@ -46,14 +47,14 @@ Run the installation script:
 ./install.sh
 ```
 
-Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
+Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
 
 ### Option 2: Copy Files
 ```bash
 ./install.sh --copy
 ```
 
-Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`) into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
+Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`) into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp.
 
@@ -85,9 +86,18 @@ Specialized AI assistants are available for orchestration (Dungeon Master), docu
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation. The `commit-message-guide` and `open-pull-request` skills are mandated globally via `CLAUDE.md` for all projects.
 
+### Slash Commands
+
+Claude Code slash commands provide quick workflow shortcuts. The `/open-pr`
+command instructs Claude to follow the `open-pull-request` skill workflow
+exactly: conventional branch naming, conventional PR title, draft mode,
+assigned to @me, and full pre-flight checklist. Commands are installed
+alongside skills and agents into `~/.claude/commands/`.
+
 ## Agent Orchestration Workflow
 
-When you invoke the Dungeon Master agent (`claude --agent dungeonmaster`), it orchestrates a multi-phase workflow with intelligent review gates:
+When you invoke the Dungeon Master agent (`claude --agent dungeonmaster`),
+it orchestrates a multi-phase workflow with intelligent review gates:
 
 ### High-Level Overview
 
@@ -172,16 +182,21 @@ flowchart TD
 
 ### Smart Review System: How It Works
 
-**Old Workflow (Removed):**
+#### Old Workflow (Removed)
+
 - All changes reviewed by 4 agents (Ruinor + 3 specialists)
 - Simple changes wasted 75% of reviews
 - Minimum 8 reviews per feature (4 plan + 4 implementation)
 
-**New Workflow (Active):**
-- **Ruinor (mandatory)**: Always runs first, provides baseline review covering quality, correctness, basic security, basic performance, basic complexity
-- **Specialists (opt-in)**: Only invoked when needed via three triggering mechanisms:
+#### New Workflow (Active)
 
-**1. User Flags (Explicit Control)**
+- **Ruinor (mandatory)**: Always runs first, provides baseline review covering
+  quality, correctness, basic security, basic performance, basic complexity
+- **Specialists (opt-in)**: Only invoked when needed via three triggering
+  mechanisms:
+
+#### 1. User Flags (Explicit Control)
+
 ```bash
 "Add OAuth login --review-security"        # Forces Riskmancer review
 "Optimize database queries --review-performance"  # Forces Windwarden review
@@ -190,40 +205,54 @@ flowchart TD
 "Major feature --review-all"                # Forces all 4 specialists
 ```
 
-**2. Ruinor Recommendations (Primary Trigger)**
+#### 2. Ruinor Recommendations (Primary Trigger)
+
 - Ruinor evaluates work in Phase 5 (Specialist Assessment)
 - Flags specialists when concerns exceed baseline checks
 - Orchestrator parses "Specialist Review Recommended" field
 
-**3. Keyword Detection (Heuristic Fallback)**
+#### 3. Keyword Detection (Heuristic Fallback)
+
 If no user flags and Ruinor doesn't recommend, checks for specialist keywords:
-- **Security**: auth, jwt, password, crypto, encrypt, secret, payment, pii, oauth
-- **Performance**: database, query, scale, cache, index, pagination, algorithm, batch
-- **Complexity**: refactor, architecture, abstraction, framework, pattern, redesign
+
+- **Security**: auth, jwt, password, crypto, encrypt, secret, payment, pii,
+  oauth
+- **Performance**: database, query, scale, cache, index, pagination, algorithm,
+  batch
+- **Complexity**: refactor, architecture, abstraction, framework, pattern,
+  redesign
 
 **Efficiency Gains:**
+
 - Simple changes: 8 reviews → 1-2 reviews (75% reduction)
 - Complex changes: 8 reviews → 2-8 reviews (same rigor, targeted)
 - Average: 60-70% fewer reviews across typical workload
 
 **Test Results (JWT Auth Feature):**
+
 - Old workflow: 4 plan + 4 implementation = 8 reviews
 - New workflow: Ruinor + Riskmancer only = 4 reviews (50% reduction)
 - Quality: Caught 8 security gaps total (no reduction in rigor)
 
-For a comprehensive guide to the review workflow, see [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md).
+For a comprehensive guide to the review workflow, see
+[docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md).
 
 **Key Principles:**
-- **Plans are artifacts** - Saved to `plans/*.md` for visibility and version control
+
+- **Plans are artifacts** - Saved to `plans/*.md` for visibility and version
+  control
 - **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files
-- **Quality gates enforce quality** - No execution without approved plan, no completion without approved implementation
-- **Intelligent triage** - Ruinor provides mandatory baseline, specialists handle deep expertise
+- **Quality gates enforce quality** - No execution without approved plan, no
+  completion without approved implementation
+- **Intelligent triage** - Ruinor provides mandatory baseline, specialists
+  handle deep expertise
 - **Revision loops** - Plans and code iterate until all reviewers accept
 - **DM never implements** - All work is delegated to specialized agents
 
 ## Contributing
 
 When updating configurations:
+
 1. Make changes in this repository
 2. Test the configurations
 3. Commit and push changes

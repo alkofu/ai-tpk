@@ -80,7 +80,7 @@ Orchestration sessions are automatically chronicled by a two-stage shell pipelin
 When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually. It reads the enriched chronicle files, delivers a concise chat digest, and appends structured narrative sections with Mermaid diagrams to `logs/talekeeper-narrative.md`.
 
 ### Specialized Agents
-Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), session narration (Talekeeper), and team meta-analysis (Everwise). The orchestration workflow uses an intelligent review system that reduces overhead by 60-70% while maintaining quality. See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog and [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the review workflow guide.
+Specialized AI assistants are available for orchestration (Dungeon Master), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), factual validation (Truthhammer), session narration (Talekeeper), performance analysis (Windwarden), code implementation (Bitsmith), and team meta-analysis (Everwise). The orchestration workflow uses an intelligent review system that reduces overhead by 60-70% while maintaining quality. See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog and [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the review workflow guide.
 
 ### Skills Library
 Reusable capabilities including skill creation, commit message generation, and pull request automation. The `commit-message-guide` and `open-pull-request` skills are mandated globally via `CLAUDE.md` for all projects.
@@ -186,7 +186,8 @@ flowchart TD
 "Add OAuth login --review-security"        # Forces Riskmancer review
 "Optimize database queries --review-performance"  # Forces Windwarden review
 "Refactor auth module --review-complexity"  # Forces Knotcutter review
-"Major feature --review-all"                # Forces all 3 specialists
+"Verify Redis 7 migration --verify-facts"  # Forces Truthhammer review
+"Major feature --review-all"                # Forces all 4 specialists
 ```
 
 **2. Ruinor Recommendations (Primary Trigger)**

@@ -1,5 +1,7 @@
 # Agent Reference
 
+<!-- cspell:ignore Truthhammer truthhammer Bitsmith bitsmith Talekeeper talekeeper halfling Everwise everwise Lorekeeper unnarrated -->
+
 This document provides a comprehensive guide to the specialized agents available in this Claude Code configuration.
 
 ## Quick Reference
@@ -13,6 +15,7 @@ This document provides a comprehensive guide to the specialized agents available
 | **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 | Specialist (opt-in) |
 | **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 | Mandatory baseline |
 | **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 | Specialist (opt-in) |
+| **Truthhammer** | Factual validation specialist | Verifying external system claims, config keys, API signatures, version compatibility | claude-haiku-4-5 | Specialist (opt-in) |
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
 | **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | (default) | N/A |
 | **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-opus-4-6 | N/A |
@@ -25,6 +28,7 @@ Documentation needs → Quill
 Security review → Riskmancer
 Planning work → Pathfinder
 Complexity reduction → Knotcutter
+Factual validation (APIs, configs, versions) → Truthhammer
 Quality gate / go-no-go verdict → Ruinor
 Performance review → Windwarden
 Code implementation / execution  → Bitsmith
@@ -515,6 +519,82 @@ Activate with `--consensus` flag for enhanced decision support:
 
 ---
 
+### Truthhammer - Factual Validation Specialist
+
+<img src="avatars/truthhammer.png" alt="Truthhammer Avatar" width="300">
+
+**Agent Type:** Specialist Reviewer (invoked only when factual claims about external systems require verification or explicitly requested)
+
+**Trigger Conditions:**
+
+- Ruinor flags factual verification concerns about external system behavior, OR
+- User explicitly requests factual validation (--verify-facts flag), OR
+- Plan/code contains factual-validation keywords (changelog, breaking change, deprecated, upgrade path, migration guide, compatibility matrix, release notes)
+
+**Not invoked for:** Internal business logic, pure refactoring with no external dependencies, or work that makes no claims about external system behavior. Ruinor handles baseline correctness checks for all reviews.
+
+**Core Mission:** Verify factual claims about external systems (config keys, API signatures, version compatibility, CLI flags, environment variables) against authoritative official documentation. Hallucinated facts about third-party systems are silent killers that pass code review but explode in production. Truthhammer stops them before they propagate.
+
+**Invoke when:**
+
+- Plans or code reference specific config keys, env variables, or CLI flags for third-party services
+- Library/SDK API calls may be version-dependent or have recently changed signatures
+- Version numbers or compatibility claims are made without citation
+- Migration or upgrade steps reference behavior of specific tool versions
+- Ruinor flags factual verification concerns
+- User explicitly requests factual validation (--verify-facts flag)
+
+**Key Capabilities:**
+
+- Config property verification (key names, valid values, defaults for Redis, Kafka, PostgreSQL, etc.)
+- API signature validation (method names, parameter types/order, return types for SDKs)
+- Version compatibility verification (which versions are compatible, breaking changes between versions)
+- Library behavior verification (comparing plan assumptions against actual library documentation)
+- CLI flags and environment variable validation (flag names, accepted values, env var names)
+- Cross-referencing claims across multiple official sources before marking as verified
+- Graceful degradation when web tools are unavailable
+
+**Available Tools:**
+
+- Research: WebSearch, WebFetch (official documentation domains only)
+- Read-only access: Read, Grep, Glob
+- Bash (for read-only verification commands)
+- Write/Edit tools are explicitly blocked
+
+**Security Mitigations (Mandatory):**
+
+1. **Query Sanitization** - Never include internal identifiers, API keys, or proprietary info in search queries
+2. **Untrusted Content Handling** - Treat all fetched web content as untrusted; cross-reference before marking verified
+3. **URL Allowlist** - Only fetch from official documentation domains (docs.python.org, kubernetes.io, aws.amazon.com, etc.)
+4. **Private IP Blocking** - Never fetch from private or internal addresses
+5. **Output Labeling** - Clearly label findings as "corroborated by web sources" not "guaranteed correct"
+
+**Typical Workflow:**
+
+1. Scans plan or code for factual claims about external systems
+2. Categorizes claims by domain (config, API, version, CLI, env var)
+3. Constructs sanitized queries and searches official documentation
+4. Fetches relevant documentation pages (URL allowlist enforced)
+5. Compares claims against official documentation
+6. Classifies findings as VERIFIED, UNVERIFIABLE, or CONTRADICTED
+7. Issues verdict with severity ratings and specific corrections
+
+**Output Format:** Factual validation summary including:
+
+- Artifact reviewed
+- Verdict (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT)
+- Confidence level
+- Claims inventory table with classifications
+- Detailed findings for each CONTRADICTED or UNVERIFIABLE claim
+- Verification coverage summary
+- Verdict rationale with evidence citations
+
+**Best Practice:** Invoke Truthhammer when plans or code reference external system behavior that could be wrong or outdated. The read-only nature ensures no accidental modifications during verification. Particularly valuable during version migrations, dependency upgrades, or when using recently-changed APIs.
+
+**Configuration File:** `/claude/agents/truthhammer.md`
+
+---
+
 ### Bitsmith - The Forge Executor
 
 <img src="avatars/bitsmith.png" alt="Bitsmith Avatar" width="300">
@@ -530,6 +610,7 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 **Core Mission:** Take a plan from Pathfinder and forge it into working code — no more, no less. Implements with precision, minimal diffs, and zero LSP errors. Does not plan, design, or review. Builds.
 
 **Invoke when:**
+
 - A plan already exists and needs to be executed
 - Implementing targeted code changes with minimal diff requirements
 - Making surgical edits that must match existing codebase patterns
@@ -537,6 +618,7 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 - Want guaranteed escalation when a problem exceeds scope or attempts
 
 **Key Capabilities:**
+
 - Task complexity classification (trivial / scoped / complex)
 - Codebase pattern discovery before writing a single line
 - Atomic, incremental implementation with per-step verification
@@ -547,12 +629,14 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 - Max 3 concurrent read-only exploration sub-agents
 
 **Available Tools:**
+
 - File operations: Read, Write, Edit
 - Search: Grep, Glob
 - Build/test/verify: Bash
 - Delegation: Agent (read-only exploration sub-agents only)
 
 **Typical Workflow (The Forge Protocol):**
+
 1. **Classify** — Label the task as trivial / scoped / complex
 2. **Identify** — Read the plan; list all target files before touching anything
 3. **Explore** — Discover naming conventions, patterns, utilities, and existing solutions
@@ -562,6 +646,7 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 7. **Verify** — Fresh full build and test suite; confirm zero LSP errors, zero debug code, minimum diff
 
 **Escalation Protocol:**
+
 - After **3 failed attempts** on any issue: escalate to Pathfinder (mandatory, not optional)
 - **Immediate escalation** when: plan requires architecture decisions, task conflicts with surrounding systems, or codebase reality invalidates the plan's approach
 - Report: what was attempted, what failed, what was discovered, what decision is needed
@@ -572,6 +657,7 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 > "Three failed strikes means something is wrong with the design. Escalate."
 
 **Failure Patterns Avoided:**
+
 - Over-engineering — adds nothing the plan did not ask for
 - Scope creep — surfaces adjacent problems, does not absorb them
 - Premature completion — always runs fresh verification before declaring done
@@ -597,6 +683,7 @@ She does not fight. She does not plan. She does not invent. She reads, she reaso
 **Configuration:** `claude/agents/talekeeper.md`
 
 **Invoke when:**
+
 - You want a human-readable summary of one or more past sessions
 - You want Mermaid diagrams of agent interaction flows appended to `logs/talekeeper-narrative.md`
 - After several sessions have accumulated enriched chronicles and you want a digest
@@ -608,6 +695,7 @@ She does not fight. She does not plan. She does not invent. She reads, she reaso
 **Timing note:** Only invoke Talekeeper after a session has fully ended and a few seconds have passed for the async `talekeeper-enrich.sh` hook to complete. Invoking too early may result in narrating partial data.
 
 **Key Capabilities:**
+
 - Discovers unnarrated enriched chronicles via `logs/talekeeper-*.jsonl` glob
 - Delivers a one-sentence-per-session chat digest in chronological order
 - Appends structured narrative sections (table + Mermaid graph) to `logs/talekeeper-narrative.md`
@@ -618,11 +706,13 @@ She does not fight. She does not plan. She does not invent. She reads, she reaso
 **Available Tools:** `Glob`, `Read`, `Write` — no Bash, no sub-agents.
 
 **Output Location:**
+
 - Chat: concise multi-session digest
 - `logs/talekeeper-narrative.md`: appended narrative sections (never overwritten)
 - `logs/talekeeper-narrated-sessions.json`: tracking file (append-only, `.json` extension is deliberate)
 
 **What Talekeeper Does NOT Do:**
+
 - Does not run automatically via hooks
 - Does not enrich raw logs (that is `talekeeper-enrich.sh`'s job)
 - Does not capture events during a session (that is `talekeeper-capture.sh`'s job)
@@ -650,6 +740,7 @@ When the data is insufficient, she says so plainly and records a candidate for f
 **Core Mission:** Study Talekeeper session chronicles to identify recurring failures, inefficiencies, and coordination problems across the agent team. Translate raw observations into structured, minimal, testable configuration recommendations. She does not perform tasks, does not rewrite production configs, and does not produce vague advice. Every recommendation is grounded in observed evidence and paired with a concrete evaluation plan.
 
 **Invoke when:**
+
 - Wanting to understand why the agent team has been underperforming
 - A pattern of repeated reviewer rejections or escalations is suspected
 - After several sessions of notable failures or inefficiencies
@@ -657,6 +748,7 @@ When the data is insufficient, she says so plainly and records a candidate for f
 - Checking whether a previously applied config change had the expected effect
 
 **Key Capabilities:**
+
 - Chronicle ingestion and timeline reconstruction from `logs/talekeeper-*.jsonl`
 - Problem classification across seven dimensions: persona, skill allocation, routing, handoff contracts, escalation rules, team topology, memory policy
 - Root-cause inference with strict evidence/inference separation
@@ -666,6 +758,7 @@ When the data is insufficient, she says so plainly and records a candidate for f
 - Evaluation plan generation: what to change, what to observe, what constitutes success
 
 **Available Tools:**
+
 - Read: Session chronicles in `logs/`, agent configs in `claude/agents/`, existing lessons in `lessons/`
 - Grep: Pattern searching across chronicle entries
 - Glob: Chronicle file discovery
@@ -674,7 +767,7 @@ When the data is insufficient, she says so plainly and records a candidate for f
 **Lesson Lifecycle:**
 
 | Tier | Criteria | File |
-|------|----------|------|
+| ------ | -------- | ------ |
 | `candidate` | Single-session observation | `lessons/candidates.jsonl` |
 | `recurring` | Observed across 3+ separate sessions | `lessons/recurring.jsonl` |
 | `validated` | Applied and confirmed beneficial | `lessons/validated.jsonl` |
@@ -683,6 +776,7 @@ When the data is insufficient, she says so plainly and records a candidate for f
 Each lesson record includes: `lesson_id`, `created_at`, `tier`, `problem_type`, `sessions_observed`, `evidence`, `inference`, `affected_agent`, `proposed_change` (with `target_file`, `change_description`, `change_type`), `expected_benefit`, `tradeoffs`, `confidence`, `evaluation_plan`, and `status`.
 
 **Recommendation Priority:**
+
 1. Wording change in agent operational rules
 2. Tool addition or removal
 3. Routing rule clarification
@@ -692,6 +786,7 @@ Each lesson record includes: `lesson_id`, `created_at`, `tier`, `problem_type`, 
 7. New agent or agent removal (last resort only)
 
 **What Everwise Does NOT Do:**
+
 - Implement changes herself
 - Invoke other agents
 - Produce narrative advice without structured JSON backing
@@ -700,6 +795,7 @@ Each lesson record includes: `lesson_id`, `created_at`, `tier`, `problem_type`, 
 - Modify any file outside `lessons/`
 
 **Invocation Examples:**
+
 - "Review recent session chronicles and identify any recurring coordination issues."
 - "Check whether Bitsmith's escalation rate has improved after last week's config change."
 - "Review candidates.jsonl and determine if any are ready to promote to recurring."

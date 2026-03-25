@@ -47,6 +47,7 @@ Planning Phase
 │     - Riskmancer (security)     │
 │     - Windwarden (performance)  │
 │     - Knotcutter (complexity)   │
+│     - Truthhammer (factual)     │
 └─────────────────────────────────┘
     ↓
 Implementation Phase
@@ -63,6 +64,7 @@ Implementation Phase
 │     - Riskmancer (security)     │
 │     - Windwarden (performance)  │
 │     - Knotcutter (complexity)   │
+│     - Truthhammer (factual)     │
 └─────────────────────────────────┘
     ↓
 Complete
@@ -138,6 +140,24 @@ Complete
 **Configuration:** `mandatory: false`, `invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"`
 
 **Trigger keywords:** refactor, architecture, abstraction, framework, pattern, generalize, reusable, complexity, simplify, redesign, restructure
+
+#### Truthhammer - Factual Validation Specialist
+
+**Only runs when:**
+- Ruinor flags factual verification concerns about external system behavior, OR
+- User explicitly requests with `--verify-facts` flag, OR
+- Plan/code contains factual-validation keywords (heuristic fallback)
+
+**Provides:**
+- Config property verification for external services
+- API signature validation for libraries and SDKs
+- Version compatibility verification
+- CLI flag and environment variable validation
+- Cross-reference verification against official documentation
+
+**Configuration:** `mandatory: false`, `invoke_when: "plans or code reference specific external system behavior, or when Ruinor flags factual verification concerns"`
+
+**Trigger keywords:** changelog, breaking change, deprecated, upgrade path, migration guide, compatibility matrix, release notes
 
 ## Triggering Mechanisms
 
@@ -275,9 +295,10 @@ If no user flags present AND Ruinor doesn't recommend specialists, the orchestra
      - Riskmancer → REVISE (missing OAuth state validation)
      - Windwarden → ACCEPT (caching strategy looks good)
      - Knotcutter → REVISE (over-engineered provider abstraction)
+     - Truthhammer → ACCEPT (OAuth spec claims verified)
    - Pathfinder revises plan
    - Re-review: all ACCEPT
-   - **Result: 4 reviewers (Ruinor + all 3 specialists)**
+   - **Result: 5 reviewers (Ruinor + all 4 specialists)**
 3. Bitsmith implements code
 4. **Implementation Review Gate:**
    - Ruinor reviews → ACCEPT
@@ -285,9 +306,10 @@ If no user flags present AND Ruinor doesn't recommend specialists, the orchestra
      - Riskmancer → ACCEPT
      - Windwarden → ACCEPT
      - Knotcutter → ACCEPT-WITH-RESERVATIONS (still some abstraction, but justified)
-   - **Result: 4 reviewers (Ruinor + all 3 specialists)**
+     - Truthhammer → ACCEPT
+   - **Result: 5 reviewers (Ruinor + all 4 specialists)**
 
-**Total reviews: 8 (same as old workflow)**
+**Total reviews: 10 (expanded from old workflow for maximum rigor)**
 **Efficiency gain: 0% (but appropriate for complex feature)**
 **Quality: Maximum rigor applied where needed**
 
@@ -329,7 +351,7 @@ If no user flags present AND Ruinor doesn't recommend specialists, the orchestra
 
 **Complex changes (10% of workload):**
 - Old: 8 reviews
-- New: 4-8 reviews (Ruinor + 1-3 specialists at both gates)
+- New: 4-10 reviews (Ruinor + 1-4 specialists at both gates)
 - **Reduction: 0-50%**
 
 **Average across typical workload:**
@@ -452,6 +474,11 @@ invoke_when: "performance-critical features or when Ruinor flags performance con
 mandatory: false
 trigger_keywords: ["refactor", "architecture", "abstraction", ...]
 invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"
+
+# Truthhammer
+mandatory: false
+trigger_keywords: ["changelog", "breaking change", "deprecated", "upgrade path", ...]
+invoke_when: "plans or code reference specific external system behavior, or when Ruinor flags factual verification concerns"
 ```
 
 ## Migration Notes

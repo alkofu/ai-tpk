@@ -8,6 +8,8 @@ claude/**
 !claude/agents/**
 !claude/hooks/
 !claude/hooks/**
+!claude/commands/
+!claude/commands/**
 
 # Git worktrees
 .worktrees/

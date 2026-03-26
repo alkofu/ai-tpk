@@ -10,6 +10,9 @@
     "Bitsmith",
     "Truthhammer",
     "Pathfinder",
-    "adrs"
-  ]
+    "adrs",
+    "talekeeper",
+    "anthropics"
+  ],
+  "ignoreWords": ["dontAsk"]
 }

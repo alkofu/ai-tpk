@@ -33,21 +33,11 @@ Runs after every sub-agent completion to capture raw session event data.
 - Timeout: 5 seconds
 - Requires `jq` for filtering; falls back to a minimal entry if unavailable
 
-#### Stop Hook - Documentation Check + Session Enrichment
+#### Stop Hook - Session Enrichment
 
-Two hooks run when you end a Claude session.
+One hook runs when you end a Claude session.
 
-**Hook 1 — Documentation check (synchronous, gated):**
-
-1. First checks whether any code changes exist via `git diff --quiet HEAD`; exits early (halts pipeline) if the working tree is clean
-2. If changes exist, an agent reviews uncommitted changes, compares them against existing documentation, and updates docs if gaps are found
-
-**Configuration:**
-- Gate: Command hook (`git diff --quiet HEAD && exit 1 || exit 0`) with `halt_pipeline: true`, timeout 5 seconds
-- Docs agent: Agent-based hook, timeout 60 seconds
-- Conservative approach: Only triggers for substantive changes requiring documentation
-
-**Hook 2 — Session enrichment (async):**
+**Session enrichment (async):**
 
 Processes the raw sub-agent event log captured during the session into a structured chronicle.
 

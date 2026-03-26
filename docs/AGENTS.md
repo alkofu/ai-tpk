@@ -144,12 +144,16 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 
 **Core Mission:** Transform intricate codebases and system designs into accessible documentation that expedites developer onboarding while decreasing support overhead.
 
-**Invoke when:**
-- Adding major features or API changes
-- Onboarding new developers to a project
-- Documentation is out of sync with code
-- Creating architecture or design documentation
-- Generating API specifications
+**Trigger Mechanisms:**
+
+1. **Automatic via Dungeon Master (Phase 5)**: Automatically invoked after Pathfinder creates a plan and implementation is completed. Quill receives context from DM: plan file path, list of files changed during implementation, and feature summary.
+
+2. **Manual Invocation**: Explicitly invoke Quill for documentation work not tied to a planning session:
+   - Adding major features or API changes
+   - Onboarding new developers to a project
+   - Documentation is out of sync with code
+   - Creating architecture or design documentation
+   - Generating API specifications
 
 **Key Capabilities:**
 - Gap analysis of existing documentation
@@ -165,7 +169,15 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 - Search: Grep, Glob
 - Bash commands for system tasks
 
-**Typical Workflow:**
+**Typical Workflow (Automatic Invocation via DM):**
+1. Receives plan file path, changed files list, and feature summary from Dungeon Master
+2. Audits existing documentation against changes made during implementation
+3. Identifies gaps, outdated content, and missing sections in scope of the feature
+4. Plans document structure with hierarchical headings
+5. Creates clear Markdown with functional code snippets
+6. Validates technical precision and link integrity
+
+**Typical Workflow (Manual Invocation):**
 1. Audits existing documentation against current codebase
 2. Identifies gaps, outdated content, and missing sections
 3. Plans document structure with hierarchical headings
@@ -174,7 +186,7 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 
 **Output Format:** Concise change log listing created/modified files with single-line summaries.
 
-**Best Practice:** Invoke Quill proactively after completing features rather than waiting for documentation to become severely outdated.
+**Best Practice:** Quill runs automatically as part of the Dungeon Master's completion workflow when a plan has been created. For documentation work outside of planning sessions, manually invoke Quill proactively rather than waiting for documentation to become severely outdated.
 
 **Configuration File:** `/claude/agents/quill.md`
 

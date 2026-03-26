@@ -1,7 +1,5 @@
 # Agent Reference
 
-<!-- cspell:ignore Truthhammer truthhammer Bitsmith bitsmith Talekeeper talekeeper halfling Everwise everwise Lorekeeper unnarrated -->
-
 This document provides a comprehensive guide to the specialized agents available in this Claude Code configuration.
 
 ## Quick Reference
@@ -141,6 +139,16 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 ---
 
 ### Quill - Documentation Specialist
+
+<img src="avatars/quill.png" alt="Quill Avatar" width="300">
+
+A high elf of uncommon precision and quiet conviction. Quill does not merely write — he architects. Every heading is load-bearing. Every sentence earns its place or is struck from the page without remorse. He has been told he is fastidious. He considers this a compliment.
+
+He does not romanticize chaos the way some scribes do, claiming that a messy desk signals a creative mind. His desk is immaculate. His filing system has a filing system. The ink on his slender fingers is the only disorder he permits — and even that follows a rule: oldest stain on the left hand, freshest on the right.
+
+Quill has a single professional rival: documentation written by someone who clearly understood the system but assumed the reader would too. He finds such documents personally offensive.
+
+> *"If a developer has to ask, the documentation failed. If they never have to ask, nobody notices. I have made peace with invisibility."*
 
 **Core Mission:** Transform intricate codebases and system designs into accessible documentation that expedites developer onboarding while decreasing support overhead.
 

@@ -12,7 +12,22 @@
     "Pathfinder",
     "adrs",
     "talekeeper",
-    "anthropics"
+    "anthropics",
+    "Talekeeper",
+    "halfling",
+    "Everwise",
+    "everwise",
+    "Lorekeeper",
+    "unnarrated",
+    "bitsmith",
+    "truthhammer",
+    "DALL",
+    "govulncheck",
+    "exploitability",
+    "RALPLAN",
+    "backpressure",
+    "hotspots",
+    "underspecified"
   ],
   "ignoreWords": ["dontAsk"]
 }

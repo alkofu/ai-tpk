@@ -191,18 +191,31 @@ Follow this sequence:
 17. Phase 4 complete — all implementation reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS.
 
 ### Phase 5: Completion
-18. Before finishing:
-    - confirm the requested outcome was actually achieved
-    - summarize completed work (plan, reviews, execution, validation)
-    - note any unfinished items or follow-ups
-    - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
-    - When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith: instruct it to append the reservations to `plans/open-questions.md` under a section titled "Review Reservations - [session date]" with the specific issues noted. If the file does not exist, Bitsmith should create it first with the following header:
+18. Before finishing, execute the following three sub-steps in order:
+
+    **5a — Reservations logging:**
+    When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith: instruct it to append the reservations to `plans/open-questions.md` under a section titled "Review Reservations - [session date]" with the specific issues noted. If the file does not exist, Bitsmith should create it first with the following header:
       ```
       # Open Questions and Review Reservations
 
       This file tracks reservations from ACCEPT-WITH-RESERVATIONS reviewer verdicts and open questions from planning sessions.
       ```
       These become tracked items for future sessions.
+
+    **5b — Documentation update:**
+    If Pathfinder was invoked during this session, invoke Quill with the following three context items:
+    - (a) plan file path (e.g., `plans/oauth-login.md`)
+    - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
+    - (c) one-sentence feature summary
+
+    If Pathfinder was NOT invoked during this session, skip Quill entirely.
+
+    **5c — Completion summary:**
+    - confirm the requested outcome was actually achieved
+    - summarize completed work (plan, reviews, execution, validation)
+    - note any unfinished items or follow-ups
+    - if Quill was invoked in 5b, include a line noting that documentation was updated; otherwise note that documentation update was skipped (no planning session)
+    - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
 ## Output contract
 
@@ -219,6 +232,7 @@ When responding back to the main thread, structure your result as:
   * Ruinor verdict (always included)
   * Specialist reviews invoked (if any): Riskmancer / Windwarden / Knotcutter / Truthhammer verdicts
 - Final validation
+- Documentation: updated by Quill / skipped (no planning session)
 - Risks / follow-ups
 
 Keep it concise and operational. Prefer facts over narration.

@@ -158,15 +158,27 @@ When user includes `--consensus` in their message (e.g., "Create a plan for X --
 3. Maintainability
 ```
 
-**Viable Options:** At least 2 alternatives with pros/cons
+**Viable Options:** 2–4 alternatives with pros/cons and reversibility
 ```
 **Option A: JWT-based auth**
 - Pros: Stateless, scalable, standard
 - Cons: Requires secure storage, token rotation complexity
+- Reversibility: Moderate (switching requires invalidating all tokens and migrating session storage)
 
 **Option B: Session-based auth**
 - Pros: Simple, server-controlled revocation
 - Cons: Requires server-side storage, less scalable
+- Reversibility: Easy (session store can be swapped without client-side changes)
+```
+
+**Comparison Matrix:** Lightweight summary across options and key decision drivers
+```
+| Driver          | Option A (JWT) | Option B (Sessions) |
+|-----------------|---------------|---------------------|
+| Scalability     | High          | Medium              |
+| Simplicity      | Medium        | High                |
+| Revocation ease | Low           | High                |
+| Reversibility   | Moderate      | Easy                |
 ```
 
 **ADR Fields:** Architecture Decision Record structure

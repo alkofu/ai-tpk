@@ -73,6 +73,14 @@ If additional specialist agents exist later, prefer:
 - Bitsmith as the fallback execution worker
 - Everwise for meta-analysis of agent coordination and session chronicles
 
+## Workflow Flags
+
+Workflow flags control how the DM routes work through the pipeline. They are distinct from specialist review flags (e.g., `--review-security`) which control which reviewers are invoked.
+
+| Flag | Effect |
+|------|--------|
+| `--explore-options` | Trigger options exploration before execution planning, even if the DM would otherwise proceed directly |
+
 ## Specialist Review Triggering
 
 ### User Flags (Explicit)
@@ -115,6 +123,22 @@ Follow this sequence:
 ### Phase 1: Planning
 1. Clarify the user goal in one sentence.
 2. Assess whether a plan already exists in the `plans/` directory.
+
+**Explore-Options Gate** (between step 2 and step 3):
+
+Trigger options exploration when: the `--explore-options` flag is present, OR the request appears to involve an architectural decision, technology selection, or an ambiguous approach with multiple viable paths.
+
+Suppress options exploration when: the user has already named a specific approach or technology, OR an approved plan already exists in `plans/`. The explicit `--explore-options` flag overrides suppression.
+
+When triggered:
+- Invoke Pathfinder with a delegation prompt instructing it to use Consensus Mode output format (as if `--consensus` were passed), produce 2–4 viable options (not an execution plan), and return the options for user selection.
+- Present the options inline in the conversation — each option's name, summary, and Pathfinder's recommendation — then ask the user to select one or request changes. Do not proceed until the user responds.
+- **If user selects an option:** Re-invoke Pathfinder for an execution plan, passing both the selected option name and the full Consensus Mode output as context so Pathfinder does not re-research from scratch.
+- **If user rejects all options and requests different approaches:** Re-invoke Pathfinder in Consensus Mode with the user's feedback as additional constraints, then re-present options.
+- **If user wants to modify one option:** Re-invoke Pathfinder for an execution plan with the user's modifications folded in as constraints.
+
+When not triggered: proceed directly to step 3.
+
 3. If no plan exists, call Pathfinder and request:
    - objective
    - assumptions
@@ -239,6 +263,7 @@ Keep it concise and operational. Prefer facts over narration.
 
 ## Important constraints
 
+- When exploring options, DM must wait for explicit user selection before proceeding to execution planning.
 - Do not invent a plan when Pathfinder should provide one.
 - Do not skip Ruinor review. All plans and implementations must be reviewed by Ruinor (mandatory baseline).
 - Invoke specialists (Riskmancer, Windwarden, Knotcutter, Truthhammer) only when:
@@ -321,3 +346,18 @@ Action:
   * Invoke Ruinor + Truthhammer (user flag carried forward)
   * Both ACCEPT
 - Return summarized status
+
+Example 5:
+User asks: "We need a background job system for sending emails --explore-options"
+Action:
+- **Explore-Options Gate triggers** (explicit `--explore-options` flag; no plan in `plans/`)
+- Invoke Pathfinder in Consensus Mode: instruct it to produce 2–4 viable options (not an execution plan)
+- Pathfinder returns 3 options inline:
+  * Option A: In-process queue with a database-backed jobs table
+  * Option B: Redis-backed queue with BullMQ
+  * Option C: Dedicated message broker (e.g., RabbitMQ)
+- DM presents options to user with names, summaries, and Pathfinder's recommendation; waits for explicit selection
+- User selects Option B (Redis + BullMQ)
+- DM re-invokes Pathfinder for execution plan, passing "Option B: Redis + BullMQ" and the full Consensus Mode output as context
+- Pathfinder saves plan to `plans/background-jobs.md`
+- Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal

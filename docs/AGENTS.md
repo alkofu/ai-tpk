@@ -85,6 +85,9 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
   - User explicitly requests with flags (--review-security, --review-performance, --review-complexity, --review-all), OR
   - Plan/code contains specialist-level keywords (fallback heuristic)
 
+**Workflow Flags:**
+- **`--explore-options`**: Triggers options exploration before execution planning. Presents 2–4 viable approaches with trade-offs for user selection before committing to an execution plan. Useful for architectural decisions, technology selection, or ambiguous approaches with multiple viable paths. Can be explicitly passed or triggered automatically when the DM detects ambiguous decisions.
+
 **Specialist Triggering:**
 - **Riskmancer**: Invoked for auth/jwt/crypto/payment/pii/security-sensitive features
 - **Windwarden**: Invoked for database/query/scale/cache/performance-critical features
@@ -93,17 +96,24 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 **Typical Workflow:**
 1. Clarifies user goal in one sentence
 2. Assesses whether a plan already exists
-3. If no plan exists, delegates to Pathfinder for planning
-4. **Plan Review Gate**: Delegates plan to Ruinor (mandatory baseline reviewer)
-5. If Ruinor flags specialists or user requested them, invokes specialists in parallel (Riskmancer/Windwarden/Knotcutter)
-6. If reviewers identify issues, sends consolidated feedback back to Pathfinder
-7. Once plan approved, converts plan into concrete execution tasks
-8. Delegates each task to appropriate agent
-9. **Implementation Review Gate**: Delegates code to Ruinor (mandatory baseline reviewer)
-10. If Ruinor flags specialists or user requested them, invokes specialists in parallel
-11. If issues found, delegates fixes back to Bitsmith
-12. Validates results against plan after all reviews pass
-13. Before finishing, confirms outcome achieved and summarizes work
+3. **Explore-Options Gate** (if `--explore-options` flag present OR request involves architectural decision/technology selection with multiple viable paths):
+   - Invokes Pathfinder with Consensus Mode (2–4 viable options, not an execution plan)
+   - Presents options inline with names, summaries, and recommendations
+   - Waits for explicit user selection
+   - If user selects: re-invokes Pathfinder for execution plan with selected option as context
+   - If user rejects all options: re-invokes Pathfinder in Consensus Mode with feedback as constraints
+   - If user wants to modify an option: re-invokes Pathfinder with modifications as constraints
+4. If no plan exists, delegates to Pathfinder for planning
+5. **Plan Review Gate**: Delegates plan to Ruinor (mandatory baseline reviewer)
+6. If Ruinor flags specialists or user requested them, invokes specialists in parallel (Riskmancer/Windwarden/Knotcutter)
+7. If reviewers identify issues, sends consolidated feedback back to Pathfinder
+8. Once plan approved, converts plan into concrete execution tasks
+9. Delegates each task to appropriate agent
+10. **Implementation Review Gate**: Delegates code to Ruinor (mandatory baseline reviewer)
+11. If Ruinor flags specialists or user requested them, invokes specialists in parallel
+12. If issues found, delegates fixes back to Bitsmith
+13. Validates results against plan after all reviews pass
+14. Before finishing, confirms outcome achieved and summarizes work
 
 **Output Format:**
 - Goal statement
@@ -132,7 +142,17 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 - User: "Rename this variable in one file"
 - Action: Skips Pathfinder → delegates directly to Bitsmith → returns brief summary
 
-**Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents.
+*Example 3: Options exploration with architectural decision*
+- User: "We need a background job system for sending emails --explore-options"
+- Action:
+  1. Explore-Options Gate triggers (explicit flag + architectural decision)
+  2. Invokes Pathfinder in Consensus Mode → returns 3 options (in-process queue, Redis+BullMQ, RabbitMQ)
+  3. Presents options with trade-offs (scalability, complexity, operational overhead)
+  4. User selects Option B (Redis + BullMQ)
+  5. Re-invokes Pathfinder for execution plan with selected option as context
+  6. Continues with Plan Review → Execution → Implementation Review as normal
+
+**Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents. Use `--explore-options` explicitly when facing technology/architecture decisions to see trade-offs before committing.
 
 **Configuration File:** `/claude/agents/dungeonmaster.md`
 
@@ -301,14 +321,20 @@ Quill has a single professional rival: documentation written by someone who clea
 - Task Flow (3-6 steps with checkboxes and acceptance criteria)
 - Success Criteria
 
-**Consensus Mode:**
-Activate with `--consensus` flag for enhanced decision support:
+**Consensus Mode (Options Exploration):**
+Activate automatically via Dungeon Master's `--explore-options` flag, or manually with `--consensus` for enhanced decision support. Pathfinder produces a structured options comparison (not an execution plan) with:
 - 3-5 guiding principles
 - Top 3 decision drivers
-- 2+ viable options with trade-offs
-- Architecture Decision Record format
-- Pre-mortem analysis (for high-risk work)
-- Expanded testing strategy
+- 2–4 viable options with:
+  - Pros and cons for each approach
+  - Reversibility assessment (Easy/Moderate/Difficult to switch later)
+  - Trade-off analysis against decision drivers
+- Comparison matrix summarizing options across key decision drivers
+- Architecture Decision Record format (Status, Context, Decision, Consequences)
+- Pre-mortem analysis (for high-risk scenarios)
+- Expanded testing strategy (Unit, Integration, E2E, Observability)
+
+Consensus Mode output is presented inline to the user for selection. Once selected, Dungeon Master re-invokes Pathfinder for execution planning with the chosen option as context, avoiding redundant research.
 
 **Output Location:**
 - Plans: `plans/{feature-name}.md`

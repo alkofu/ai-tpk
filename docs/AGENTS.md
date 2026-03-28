@@ -109,11 +109,15 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 7. If reviewers identify issues, sends consolidated feedback back to Pathfinder
 8. Once plan approved, converts plan into concrete execution tasks
 9. Delegates each task to appropriate agent
-10. **Implementation Review Gate**: Delegates code to Ruinor (mandatory baseline reviewer)
-11. If Ruinor flags specialists or user requested them, invokes specialists in parallel
-12. If issues found, delegates fixes back to Bitsmith
-13. Validates results against plan after all reviews pass
-14. Before finishing, confirms outcome achieved and summarizes work
+10. **Intermediate review gates** (Phase 3): After 2 consecutive Bitsmith invocations, runs an intermediate Ruinor review before continuing
+11. **Implementation Review Gate**: Delegates code to Ruinor (mandatory baseline reviewer)
+12. If Ruinor flags specialists or user requested them, invokes specialists in parallel
+13. If Ruinor issues REJECT (not REVISE), requires Bitsmith to produce a written remediation brief before re-review
+14. If issues found, delegates fixes back to Bitsmith and returns to review step
+15. **Documentation update** (Phase 5): After implementation review is fully complete, invokes Quill for documentation updates
+16. **Post-documentation review**: If any Bitsmith work is needed after Quill, that work must re-enter the Implementation Review Gate before session completion
+17. Validates results against plan after all reviews pass
+18. Before finishing, confirms outcome achieved and summarizes work
 
 **Output Format:**
 - Goal statement
@@ -131,6 +135,10 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 - Only declares completion when results match both plan and user request
 - If execution reveals plan is invalid, loops back to planning
 - Minimizes unnecessary back-and-forth with decisive delegation
+- **Intermediate review gates are hard limits:** After 2 consecutive Bitsmith invocations without intervening review, runs an intermediate Ruinor review before proceeding
+- **Everwise is user-facing only:** Never invokes Everwise as an escalation path after review failures or stalled loops; instead suggest it to the user
+- **REJECT verdicts require remediation:** When Ruinor issues REJECT (vs. REVISE), requires a written remediation brief from Bitsmith before re-review invocation
+- **Documentation follows implementation review:** Quill must only be invoked after Phase 4 (Implementation Review) is fully complete; any Bitsmith work after Quill must re-enter Phase 4
 
 **Example Scenarios:**
 

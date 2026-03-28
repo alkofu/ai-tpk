@@ -248,6 +248,14 @@ For a comprehensive guide to the review workflow, see
   handle deep expertise
 - **Revision loops** - Plans and code iterate until all reviewers accept
 - **DM never implements** - All work is delegated to specialized agents
+- **Hard intermediate review gates** - After 2 consecutive Bitsmith invocations,
+  a review gate is mandatory before continuing
+- **REJECT verdicts require remediation** - When Ruinor issues REJECT, Bitsmith
+  must provide a written remediation brief before re-review to prevent
+  rubber-stamp approvals
+- **Documentation follows implementation** - Quill is invoked only after
+  implementation review is fully complete; any post-documentation code changes
+  must re-enter the implementation review gate
 
 ## Contributing
 

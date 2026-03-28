@@ -18,6 +18,7 @@
     "Everwise",
     "everwise",
     "Lorekeeper",
+    "maxmemory",
     "unnarrated",
     "bitsmith",
     "truthhammer",
@@ -27,7 +28,8 @@
     "RALPLAN",
     "backpressure",
     "hotspots",
-    "underspecified"
+    "underspecified",
+    "unreviewed"
   ],
   "ignoreWords": ["dontAsk"]
 }

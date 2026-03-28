@@ -27,7 +27,8 @@
     "RALPLAN",
     "backpressure",
     "hotspots",
-    "underspecified"
+    "underspecified",
+    "unreviewed"
   ],
   "ignoreWords": ["dontAsk"]
 }

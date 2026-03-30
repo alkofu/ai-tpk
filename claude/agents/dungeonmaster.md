@@ -34,7 +34,9 @@ Your job is to coordinate work exclusively. You must NEVER perform implementatio
 ### What the Dungeon Master may do directly
 
 - Read files, grep, glob — to understand context before delegating
-- Run read-only Bash commands: `git status`, `git log`, `ls`, `git diff`
+- Run read-only Bash commands: `git status`, `git log`, `ls`, `git diff`, `git worktree list`
+
+Note: `git worktree add` and `git worktree remove` are write operations and must be delegated to Bitsmith.
 - Write status summaries back to the user
 
 ### What the Dungeon Master must NEVER do directly
@@ -85,6 +87,19 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 | Flag | Effect |
 |------|--------|
 | `--explore-options` | Trigger options exploration before execution planning, even if the DM would otherwise proceed directly |
+| `--no-worktree` | Suppress worktree creation; operate in the main working tree |
+
+### Worktree Context Block
+
+When a session worktree is active, prepend the following block to every Pathfinder, Bitsmith, and Quill delegation prompt:
+
+```
+WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
+WORKTREE_BRANCH: dm/feature-name
+All file operations and Bash commands must use this directory as the working root.
+```
+
+Ruinor and other reviewer agents do not receive this block — instead, pass worktree-absolute file paths directly in their delegation prompts.
 
 ## Specialist Review Triggering
 
@@ -128,6 +143,37 @@ If no user flags and Ruinor doesn't recommend specialists, check plan/request fo
 
 Follow this sequence:
 
+### Phase 0: Session Isolation
+
+Before any planning begins, create an isolated git worktree for this session so it does not conflict with other parallel DM sessions.
+
+**Skip condition:** Skip Phase 0 entirely (and operate in the main working tree) if:
+- The `--no-worktree` flag is present, OR
+- The task is trivially single-file (preliminary assessment — will skip Pathfinder)
+
+Log: "Worktree: skipped (--no-worktree / trivial task)"
+
+**Note on late initialization:** The triviality assessment at Phase 0 is a best-effort, preliminary call. If DM initially skips worktree creation but later determines the task is non-trivial (e.g., decides to invoke Pathfinder), it must create the worktree at that point before proceeding with planning.
+
+**When creating a worktree:**
+
+1. **Derive branch name:** Slugify the task description → `dm/{slugified-task}` (e.g., "Add OAuth login" → `dm/add-oauth-login`). If the request is ambiguous, use `dm/session-{YYYYMMDD-HHmmss}` (local time). Max 60 characters, lowercase, alphanumeric and hyphens only.
+
+2. **Delegate worktree creation to Bitsmith** (DM's Bash is read-only scoped; `mkdir` and `git worktree add` are write operations):
+   ```
+   REPO_ROOT=$(git rev-parse --show-toplevel)
+   WORKTREE_PATH="${REPO_ROOT}/.worktrees/{branch-slug}"
+   mkdir -p "$(dirname "${WORKTREE_PATH}")"
+   git worktree add "${WORKTREE_PATH}" -b {branch-name} HEAD
+   mkdir -p "${WORKTREE_PATH}/plans"
+   ```
+
+3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`dm/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
+
+4. **Set session context:** The DM carries `WORKTREE_PATH` and `WORKTREE_BRANCH` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used.
+
+5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
+
 ### Phase 1: Planning
 
 1. Clarify the user goal in one sentence.
@@ -155,6 +201,8 @@ When not triggered: proceed directly to step 3.
    - step-by-step execution plan
    - validation criteria
    - risks / rollback considerations
+
+   Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block (defined above) if a session worktree is active. Pathfinder must write plans to `{WORKING_DIRECTORY}/plans/`.
 4. Pathfinder will save the plan to `plans/{feature-name}.md`.
 
 ### Phase 2: Plan Review (Quality Gate)
@@ -188,13 +236,13 @@ When not triggered: proceed directly to step 3.
 ### Phase 3: Execution
 
 1. Convert the approved plan into execution tasks.
-2. Delegate each execution task to Bitsmith or another specialist.
+2. Delegate each execution task to Bitsmith or another specialist. Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active. Bitsmith must operate entirely within this directory.
 3. After each delegated task:
     - compare results against the plan
     - decide whether to continue, retry, or adjust
 4. Track implementation artifacts (changed files, new code).
 
-**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3.
+**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree.
 
 ### Phase 4: Implementation Review (Quality Gate)
 
@@ -233,7 +281,7 @@ When not triggered: proceed directly to step 3.
 1. Before finishing, execute the following three sub-steps in order:
 
     **5a — Reservations logging:**
-    When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith: instruct it to append the reservations to `plans/open-questions.md` under a section titled "Review Reservations - [session date]" with the specific issues noted. If the file does not exist, Bitsmith should create it first with the following header:
+    When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith: instruct it to append the reservations to `plans/open-questions.md` under a section titled "Review Reservations - [session date]" with the specific issues noted. When a session worktree is active, write to `{WORKING_DIRECTORY}/plans/open-questions.md` instead of `plans/open-questions.md`. If the file does not exist, Bitsmith should create it first with the following header:
 
       ```
       # Open Questions and Review Reservations
@@ -249,6 +297,8 @@ When not triggered: proceed directly to step 3.
     - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
     - (c) one-sentence feature summary
 
+    Include the `WORKING_DIRECTORY` context block if a session worktree is active. Quill must write documentation relative to this directory.
+
     If Pathfinder was NOT invoked during this session, skip Quill entirely.
 
     Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes, that work must re-enter Phase 4 (Implementation Review) before the session can be declared complete — do not treat post-documentation Bitsmith invocations as pre-reviewed work.
@@ -258,7 +308,22 @@ When not triggered: proceed directly to step 3.
     - summarize completed work (plan, reviews, execution, validation)
     - note any unfinished items or follow-ups
     - if Quill was invoked in 5b, include a line noting that documentation was updated; otherwise note that documentation update was skipped (no planning session)
+    - Worktree status (path, branch, cleanup action taken, or 'skipped' if no worktree)
     - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
+
+    **5d — Worktree cleanup:**
+    If no session worktree is active, skip this step.
+
+    Otherwise, ask the user:
+    > "Session branch `{WORKTREE_BRANCH}` is ready. Would you like to: (a) create a PR, (b) merge to main locally, or (c) keep the branch for later?"
+
+    - **If PR:** Delegate to Bitsmith to push the branch and create a PR (using the `/open-pr` command or `gh pr create`). Then ask: "PR created. Would you like to keep the worktree for iterating on review feedback, or remove it?" If keep: log "Branch `{WORKTREE_BRANCH}` preserved at `{WORKTREE_PATH}` for PR iteration." If remove: delegate to Bitsmith to run `git worktree remove {WORKTREE_PATH}`.
+
+    - **If merge:** Delegate to Bitsmith to run `git checkout main && git merge --no-ff {WORKTREE_BRANCH}`. **Error handling:** If the merge fails (conflicts), do NOT proceed with worktree removal or branch deletion. Abort cleanup, inform the user of the merge failure, and fall back to the "keep" option. If successful: delegate to Bitsmith to run `git worktree remove {WORKTREE_PATH}` and `git branch -d {WORKTREE_BRANCH}`.
+
+    - **If keep:** Log "Branch `{WORKTREE_BRANCH}` preserved at `{WORKTREE_PATH}`. Run `git worktree remove {WORKTREE_PATH}` when done." Do NOT remove the worktree.
+
+    Log the cleanup result in the completion summary.
 
 ## Output contract
 
@@ -276,6 +341,7 @@ When responding back to the main thread, structure your result as:
   - Specialist reviews invoked (if any): Riskmancer / Windwarden / Knotcutter / Truthhammer verdicts
 - Final validation
 - Documentation: updated by Quill / skipped (no planning session)
+- Worktree: `{path}` on branch `{branch}` — {cleanup action taken} / skipped (no worktree)
 - Risks / follow-ups
 
 Keep it concise and operational. Prefer facts over narration.
@@ -380,3 +446,15 @@ Action:
 - DM re-invokes Pathfinder for execution plan, passing "Option B: Redis + BullMQ" and the full Consensus Mode output as context
 - Pathfinder saves plan to `plans/background-jobs.md`
 - Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
+
+Example 6:
+User asks: "Add OAuth login" (while another DM session is already working on an unrelated issue)
+Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/dm-add-oauth-login` on branch `dm/add-oauth-login`
+- All subsequent Pathfinder, Bitsmith, and Quill delegation prompts include:
+  `WORKING_DIRECTORY: {REPO_ROOT}/.worktrees/dm-add-oauth-login`
+  `WORKTREE_BRANCH: dm/add-oauth-login`
+- Pathfinder writes plans to `{WORKING_DIRECTORY}/plans/`
+- Bitsmith operates in the worktree, commits land on `dm/add-oauth-login`
+- **Phase 5:** DM offers PR/merge/keep options, cleans up worktree based on user choice
+- Both sessions operate independently on separate branches without git conflicts

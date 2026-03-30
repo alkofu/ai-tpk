@@ -72,6 +72,20 @@ git pull
 
 ## Features
 
+### Parallel Sessions via Git Worktrees
+
+The Dungeon Master now supports true parallel development workflows using Git worktrees. Each session automatically creates an isolated worktree on a dedicated branch (e.g., `.worktrees/dm-add-oauth-login/` on `dm/add-oauth-login`), enabling multiple simultaneous `claude --agent dungeonmaster` terminals to work on unrelated issues without git conflicts or interference.
+
+**Key benefits:**
+- Run multiple DungeonMaster sessions simultaneously on the same repository
+- Each session operates on its own branch in its own worktree
+- Plans are isolated within each worktree's `plans/` directory
+- Zero git conflicts between parallel sessions
+- At completion, choose to create PR, merge to main, or keep the branch for later
+- Manual cleanup with `git worktree remove` or automatic cleanup at Phase 5
+
+Use `--no-worktree` flag to suppress worktree creation and operate in the main working tree (backwards compatible). See [docs/WORKTREE_ISOLATION.md](/docs/WORKTREE_ISOLATION.md) for comprehensive guide with examples and troubleshooting.
+
 ### Documentation Integration
 The Dungeon Master orchestration agent automatically invokes Quill (documentation specialist) as the final step of Phase 5 (Completion) when a planning session was conducted. Quill receives the plan file, list of changed files, and feature summary, then updates documentation to reflect the implementation. This ensures documentation stays synchronized with code without manual effort.
 

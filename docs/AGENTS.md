@@ -87,6 +87,20 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 
 **Workflow Flags:**
 - **`--explore-options`**: Triggers options exploration before execution planning. Presents 2–4 viable approaches with trade-offs for user selection before committing to an execution plan. Useful for architectural decisions, technology selection, or ambiguous approaches with multiple viable paths. Can be explicitly passed or triggered automatically when the DM detects ambiguous decisions.
+- **`--no-worktree`**: Suppress automatic git worktree creation; operate in the main working tree instead. Use for read-only analysis or trivial single-file changes. Useful for backwards compatibility with pre-worktree workflows. See [Worktree Isolation Guide](/docs/WORKTREE_ISOLATION.md) for details.
+
+**Parallel Sessions via Worktree Isolation:**
+
+Each DungeonMaster session automatically creates an isolated git worktree on a dedicated branch (e.g., `.worktrees/dm-add-oauth-login/` on `dm/add-oauth-login`). This enables truly parallel sessions without git conflicts:
+
+- **Multiple simultaneous sessions:** Run multiple `claude --agent dungeonmaster` terminals on unrelated issues
+- **Independent branches:** Each session operates on its own branch, preventing conflicts
+- **Isolated plans:** Each worktree has its own local `plans/` directory
+- **Phase 0 worktree creation:** Automatic at session start (skipped only with `--no-worktree` flag or for trivial tasks)
+- **Phase 5 cleanup:** At completion, choose to create PR, merge to main, or keep the branch for later
+- **Manual cleanup:** `git worktree list`, `git worktree remove .worktrees/{slug}`, `git worktree prune`
+
+For comprehensive usage guide, examples, troubleshooting, and best practices, see [Worktree Isolation Guide](/docs/WORKTREE_ISOLATION.md).
 
 **Specialist Triggering:**
 - **Riskmancer**: Invoked for auth/jwt/crypto/payment/pii/security-sensitive features
@@ -159,6 +173,20 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
   4. User selects Option B (Redis + BullMQ)
   5. Re-invokes Pathfinder for execution plan with selected option as context
   6. Continues with Plan Review → Execution → Implementation Review as normal
+
+*Example 4: Parallel sessions with git worktree isolation*
+- Terminal A: User: "Add OAuth login"
+  - Session automatically creates worktree at `.worktrees/dm-add-oauth-login/` on branch `dm/add-oauth-login`
+  - Pathfinder creates plan in worktree's `plans/`
+  - Bitsmith implements in worktree
+  - Reviews happen in worktree context
+  - At Phase 5, presents PR/merge/keep options
+- Terminal B (simultaneously): User: "Fix database query performance on issue #42"
+  - Session automatically creates separate worktree at `.worktrees/dm-fix-db-perf-issue-42/` on branch `dm/fix-db-perf-issue-42`
+  - Work proceeds independently without git conflicts
+  - Both sessions can commit, implement, and generate PRs in parallel
+- Result: Two independent feature branches, zero conflicts, true parallel development
+- See [Worktree Isolation Guide](/docs/WORKTREE_ISOLATION.md) for comprehensive details
 
 **Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents. Use `--explore-options` explicitly when facing technology/architecture decisions to see trade-offs before committing.
 

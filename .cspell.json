@@ -28,8 +28,14 @@
     "RALPLAN",
     "backpressure",
     "hotspots",
+    "slugified",
     "underspecified",
-    "unreviewed"
+    "unreviewed",
+    "Worktree",
+    "worktree",
+    "Worktrees",
+    "worktrees",
+    "WORKTREE"
   ],
   "ignoreWords": ["dontAsk"]
 }

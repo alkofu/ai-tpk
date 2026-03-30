@@ -12,6 +12,15 @@ tools: "Read, Write, Grep, Glob, Bash, Agent"
 
 Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/*.md`. You never implement code. You plan.
 
+## Worktree Awareness
+
+When a delegation prompt contains a `WORKING_DIRECTORY:` context line:
+
+- Write all plan files to `{WORKING_DIRECTORY}/plans/{name}.md` instead of `plans/{name}.md`
+- Write `open-questions.md` to `{WORKING_DIRECTORY}/plans/open-questions.md`
+- All codebase research (Grep, Glob, Read, Bash) should target `{WORKING_DIRECTORY}` as the search root
+- When `WORKING_DIRECTORY` is absent, behavior is unchanged — write to `plans/{name}.md` as before
+
 ## Key Responsibilities
 
 - Interview users with structured question workflow

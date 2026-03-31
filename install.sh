@@ -55,9 +55,9 @@ while [[ $# -gt 0 ]]; do
       echo "  copy:              Copies files. Manual sync required with git pull."
       echo ""
       echo "Prerequisites:"
-      echo "  yq  Required for adapter scripts that regenerate harness-specific files."
-      echo "      macOS:  brew install yq"
-      echo "      Linux:  snap install yq"
+      echo "  deno  Required for adapter scripts that regenerate harness-specific files."
+      echo "        macOS/Linux: curl -fsSL https://deno.land/install.sh | sh"
+      echo "        or: https://docs.deno.com/runtime/getting_started/installation/"
       exit 0
       ;;
     *)
@@ -88,17 +88,12 @@ echo "Harness: ${GREEN}${HARNESS}${NC}"
 echo "Source directory: ${SCRIPT_DIR}"
 echo ""
 
-# Check for yq dependency (required by adapter scripts)
-check_yq() {
-  if ! command -v yq &>/dev/null; then
-    echo -e "${RED}Error: 'yq' is required but not installed.${NC}"
-    echo ""
-    echo "The adapter scripts use yq to parse YAML frontmatter."
-    echo ""
-    echo "Install yq:"
-    echo "  macOS:  brew install yq"
-    echo "  Linux:  snap install yq"
-    echo "          or: https://github.com/mikefarah/yq#install"
+# Check for deno dependency (required by adapter scripts)
+check_deno() {
+  if ! command -v deno &>/dev/null; then
+    echo "Error: deno is required but not installed."
+    echo "Install: https://docs.deno.com/runtime/getting_started/installation/"
+    echo "  macOS/Linux: curl -fsSL https://deno.land/install.sh | sh"
     exit 1
   fi
 }
@@ -211,27 +206,33 @@ install_opencode_artifacts() {
   fi
 }
 
+# Run cursor harness: install cursor directory
+run_cursor() {
+  echo "--- Cursor harness ---"
+  install_dir "cursor" ".cursor"
+}
+
 # Run claude harness: regenerate artifacts then install
 run_claude() {
   echo -e "${BLUE}--- Claude Code harness ---${NC}"
   echo "Regenerating claude/agents/ from source..."
-  "${SCRIPT_DIR}/adapters/to-claude.sh"
+  "${SCRIPT_DIR}/adapters/to-claude.ts"
   echo ""
   install_claude_whitelist
-  install_dir "cursor" ".cursor"
+  run_cursor
 }
 
 # Run opencode harness: regenerate artifacts then install
 run_opencode() {
   echo -e "${BLUE}--- OpenCode harness ---${NC}"
   echo "Regenerating opencode/agents/ and opencode/AGENTS.md from source..."
-  "${SCRIPT_DIR}/adapters/to-opencode.sh"
+  "${SCRIPT_DIR}/adapters/to-opencode.ts"
   echo ""
   install_opencode_artifacts
 }
 
-# Check yq before running any adapter
-check_yq
+# Check deno before running any adapter
+check_deno
 
 # Dispatch by harness
 case "$HARNESS" in

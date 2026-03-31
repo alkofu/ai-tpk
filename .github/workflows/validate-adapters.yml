@@ -9,10 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install yq
-        run: |
-          sudo wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/bin/yq
-          yq --version
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: Check formatting
+        run: deno fmt --check --config adapters/deno.json
+
+      - name: Lint
+        run: deno lint --config adapters/deno.json
+
+      - name: Type check
+        run: deno check --config adapters/deno.json adapters/**/*.ts
+
+      - name: Run tests
+        run: deno test --allow-read --allow-write --allow-run=deno --config adapters/deno.json adapters/
+
       - name: Validate adapter output matches committed files
-        run: bash adapters/validate.sh
+        run: deno run --allow-read --allow-write --allow-run=git --config adapters/deno.json adapters/validate.ts

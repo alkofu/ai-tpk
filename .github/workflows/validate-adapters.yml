@@ -1,0 +1,32 @@
+name: Validate Adapters
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: Check formatting
+        run: deno fmt --check --config adapters/deno.json
+
+      - name: Lint
+        run: deno lint --config adapters/deno.json
+
+      - name: Type check
+        run: deno check --config adapters/deno.json adapters/**/*.ts
+
+      - name: Run tests
+        run: deno test --allow-read --allow-write --allow-run=deno --config adapters/deno.json adapters/
+
+      - name: Validate adapter output correctness
+        run: deno run --allow-read --allow-write --config adapters/deno.json adapters/validate.ts

@@ -1,8 +1,18 @@
 ---
-name: dungeonmaster
 description: "Use this agent to coordinate multi-step software development work. It delegates planning to Pathfinder, runs mandatory Ruinor baseline reviews, conditionally invokes specialist reviewers (Riskmancer/Windwarden/Knotcutter/Truthhammer) based on findings or user flags, delegates implementation to Bitsmith, and validates completion against the plan."
-tools: "Task, Read, Grep, Glob, Bash"
 model: claude-sonnet-4-6
+system_prompt_below: true
+
+claude:
+  tools: "Task, Read, Grep, Glob, Bash"
+
+opencode:
+  permission:
+    - read
+    - grep
+    - glob
+    - bash
+  mode: subagent
 ---
 
 # Dungeon Master - Orchestration Agent

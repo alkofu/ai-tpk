@@ -1,9 +1,20 @@
 ---
-name: pathfinder
 description: "Strategic planning consultant with interview workflow"
 model: claude-opus-4-6
-level: 4
-tools: "Read, Write, Grep, Glob, Bash, Agent"
+system_prompt_below: true
+
+claude:
+  tools: "Read, Write, Grep, Glob, Bash, Agent"
+  level: 4
+
+opencode:
+  permission:
+    - read
+    - write
+    - grep
+    - glob
+    - bash
+  mode: subagent
 ---
 
 # Pathfinder - Strategic Planning Agent

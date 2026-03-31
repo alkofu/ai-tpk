@@ -1,12 +1,41 @@
 ---
-name: riskmancer
 description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
 model: claude-opus-4-6
-level: 3
-disallowedTools: Write, Edit
-mandatory: false
-trigger_keywords: ["auth", "authentication", "authorization", "session", "jwt", "token", "password", "crypto", "encrypt", "decrypt", "secret", "credential", "payment", "pii", "personal data", "api key", "oauth", "saml", "security"]
-invoke_when: "security-sensitive features or when Ruinor flags security concerns"
+system_prompt_below: true
+
+claude:
+  level: 3
+  disallowedTools: Write, Edit
+  mandatory: false
+  trigger_keywords:
+    - auth
+    - authentication
+    - authorization
+    - session
+    - jwt
+    - token
+    - password
+    - crypto
+    - encrypt
+    - decrypt
+    - secret
+    - credential
+    - payment
+    - pii
+    - personal data
+    - api key
+    - oauth
+    - saml
+    - security
+  invoke_when: "security-sensitive features or when Ruinor flags security concerns"
+
+opencode:
+  permission:
+    - read
+    - bash
+    - grep
+    - glob
+  mode: subagent
 ---
 
 # Riskmancer - Security Reviewer Agent

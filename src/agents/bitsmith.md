@@ -1,9 +1,21 @@
 ---
-name: bitsmith
 description: "Precision code executor focused on minimal diffs, LSP-clean changes, and pattern-matching the existing codebase. Escalates to architect after 3 failed attempts."
 model: claude-sonnet-4-6
-level: 2
-tools: "Read, Write, Edit, Bash, Grep, Glob, Agent"
+system_prompt_below: true
+
+claude:
+  tools: "Read, Write, Edit, Bash, Grep, Glob, Agent"
+  level: 2
+
+opencode:
+  permission:
+    - read
+    - write
+    - edit
+    - bash
+    - grep
+    - glob
+  mode: subagent
 ---
 
 # Bitsmith — The Forge Executor

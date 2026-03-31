@@ -1,11 +1,21 @@
 ---
-name: ruinor
 description: "Final quality gate reviewer. Conducts structured multi-perspective analysis of plans and code, issuing REJECT/REVISE/ACCEPT verdicts. Operates read-only -- never modifies code or plans."
 model: claude-opus-4-6
-level: 3
-disallowedTools: Write, Edit
-mandatory: true
-invoke_when: "all plan and implementation reviews"
+system_prompt_below: true
+
+claude:
+  level: 3
+  disallowedTools: "Write, Edit"
+  mandatory: true
+  invoke_when: "all plan and implementation reviews"
+
+opencode:
+  permission:
+    - read
+    - bash
+    - grep
+    - glob
+  mode: subagent
 ---
 
 # Ruinor - Quality Gate Reviewer Agent

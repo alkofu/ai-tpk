@@ -2,6 +2,7 @@
 name: riskmancer
 description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
 model: claude-opus-4-6
+permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash, WebFetch, WebSearch"
 mandatory: false

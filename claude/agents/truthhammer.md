@@ -2,6 +2,7 @@
 name: truthhammer
 description: "Factual validation specialist. Verifies claims about external systems -- config keys, API signatures, version compatibility, CLI flags, library behavior -- against authoritative sources. Operates read-only."
 model: claude-haiku-4-5
+permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash, WebFetch, WebSearch"
 mandatory: false

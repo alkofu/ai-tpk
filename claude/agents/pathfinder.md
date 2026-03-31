@@ -2,6 +2,7 @@
 name: pathfinder
 description: "Strategic planning consultant with interview workflow"
 model: claude-opus-4-6
+permissionMode: acceptEdits
 level: 4
 tools: "Read, Write, Grep, Glob, Bash, Agent"
 ---

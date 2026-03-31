@@ -1,29 +1,12 @@
 ---
+name: truthhammer
 description: "Factual validation specialist. Verifies claims about external systems -- config keys, API signatures, version compatibility, CLI flags, library behavior -- against authoritative sources. Operates read-only."
 model: claude-haiku-4-5
-system_prompt_below: true
-
-claude:
-  level: 3
-  disallowedTools: "Write, Edit"
-  mandatory: false
-  trigger_keywords:
-    - changelog
-    - breaking change
-    - deprecated
-    - upgrade path
-    - migration guide
-    - compatibility matrix
-    - release notes
-  invoke_when: "plans or code reference specific external system behavior, or when Ruinor flags factual verification concerns"
-
-opencode:
-  permission:
-    - read
-    - bash
-    - grep
-    - glob
-  mode: subagent
+level: 3
+disallowedTools: Write, Edit
+mandatory: false
+trigger_keywords: ["changelog", "breaking change", "deprecated", "upgrade path", "migration guide", "compatibility matrix", "release notes"]
+invoke_when: "plans or code reference specific external system behavior, or when Ruinor flags factual verification concerns"
 ---
 
 # Truthhammer - Factual Validation Reviewer Agent

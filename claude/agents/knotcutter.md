@@ -1,32 +1,11 @@
 ---
+name: knotcutter
 description: "Radical simplification specialist. Cuts through complexity by questioning necessity, eliminating over-engineering, and reducing systems to their essential core. Use when codebases are bloated, abstractions proliferate, or solutions feel needlessly complex."
+disallowedTools: Write, Edit
 model: claude-opus-4-6
-system_prompt_below: true
-
-claude:
-  disallowedTools: "Write, Edit"
-  mandatory: false
-  trigger_keywords:
-    - refactor
-    - architecture
-    - abstraction
-    - framework
-    - pattern
-    - generalize
-    - reusable
-    - complexity
-    - simplify
-    - redesign
-    - restructure
-  invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"
-
-opencode:
-  permission:
-    - read
-    - bash
-    - grep
-    - glob
-  mode: subagent
+mandatory: false
+trigger_keywords: ["refactor", "architecture", "abstraction", "framework", "pattern", "generalize", "reusable", "complexity", "simplify", "redesign", "restructure"]
+invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"
 ---
 
 # Knotcutter - Complexity Elimination Agent

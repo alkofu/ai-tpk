@@ -1,4 +1,0 @@
-{
-  "deno.enablePaths": ["adapters"],
-  "deno.config": "adapters/deno.json"
-}

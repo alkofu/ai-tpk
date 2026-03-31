@@ -95,7 +95,7 @@ When a session worktree is active, prepend the following block to every Pathfind
 
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
-WORKTREE_BRANCH: dm/feature-name
+WORKTREE_BRANCH: feat/feature-name
 All file operations and Bash commands must use this directory as the working root.
 ```
 
@@ -157,7 +157,7 @@ Log: "Worktree: skipped (--no-worktree / trivial task)"
 
 **When creating a worktree:**
 
-1. **Derive branch name:** Slugify the task description → `dm/{slugified-task}` (e.g., "Add OAuth login" → `dm/add-oauth-login`). If the request is ambiguous, use `dm/session-{YYYYMMDD-HHmmss}` (local time). Max 60 characters, lowercase, alphanumeric and hyphens only.
+1. **Derive branch name:** Slugify the task description using a conventional commit prefix → `{type}/{slugified-task}` (e.g., "Add OAuth login" → `feat/add-oauth-login`, "Fix null pointer in auth" → `fix/null-pointer-auth`, "Refactor cache layer" → `refactor/cache-layer`). Infer the prefix from the nature of the request: use `feat/` for new features, `fix/` for bug fixes, `refactor/` for refactoring, `chore/` for maintenance/config/tooling, `docs/` for documentation-only changes, `test/` for test-only changes. If the request is ambiguous, use `chore/session-{YYYYMMDD-HHmmss}` (local time). Max 60 characters, lowercase, alphanumeric and hyphens only.
 
 2. **Delegate worktree creation to Bitsmith** (DM's Bash is read-only scoped; `mkdir` and `git worktree add` are write operations):
    ```
@@ -168,7 +168,7 @@ Log: "Worktree: skipped (--no-worktree / trivial task)"
    mkdir -p "${WORKTREE_PATH}/plans"
    ```
 
-3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`dm/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
+3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`feat/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
 
 4. **Set session context:** The DM carries `WORKTREE_PATH` and `WORKTREE_BRANCH` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used.
 
@@ -450,11 +450,11 @@ Action:
 Example 6:
 User asks: "Add OAuth login" (while another DM session is already working on an unrelated issue)
 Action:
-- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/dm-add-oauth-login` on branch `dm/add-oauth-login`
+- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/feat-add-oauth-login` on branch `feat/add-oauth-login`
 - All subsequent Pathfinder, Bitsmith, and Quill delegation prompts include:
-  `WORKING_DIRECTORY: {REPO_ROOT}/.worktrees/dm-add-oauth-login`
-  `WORKTREE_BRANCH: dm/add-oauth-login`
+  `WORKING_DIRECTORY: {REPO_ROOT}/.worktrees/feat-add-oauth-login`
+  `WORKTREE_BRANCH: feat/add-oauth-login`
 - Pathfinder writes plans to `{WORKING_DIRECTORY}/plans/`
-- Bitsmith operates in the worktree, commits land on `dm/add-oauth-login`
+- Bitsmith operates in the worktree, commits land on `feat/add-oauth-login`
 - **Phase 5:** DM offers PR/merge/keep options, cleans up worktree based on user choice
 - Both sessions operate independently on separate branches without git conflicts

@@ -35,16 +35,7 @@
     "worktree",
     "Worktrees",
     "worktrees",
-    "WORKTREE",
-    "frontmatter",
-    "opencode",
-    "todowrite",
-    "webfetch",
-    "websearch",
-    "myharness",
-    "Unmappable",
-    "gsub",
-    "nullglob"
+    "WORKTREE"
   ],
   "ignoreWords": ["dontAsk"]
 }

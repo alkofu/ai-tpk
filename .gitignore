@@ -4,12 +4,12 @@ claude/**
 !claude/settings.json
 !claude/skills/
 !claude/skills/**
+!claude/agents/
+!claude/agents/**
 !claude/hooks/
 !claude/hooks/**
 !claude/commands/
 !claude/commands/**
-
-opencode/
 
 # Git worktrees
 .worktrees/

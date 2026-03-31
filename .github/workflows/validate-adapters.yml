@@ -26,5 +26,5 @@ jobs:
       - name: Run tests
         run: deno test --allow-read --allow-write --allow-run=deno --config adapters/deno.json adapters/
 
-      - name: Validate adapter output matches committed files
-        run: deno run --allow-read --allow-write --allow-run=git --config adapters/deno.json adapters/validate.ts
+      - name: Validate adapter output correctness
+        run: deno run --allow-read --allow-write --config adapters/deno.json adapters/validate.ts

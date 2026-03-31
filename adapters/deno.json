@@ -11,7 +11,7 @@
   "tasks": {
     "to-claude": "deno run --allow-read --allow-write adapters/to-claude.ts",
     "to-opencode": "deno run --allow-read --allow-write adapters/to-opencode.ts",
-    "validate": "deno run --allow-read --allow-write --allow-run=git adapters/validate.ts",
+    "validate": "deno run --allow-read --allow-write adapters/validate.ts",
     "check": "deno check adapters/**/*.ts",
     "lint": "deno lint",
     "fmt-check": "deno fmt --check",

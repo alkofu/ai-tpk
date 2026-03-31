@@ -1,7 +1,7 @@
 ---
 name: knotcutter
 description: "Radical simplification specialist. Cuts through complexity by questioning necessity, eliminating over-engineering, and reducing systems to their essential core. Use when codebases are bloated, abstractions proliferate, or solutions feel needlessly complex."
-disallowedTools: Write, Edit
+tools: "Read, Grep, Glob, Bash"
 model: claude-opus-4-6
 mandatory: false
 trigger_keywords: ["refactor", "architecture", "abstraction", "framework", "pattern", "generalize", "reusable", "complexity", "simplify", "redesign", "restructure"]

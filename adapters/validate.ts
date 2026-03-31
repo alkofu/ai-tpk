@@ -10,10 +10,7 @@
 import { join } from "@std/path";
 import { agentNameFromFile } from "./lib/parse.ts";
 import { generateClaudeAgent } from "./to-claude.ts";
-import {
-  generateAgentOutput,
-  generateAgentsMd,
-} from "./to-opencode.ts";
+import { generateAgentOutput, generateAgentsMd } from "./to-opencode.ts";
 
 const SCRIPT_DIR = import.meta.dirname!;
 const REPO_ROOT = join(SCRIPT_DIR, "..");

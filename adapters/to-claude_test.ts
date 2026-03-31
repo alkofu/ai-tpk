@@ -109,13 +109,23 @@ Deno.test("generateClaudeAgent - all 11 agents match committed files", async () 
     if (!entry.name.endsWith(".md")) continue;
     const srcPath = join(srcDir, entry.name);
     const agentName = entry.name.replace(/\.md$/, "");
-    const committedPath = join(import.meta.dirname!, "..", "claude", "agents", entry.name);
+    const committedPath = join(
+      import.meta.dirname!,
+      "..",
+      "claude",
+      "agents",
+      entry.name,
+    );
     const generated = await generateClaudeAgent(srcPath);
     const committed = await Deno.readTextFile(committedPath);
     // Strip the generated header (first two lines) from both sides before comparing
     const generatedBody = generated.split("\n").slice(2).join("\n");
     const committedBody = committed.split("\n").slice(2).join("\n");
-    assertEquals(generatedBody, committedBody, `Mismatch for agent: ${agentName}`);
+    assertEquals(
+      generatedBody,
+      committedBody,
+      `Mismatch for agent: ${agentName}`,
+    );
   }
 });
 

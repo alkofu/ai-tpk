@@ -1,4 +1,10 @@
-import { assert, assertEquals, assertMatch, assertNotEquals, assertRejects } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertMatch,
+  assertNotEquals,
+  assertRejects,
+} from "@std/assert";
 import {
   agentNameFromFile,
   extractFrontmatter,
@@ -56,7 +62,10 @@ Deno.test("extractFrontmatter riskmancer - claude.trigger_keywords is array with
   const fm = await extractFrontmatter(RISKMANCER);
   const kw = fm.claude?.trigger_keywords;
   assertEquals(Array.isArray(kw), true);
-  assert((kw ?? []).length >= 2, "trigger_keywords should have at least 2 elements");
+  assert(
+    (kw ?? []).length >= 2,
+    "trigger_keywords should have at least 2 elements",
+  );
 });
 
 Deno.test("getArray knotcutter - claude.tools returns [] (field absent)", async () => {

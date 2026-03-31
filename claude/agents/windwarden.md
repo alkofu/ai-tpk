@@ -2,8 +2,9 @@
 name: windwarden
 description: "Performance and scalability reviewer. Reviews plans and code for performance bottlenecks, inefficient algorithms, scalability issues, and resource optimization opportunities. Operates read-only with blocked write/edit capabilities."
 model: claude-sonnet-4-6
+permissionMode: auto
 level: 3
-disallowedTools: Write, Edit
+tools: "Read, Grep, Glob, Bash"
 mandatory: false
 trigger_keywords: ["database", "query", "performance", "scale", "scalability", "optimization", "cache", "index", "pagination", "algorithm", "batch", "real-time", "throughput", "latency", "memory", "cpu"]
 invoke_when: "performance-critical features or when Ruinor flags performance concerns"

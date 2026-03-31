@@ -2,6 +2,7 @@
 name: bitsmith
 description: "Precision code executor focused on minimal diffs, LSP-clean changes, and pattern-matching the existing codebase. Escalates to architect after 3 failed attempts."
 model: claude-sonnet-4-6
+permissionMode: acceptEdits
 level: 2
 tools: "Read, Write, Edit, Bash, Grep, Glob, Agent"
 ---

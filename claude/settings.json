@@ -1,4 +1,27 @@
 {
+  "allowedTools": [
+    "Bash(git *)",
+    "Bash(gh pr *)",
+    "Bash(gh issue *)",
+    "Bash(gh run *)",
+    "Bash(gh repo view *)",
+    "Bash(gh repo clone *)",
+    "Bash(gh release view *)",
+    "Bash(gh auth switch *)",
+    "Bash(mkdir *)",
+    "Bash(rm *)",
+    "Bash(cp *)",
+    "Bash(mv *)",
+    "Bash(touch *)",
+    "Bash(ls *)",
+    "Bash(npm *)",
+    "Bash(npx *)",
+    "Bash(pnpm *)",
+    "Bash(yarn *)",
+    "Bash(* --help)",
+    "Bash(* --version)",
+    "Bash(python *)"
+  ],
   "hooks": {
     "SubagentStop": [
       {

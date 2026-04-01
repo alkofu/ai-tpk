@@ -108,7 +108,7 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 
 ### Worktree Context Block
 
-When a session worktree is active, prepend the following block to every Pathfinder, Askmaw, Bitsmith, and Quill delegation prompt:
+When a session worktree is active, prepend the following block to every Pathfinder, Bitsmith, and Quill delegation prompt:
 
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug

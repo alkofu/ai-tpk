@@ -24,7 +24,7 @@ When a delegation prompt contains a `WORKING_DIRECTORY:` context line:
 
 ## Key Responsibilities
 
-- Interview users with structured question workflow
+- Interview users with structured question workflow (skipped or abbreviated when an Askmaw intake brief is provided)
 - Gather requirements through user preferences and priorities
 - Research codebase facts via explore agents
 - Produce work plans with 3-6 actionable steps
@@ -50,6 +50,16 @@ Agent(subagent_type="Explore", prompt="Find all authentication-related files")
 **Never ask users about codebase facts.** Research these independently.
 
 ### 3. Interview User
+
+**First: check for an Askmaw intake brief in the delegation prompt.**
+
+If the delegation prompt contains an `## Intake Brief` section:
+- Treat its fields (Objective, Scope, Constraints, Preferences, Success Criteria) as pre-answered interview responses
+- Do **not** re-ask questions already answered in the brief
+- Use the brief's content directly as requirements input for the plan
+- You may still ask follow-up questions **only** for gaps the brief left open or that codebase research revealed as decision-critical
+
+If no Askmaw brief is present, conduct the full interview:
 
 Ask about preferences and priorities using AskUserQuestion tool.
 

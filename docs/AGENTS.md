@@ -7,6 +7,7 @@ This document provides a comprehensive guide to the specialized agents available
 | Agent | Purpose | Primary Use Cases | Model | Review Type |
 |-------|---------|-------------------|-------|-------------|
 | **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
+| **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | N/A |
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 | N/A |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 | Specialist (opt-in) |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 | N/A |
@@ -21,6 +22,7 @@ This document provides a comprehensive guide to the specialized agents available
 ## When to Use Which Agent
 
 ```
+Ambiguous or underspecified request → Askmaw
 Multi-step coordination → Dungeon Master
 Documentation needs → Quill
 Security review → Riskmancer
@@ -191,6 +193,117 @@ For comprehensive usage guide, examples, troubleshooting, and best practices, se
 **Best Practice:** Invoke Dungeon Master as the entry point for non-trivial development work. It intelligently routes between planning and execution, ensuring structured progress without requiring you to manually coordinate between agents. Use `--explore-options` explicitly when facing technology/architecture decisions to see trade-offs before committing.
 
 **Configuration File:** `/claude/agents/dungeonmaster.md`
+
+---
+
+### Askmaw - Intake and Elaboration Clerk
+
+A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks purposeful questions without padding.
+
+**Core Mission:** Stateless intake clerk that resolves ambiguous user requests through a structured interview loop managed by Dungeon Master. Each invocation receives full context (original request plus all prior Q&A pairs) and returns exactly one output: either a single clarifying question or a completed structured brief. Askmaw has no memory between invocations. Never plans, implements, researches the codebase, or writes files.
+
+**Invoke when:**
+
+- A user request is ambiguous, underspecified, or has multiple plausible interpretations
+- The objective is unclear, scope is unbounded, or key trade-offs have not been addressed
+- Dungeon Master detects ambiguity before delegating to Pathfinder
+- Clarification is needed without immediately jumping to planning
+
+**Skip Askmaw when:**
+
+- The user's request is already well-specified (clear objective, bounded scope, stated constraints)
+- The user provides a detailed specification or brief inline
+- The task is trivial and would skip Pathfinder entirely
+
+**Key Capabilities:**
+
+- Stateless one-shot intake processing (full context provided on each invocation)
+- Clarifying question generation (targets objective clarity, scope boundaries, preferences, constraints, success criteria)
+- Structured brief production (objective, scope, constraints, preferences, success criteria, raw request)
+- Fallback handling for "just do it" requests
+- Question discipline (2–5 questions across full loop, hard limit of 5 enforced by DM)
+
+**Available Tools:** None — read-only delegation from Dungeon Master only
+
+**Question Discipline:**
+
+**Questions Askmaw asks:**
+- "What should this feature do when X happens?"
+- "Is Y in scope or out of scope?"
+- "Do you prefer A or B?"
+- "What does done look like?"
+- "Are there any constraints on timeline or technology?"
+
+**Questions Askmaw does NOT ask:**
+- Codebase structure ("Where is the auth code?")
+- File locations ("Which file handles X?")
+- Implementation details ("How is X currently built?")
+
+Those are Pathfinder's domain. Askmaw asks about intent, scope, and preferences — not facts about the existing system.
+
+**Output Contract — Two Modes:**
+
+**Mode A: Question**
+```
+## Intake Question
+
+{Single clarifying question}
+```
+
+**Mode B: Brief**
+```
+## Intake Brief
+
+**Objective:** One-sentence statement of what the user wants to accomplish.
+
+**Scope:**
+- In scope: [bulleted list]
+- Out of scope: [bulleted list, if established]
+
+**Constraints:**
+- [Technical, timeline, or organizational constraints]
+
+**Preferences:**
+- [User-stated preferences on approach, trade-offs, priorities]
+
+**Success Criteria:**
+- [How the user will know this is done]
+
+**Raw Request:** [Original request text, preserved verbatim]
+```
+
+**When to Produce the Brief (Mode B):**
+
+Switch to Mode B when all of the following hold:
+
+- The objective is unambiguous — one clear goal, not multiple plausible interpretations
+- The scope is bounded — what's in and out is clear, or the user has declined to specify
+- Key preferences and constraints are captured, or the user has deferred them
+- No critical decision-blocking ambiguity remains
+
+**Termination Rules:**
+
+When producing the brief (Mode B), stop. Do not continue into planning, implementation notes, or research questions. The brief is the terminal output.
+
+Produce a minimal brief immediately if the user says "just do it," "skip the questions," or any equivalent. Flag unresolved ambiguities for Pathfinder to exercise judgment on.
+
+**Failure Safeguard (Round 6):**
+
+If Dungeon Master instructs Askmaw to produce a brief after 5 questions, produce a best-effort brief immediately and flag any remaining unresolved ambiguities as open questions within the brief. Pathfinder will receive these as flagged items.
+
+**Typical Workflow (DM-Managed Loop):**
+
+1. DM invokes Askmaw (round 1) with raw request and empty Q&A history
+2. If Askmaw returns a question: DM surfaces it to user, collects answer, appends Q&A pair to history, re-invokes Askmaw
+3. If Askmaw returns a brief: DM exits the loop and passes brief to Pathfinder
+4. After 5 rounds without a brief: DM instructs Askmaw to produce a best-effort brief, flagging open questions
+5. DM proceeds to Pathfinder with completed brief as requirements input
+
+**Output Format:** Either a single clarifying question or a structured intake brief — nothing else.
+
+**Best Practice:** Invoke Dungeon Master as the entry point for ambiguous work. DM automatically routes through Askmaw when ambiguity is detected, manages the interview loop, and transitions to Pathfinder once requirements are clarified. Askmaw is stateless by design — DM maintains full context between invocations.
+
+**Configuration File:** `/claude/agents/askmaw.md`
 
 ---
 

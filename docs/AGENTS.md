@@ -198,6 +198,8 @@ For comprehensive usage guide, examples, troubleshooting, and best practices, se
 
 ### Askmaw - Intake and Elaboration Clerk
 
+<img src="avatars/askmaw.png" alt="Askmaw Avatar" width="300">
+
 A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks purposeful questions without padding.
 
 **Core Mission:** Stateless intake clerk that resolves ambiguous user requests through a structured interview loop managed by Dungeon Master. Each invocation receives full context (original request plus all prior Q&A pairs) and returns exactly one output: either a single clarifying question or a completed structured brief. Askmaw has no memory between invocations. Never plans, implements, researches the codebase, or writes files.

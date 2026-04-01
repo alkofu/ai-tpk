@@ -14,6 +14,7 @@
     "Bash(mv *)",
     "Bash(touch *)",
     "Bash(ls *)",
+    "Bash(cd *)",
     "Bash(npm *)",
     "Bash(npx *)",
     "Bash(pnpm *)",

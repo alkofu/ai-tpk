@@ -9,11 +9,11 @@ This document provides a comprehensive guide to the specialized agents available
 | **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
 | **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | N/A |
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 | N/A |
-| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 | Specialist (opt-in) |
+| **Riskmancer** | Security reviewer | STRIDE threat modeling, trust boundary analysis, cryptographic assessment, race condition detection | claude-opus-4-6 | Specialist (opt-in) |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 | N/A |
-| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-sonnet-4.5 | Specialist (opt-in) |
+| **Knotcutter** | Complexity elimination specialist | Dependency graph analysis, complexity metrics, abstraction fitness assessment, cognitive load quantification | claude-sonnet-4.5 | Specialist (opt-in) |
 | **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-6 | Mandatory baseline |
-| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-opus-4-6 | Specialist (opt-in) |
+| **Windwarden** | Performance & scalability reviewer | Amdahl's Law bottleneck identification, latency budget decomposition, concurrency analysis, read/write path separation, cost-aware capacity modeling | claude-opus-4-6 | Specialist (opt-in) |
 | **Truthhammer** | Factual validation specialist | Verifying external system claims, config keys, API signatures, version compatibility | claude-haiku-4-5 | Specialist (opt-in) |
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
 | **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | (default) | N/A |
@@ -402,11 +402,14 @@ Quill has a single professional rival: documentation written by someone who clea
 - Running dependency vulnerability checks for security-sensitive features
 
 **Key Capabilities:**
-- OWASP Top 10 vulnerability evaluation
+- STRIDE threat modeling with per-feature analysis (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)
+- Trust boundary analysis and data flow validation across system boundaries
+- Authentication architecture deep-dive: token lifecycle, session management, credential storage, OAuth/OIDC flows, PKCE enforcement
+- Cryptographic implementation evaluation: algorithm correctness, IV/nonce handling, AEAD usage, key rotation, no custom crypto
+- Race condition and TOCTOU vulnerability detection: atomicity analysis, double-spend prevention, concurrent permission checks
+- OWASP Top 10 vulnerability systematic evaluation
 - Secrets scanning for hardcoded credentials, API keys, tokens
 - Dependency audit execution (npm, pip, cargo, govulncheck)
-- Input validation and sanitization analysis
-- Authentication and authorization review
 - Vulnerability prioritization by severity × exploitability × blast radius
 - Remediation guidance with secure code examples in source language
 
@@ -528,14 +531,16 @@ Consensus Mode output is presented inline to the user for selection. Once select
 - Looking to improve code clarity and reduce cognitive load for complex systems
 
 **Key Capabilities:**
-- Systematic complexity cataloging and analysis
-- Necessity questioning for each component
+- Complexity metrics with numeric thresholds (cyclomatic complexity, fan-out, abstraction depth, cognitive load)
+- Dependency graph analysis with cycle detection, fan-in/fan-out evaluation, instability index calculation
+- Abstraction fitness evaluation: implementation count, interface leakage, coupling, replacement feasibility
+- Architectural pattern fitness criteria: Factory, Strategy, Observer, Middleware, Repository with justified/not-justified conditions
+- Cognitive load quantification: files to open, indirection levels, concepts to learn, configuration surface
+- Simplification risk assessment with before/after metrics and migration path
+- Systematic complexity cataloging and necessity questioning
 - YAGNI (You Aren't Gonna Need It) enforcement
 - Identification of minimal viable core functionality
-- Over-engineering pattern detection
-- Abstraction cost-benefit analysis
 - Aggressive scope reduction (targeting 50%+ reduction)
-- Inline premature abstractions
 
 **Available Tools:**
 - Research: Read, Grep, Glob
@@ -655,6 +660,12 @@ Consensus Mode output is presented inline to the user for selection. Once select
 - Pre-deployment performance validation for scalability-sensitive features
 
 **Key Capabilities:**
+- Amdahl's Law bottleneck identification: pinpointing the single highest-impact component and proving why other optimizations won't help until the bottleneck is addressed
+- Latency budget decomposition: end-to-end target allocation to per-component budgets with variance analysis (P99/P50 ratios)
+- I/O-bound vs CPU-bound classification with appropriate optimization strategies for each
+- Concurrency and contention analysis: connection pool sizing, lock contention, deadlock potential, optimistic vs pessimistic strategy fitness
+- Read-path vs write-path separation with distinct optimization approaches per path
+- Capacity modeling: performance projection as data volume and user count grow, infrastructure cost implications
 - Algorithmic complexity analysis (identifying O(n²) where O(n) is possible)
 - Database performance review (N+1 queries, missing indexes, full table scans)
 - Scalability pattern validation (pagination, rate limiting, backpressure)

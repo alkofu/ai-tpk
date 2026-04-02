@@ -260,12 +260,10 @@ Optional frontmatter fields:
 
 After creating the agent file, update:
 
-1. **docs/AGENTS.md**: Add full profile with:
+1. **docs/AGENTS.md**: Add compact profile with:
    - Quick reference table entry
-   - Detailed profile section
-   - When to use guidance
-   - Example scenarios
-   - Configuration file path
+   - Compact profile section using the standard template (Core Mission, When to invoke, Key constraint, Best Practice, Configuration File)
+   - Lore paragraph if the agent has a fantasy persona
 
 2. **README.md**: Mention in the Features section if noteworthy
 
@@ -605,7 +603,7 @@ Identify code quality issues, anti-patterns, and convention violations through s
 ```
 
 **4. Document in AGENTS.md:**
-Add to the catalog with use cases and examples
+Add compact profile to docs/AGENTS.md using the standard template
 
 ## Avatar Images
 
@@ -647,7 +645,7 @@ When creating an agent, ensure:
 If you're unsure about agent design:
 
 1. Read existing agents in `claude/agents/` for patterns
-2. Review `docs/AGENTS.md` for comprehensive examples
+2. Review `docs/AGENTS.md` for agent catalog and `claude/agents/*.md` for detailed operational specs
 3. Consider whether this should be a skill instead of an agent
 4. Start simple - you can always expand later
 

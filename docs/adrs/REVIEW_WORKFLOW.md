@@ -526,7 +526,8 @@ Potential improvements to the review workflow:
 
 ## References
 
-- [Agent Reference](/docs/AGENTS.md) - Full agent profiles and capabilities
+- [Agent Reference](/docs/AGENTS.md) - Agent catalog and quick reference
+- [Agent Operational Specs](/claude/agents/) - Detailed operational specs, tool lists, and workflows for each agent
 - [Configuration Guide](/docs/CONFIGURATION.md) - Setup and customization
 - [Dungeon Master Agent](/claude/agents/dungeonmaster.md) - Orchestration logic implementation
 - [Ruinor Agent](/claude/agents/ruinor.md) - Baseline reviewer implementation

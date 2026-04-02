@@ -66,7 +66,7 @@ These mandates are active for every project. Project-level `.claude/CLAUDE.md` f
 
 Agents are specialized AI assistants that help with specific tasks. They are automatically available in Claude Code.
 
-See [docs/AGENTS.md](/docs/AGENTS.md) for the full agent roster and descriptions.
+See [docs/AGENTS.md](/docs/AGENTS.md) for the agent roster and quick reference. For detailed operational specs, tool lists, and workflows, see each agent's config file in `claude/agents/{name}.md`.
 
 **Invoking an agent:**
 Simply @-mention the agent by name (e.g., `@quill` or `@riskmancer`) in your Claude conversation to activate it.

@@ -13,3 +13,8 @@ ALL git commits must follow the `commit-message-guide` skill. Conventional commi
 ### Open Pull Request
 
 ALL pull requests and merge requests must be created using the `open-pull-request` skill. No other PR creation method is allowed.
+
+## Bash Command Style
+
+- Never use compound shell commands (`&&`, `;`, `|` chaining).
+- Always issue each command as a separate, standalone Bash call.

@@ -162,6 +162,12 @@ Follow this sequence:
 
 ### Phase 0: Session Isolation
 
+At the very start of every session, before any other work, capture two session-scoped variables in conversation memory:
+- `SESSION_TS` — current local time formatted as `YYYYMMDD-HHmmss` (e.g., `20260401-143022`)
+- `SESSION_SLUG` — the task description slugified: lowercase, alphanumeric and hyphens only, max 40 characters (e.g., "Add OAuth login" → `add-oauth-login`, "Rename env var" → `rename-env-var`)
+
+These are carried in conversation memory alongside `WORKTREE_PATH` and `WORKTREE_BRANCH` for the entire session and are used for consistent file naming throughout.
+
 Before any planning begins, create an isolated git worktree for this session so it does not conflict with other parallel DM sessions.
 
 **Skip condition:** Skip Phase 0 entirely (and operate in the main working tree) if:
@@ -187,7 +193,7 @@ Log: "Worktree: skipped (--no-worktree / trivial task)"
 
 3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`feat/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
 
-4. **Set session context:** The DM carries `WORKTREE_PATH` and `WORKTREE_BRANCH` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used.
+4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, and `SESSION_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used.
 
 5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
@@ -260,8 +266,8 @@ When not triggered: proceed directly to step 3.
    - validation criteria
    - risks / rollback considerations
 
-   Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block (defined above) if a session worktree is active. Pathfinder must write plans to `{WORKING_DIRECTORY}/plans/`.
-4. Pathfinder will save the plan to `plans/{feature-name}.md`.
+   Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block (defined above) if a session worktree is active. Pathfinder must write plans to `{WORKING_DIRECTORY}/plans/` using the filename `{SESSION_TS}-{feature-slug}.md` (e.g., `plans/20260401-143022-oauth-login.md`).
+4. Pathfinder will save the plan to `plans/{SESSION_TS}-{feature-slug}.md`.
 
 ### Phase 2: Plan Review (Quality Gate)
 
@@ -339,12 +345,17 @@ When not triggered: proceed directly to step 3.
 1. Before finishing, execute the following three sub-steps in order:
 
     **5a — Reservations logging:**
-    When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith: instruct it to append the reservations to `plans/open-questions.md` under a section titled "Review Reservations - [session date]" with the specific issues noted. When a session worktree is active, write to `{WORKING_DIRECTORY}/plans/open-questions.md` instead of `plans/open-questions.md`. If the file does not exist, Bitsmith should create it first with the following header:
+    When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
+
+    - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `plans/20260401-143022-oauth-login.md` → `plans/20260401-143022-oauth-login-open-questions.md`. When a session worktree is active, prefix with `{WORKING_DIRECTORY}/`.
+    - **If Pathfinder was NOT invoked this session:** use `plans/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `plans/20260401-143022-rename-env-var-open-questions.md`). Apply the `{WORKING_DIRECTORY}/` prefix if a worktree is active.
+
+    Instruct Bitsmith to append the reservations under a section titled `## Review Reservations - [session date]` with the specific issues noted. If the target file does not exist, Bitsmith should create it first with the following header (substituting the plan name where applicable):
 
       ```
-      # Open Questions and Review Reservations
+      # Open Questions — {plan-name}
 
-      This file tracks reservations from ACCEPT-WITH-RESERVATIONS reviewer verdicts and open questions from planning sessions.
+      This file tracks reservations from ACCEPT-WITH-RESERVATIONS reviewer verdicts for this plan.
       ```
 
       These become tracked items for future sessions.

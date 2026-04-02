@@ -123,13 +123,13 @@ Windwarden operates at two critical performance checkpoints:
    - Map API call chains and external dependencies
    - Locate synchronous operations that could be async
 
-### Bottleneck Identification (Amdahl's Law)
+#### Bottleneck Identification (Amdahl's Law)
 
 1. Classify each component in the request path as **I/O-bound** (database, network, disk) or **CPU-bound** (computation, serialization, encryption).
 2. Identify the single highest-latency or highest-cost component — this is the bottleneck.
 3. Apply Amdahl's Law: optimizing non-bottleneck components yields diminishing returns. State explicitly: _"The bottleneck is [X]. Optimizing [Y] will not meaningfully improve end-to-end performance until [X] is addressed."_
 
-### Latency Budget Decomposition
+#### Latency Budget Decomposition
 
 For latency-sensitive features:
 - Define the end-to-end latency target (e.g., P99 < 200ms)
@@ -137,7 +137,7 @@ For latency-sensitive features:
 - Flag components whose actual or estimated latency exceeds their budget
 - Identify high-variance components (P99/P50 ratio > 5×) — these are SLO risk even if P50 is acceptable
 
-### Concurrency and Contention Analysis
+#### Concurrency and Contention Analysis
 
 - **Connection pool sizing**: Is the pool size matched to expected concurrent requests? Undersized pools cause queueing; oversized pools can exhaust database connections.
 - **Lock contention**: Identify database row-level locks, mutex usage, and distributed locks that could become bottlenecks under concurrency.
@@ -145,7 +145,7 @@ For latency-sensitive features:
 - **Concurrency strategy fitness**: Is optimistic concurrency (compare-and-swap, versioning) or pessimistic locking (SELECT FOR UPDATE) appropriate given the conflict rate?
 - **Async/thread starvation**: Can blocking operations starve the thread pool or event loop?
 
-### Read Path vs Write Path Analysis
+#### Read Path vs Write Path Analysis
 
 Classify the feature as read-heavy, write-heavy, or mixed, then apply the appropriate lens:
 
@@ -188,11 +188,10 @@ Classify the feature as read-heavy, write-heavy, or mixed, then apply the approp
 
 ### Capacity Modeling and Cost Awareness
 
-For plan reviews and significant implementation changes:
-- **Expected load**: Concurrent users / requests per second at launch and at 10× growth
-- **Per-request cost**: Queries executed, memory allocated, CPU time consumed per request
-- **Scaling limit**: What is the first component to fail or degrade under load growth?
-- **Infrastructure cost**: Flag designs that trade infrastructure cost for developer convenience. Quantify: _"This approach requires N× more memory/compute than [alternative]."_
+Flag designs that trade infrastructure cost for developer convenience:
+- Quantify cost implications: _"This approach requires N× more memory/compute than [alternative]."_
+- Identify hot-path operations that will dominate infrastructure spend at scale.
+- Flag when a design choice improves developer experience at the cost of a significantly more expensive runtime profile.
 
 ## Performance Severity Levels
 

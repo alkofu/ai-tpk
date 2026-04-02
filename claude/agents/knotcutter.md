@@ -131,7 +131,7 @@ For each abstraction layer, evaluate:
 4. Could callers use the underlying concrete implementation directly without meaningful loss?
 5. What is the cost of changing the abstraction vs. changing the concrete code directly?
 
-An abstraction fails this test if it answers "yes" to questions 2–4 or "yes" to question 4. One failure is a flag; two or more failures is a recommendation to remove the abstraction.
+An abstraction fails this test if it answers "yes" to any of questions 2, 3, or 4. One failure is a flag; two or more failures is a recommendation to remove the abstraction.
 
 ### Architectural Pattern Fitness Criteria
 

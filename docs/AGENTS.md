@@ -130,10 +130,14 @@ For comprehensive usage guide, examples, troubleshooting, and best practices, se
 12. If Ruinor flags specialists or user requested them, invokes specialists in parallel
 13. If Ruinor issues REJECT (not REVISE), requires Bitsmith to produce a written remediation brief before re-review
 14. If issues found, delegates fixes back to Bitsmith and returns to review step
-15. **Documentation update** (Phase 5): After implementation review is fully complete, invokes Quill for documentation updates
-16. **Post-documentation review**: If any Bitsmith work is needed after Quill, that work must re-enter the Implementation Review Gate before session completion
-17. Validates results against plan after all reviews pass
-18. Before finishing, confirms outcome achieved and summarizes work
+15. **Completion Phase (Phase 5)** - Three conditional gates executed in order:
+    - **5a: Reservations logging** (mandatory if ACCEPT-WITH-RESERVATIONS issued): Extract reservations from review findings, delegate to Bitsmith to write to `open-questions.md`
+    - **Verification gate** (conditional): If reservations were logged, confirm `open-questions.md` was written successfully before proceeding
+    - **5b: Documentation update** (conditional on planning): Before invoking Quill, cross-reference plan steps against completed delegations to ensure no skipped work; invoke Quill only after verification
+    - **Post-documentation safeguard**: If any Bitsmith work occurs after Quill, that work must re-enter Phase 4 (Implementation Review) before session can complete
+    - **5c: Completion summary**: Confirm outcome, summarize all work, explicitly record reservations logging status (yes/no)
+16. Validates results against plan after all reviews pass and all gates cleared
+17. Before finishing, confirms outcome achieved and summarizes work with risks/follow-ups
 
 **Output Format:**
 - Goal statement
@@ -155,6 +159,8 @@ For comprehensive usage guide, examples, troubleshooting, and best practices, se
 - **Everwise is user-facing only:** Never invokes Everwise as an escalation path after review failures or stalled loops; instead suggest it to the user
 - **REJECT verdicts require remediation:** When Ruinor issues REJECT (vs. REVISE), requires a written remediation brief from Bitsmith before re-review invocation
 - **Documentation follows implementation review:** Quill must only be invoked after Phase 4 (Implementation Review) is fully complete; any Bitsmith work after Quill must re-enter Phase 4
+- **Post-Quill review obligation is mandatory:** Quill completion does not end the review obligation. If any Bitsmith invocation occurs after Quill, a Phase 4 Ruinor review of that work is mandatory before declaring session complete
+- **ACCEPT-WITH-RESERVATIONS requires explicit tracking:** When any reviewer issues ACCEPT-WITH-RESERVATIONS, reservations must be logged to `open-questions.md` before progression to completion summary. Session cannot declare complete without this tracking.
 
 **Example Scenarios:**
 

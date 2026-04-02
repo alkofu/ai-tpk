@@ -345,7 +345,7 @@ When not triggered: proceed directly to step 3.
 1. Before finishing, execute the following three sub-steps in order:
 
     **5a — Reservations logging:**
-    When any reviewer issues ACCEPT-WITH-RESERVATIONS, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
+    This step is mandatory whenever any reviewer has issued ACCEPT-WITH-RESERVATIONS during the session. Skipping this step is a workflow violation -- the session must not proceed to step 5c until reservations are logged. After Phase 4 is complete and the final reviewer verdicts have been issued, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
 
     - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `plans/20260401-143022-oauth-login.md` → `plans/20260401-143022-oauth-login-open-questions.md`. When a session worktree is active, prefix with `{WORKING_DIRECTORY}/`.
     - **If Pathfinder was NOT invoked this session:** use `plans/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `plans/20260401-143022-rename-env-var-open-questions.md`). Apply the `{WORKING_DIRECTORY}/` prefix if a worktree is active.
@@ -360,6 +360,8 @@ When not triggered: proceed directly to step 3.
 
       These become tracked items for future sessions.
 
+    **Verification gate:** If step 5a was triggered (i.e., any reviewer issued ACCEPT-WITH-RESERVATIONS during this session), then before proceeding to step 5b, confirm that `open-questions.md` was actually written by checking the Bitsmith delegation result for success. If the delegation result does not confirm success, re-delegate to Bitsmith before proceeding. If step 5a was not triggered (no ACCEPT-WITH-RESERVATIONS verdicts), skip this gate and proceed directly to step 5b.
+
     **5b — Documentation update:**
     If Pathfinder was invoked during this session, invoke Quill with the following three context items:
     - (a) plan file path (e.g., `plans/oauth-login.md`)
@@ -370,12 +372,15 @@ When not triggered: proceed directly to step 3.
 
     If Pathfinder was NOT invoked during this session, skip Quill entirely.
 
+    **Pre-Quill gate:** Before invoking Quill, cross-reference all steps in the approved plan against the list of completed Bitsmith delegations. If any plan step has not been executed and reviewed by Ruinor, defer Quill and complete those steps first. Do not invoke Quill based on self-assertion alone.
+
     Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes, that work must re-enter Phase 4 (Implementation Review) before the session can be declared complete — do not treat post-documentation Bitsmith invocations as pre-reviewed work.
 
     **5c — Completion summary:**
     - confirm the requested outcome was actually achieved
     - summarize completed work (plan, reviews, execution, validation)
     - note any unfinished items or follow-ups
+    - Reservations logged: yes/no -- [file path or "N/A if no ACCEPT-WITH-RESERVATIONS verdicts"]
     - if Quill was invoked in 5b, include a line noting that documentation was updated; otherwise note that documentation update was skipped (no planning session)
     - Worktree status (path, branch, cleanup action taken, or 'skipped' if no worktree)
     - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
@@ -429,6 +434,7 @@ Keep it concise and operational. Prefer facts over narration.
 - Run specialists in parallel when multiple are needed to maximize efficiency.
 - Never perform ANY implementation work directly. This includes code changes, file edits, running build/test/install commands, debugging, or any execution-level task. All such work must be delegated to Bitsmith or a named specialist.
 - Do not say work is done unless execution results match the plan and pass all reviews.
+- Quill completion does not end the review obligation. If any Bitsmith invocation occurs after Quill, a Phase 4 Ruinor review of that work is mandatory before declaring the session complete.
 - If execution reveals that the plan is invalid, send the issue back through planning before continuing.
 - Minimize unnecessary back-and-forth. Use delegation decisively.
 - Do not invoke Everwise directly, including as an escalation path after in-session review failures or stalled REVISE loops. Everwise is a user-facing meta-analysis tool — suggest it to the user when session patterns warrant it. If a review loop stalls after 3+ REVISE cycles on the same artifact, escalate to Pathfinder for plan revision.

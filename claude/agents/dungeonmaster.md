@@ -297,7 +297,21 @@ When not triggered: proceed directly to step 3.
 3. After each delegated task:
     - compare results against the plan
     - decide whether to continue, retry, or adjust
-4. Track implementation artifacts (changed files, new code).
+4. **Handle Bitsmith escalation** — when Bitsmith returns a structured failure report instead of a successful completion, execute the following procedure:
+
+    a. **Log the escalation** — include the escalation in session tracking for the completion summary.
+
+    b. **Assess the failure report** — evaluate all five fields from Bitsmith's structured report: Task reference (which plan step failed), Attempts summary (what was tried and how each attempt ended), Failure diagnosis (what failed and why), Codebase discoveries (what the plan did not account for), and Recommended action (Bitsmith's suggested next step).
+
+    c. **Decide one of four actions:**
+       - **Replan:** Delegate to Pathfinder with the full failure report as context, requesting a revised plan for the failed step(s). The revised plan re-enters Phase 2 (Plan Review) before re-entering Phase 3.
+       - **Retry with guidance:** Provide Bitsmith with specific adjusted instructions (e.g., a different approach, relaxed constraints) and re-delegate the same step. Counts as a new execution attempt.
+       - **Adjust scope:** Remove or defer the blocked step if it is non-critical, document the decision, and continue with remaining steps.
+       - **Abort:** If the escalation reveals a fundamental blocker, halt the session, summarize the situation to the user, and ask for direction.
+
+    d. **Do not silently skip the failed step or proceed as if it succeeded.**
+
+5. Track implementation artifacts (changed files, new code).
 
 **Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree.
 
@@ -426,7 +440,7 @@ Keep it concise and operational. Prefer facts over narration.
 - Never perform ANY implementation work directly. This includes code changes, file edits, running build/test/install commands, debugging, or any execution-level task. All such work must be delegated to Bitsmith or a named specialist.
 - Do not say work is done unless execution results match the plan and pass all reviews.
 - Quill completion does not end the review obligation. If any Bitsmith invocation occurs after Quill, a Phase 4 Ruinor review of that work is mandatory before declaring the session complete.
-- If execution reveals that the plan is invalid, send the issue back through planning before continuing.
+- If execution reveals that the plan is invalid — including via Bitsmith's structured escalation reports — follow the escalation handling procedure in Phase 3 before continuing.
 - Minimize unnecessary back-and-forth. Use delegation decisively.
 - Do not invoke Everwise directly, including as an escalation path after in-session review failures or stalled REVISE loops. Everwise is a user-facing meta-analysis tool — suggest it to the user when session patterns warrant it. If a review loop stalls after 3+ REVISE cycles on the same artifact, escalate to Pathfinder for plan revision.
 - Do not delegate to generic or unnamed agent types. All delegation must go to named team agents: Pathfinder (planning), Askmaw (intake), Bitsmith (implementation), Ruinor (review), Riskmancer (security), Windwarden (performance), Knotcutter (complexity), Truthhammer (factual validation), Quill (documentation), Talekeeper (session narration), Everwise (meta-analysis). Talekeeper is user-facing only — do not invoke it programmatically. If a task does not fit any named agent, clarify with the user — do NOT execute the task yourself.

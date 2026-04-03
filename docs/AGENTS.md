@@ -37,6 +37,7 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 > For detailed operational specs, tool lists, workflows, and output formats, see each agent's config file: `claude/agents/{name}.md`
 
 ## Detailed Agent Profiles
+
 ### Dungeon Master - Orchestrator
 
 <img src="avatars/dungeonmaster.png" alt="Dungeon Master Avatar" width="300">
@@ -52,6 +53,7 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 **Configuration File:** `/claude/agents/dungeonmaster.md`
 
 ---
+
 ### Askmaw - Intake and Elaboration Clerk
 
 <img src="avatars/askmaw.png" alt="Askmaw Avatar" width="300">
@@ -69,6 +71,7 @@ A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks pur
 **Configuration File:** `/claude/agents/askmaw.md`
 
 ---
+
 ### Quill - Documentation Specialist
 
 <img src="avatars/quill.png" alt="Quill Avatar" width="300">

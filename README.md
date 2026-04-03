@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/party.png" alt="AI TPK — The Adventuring Party" width="640" style="max-width: 100%" />
+  <img src="docs/images/party.jpg" alt="AI TPK — The Adventuring Party" width="640" />
 </div>
 
 # AI TPK
@@ -30,6 +30,7 @@ Keep AI tool configurations version-controlled and portable across machines. The
 │   └── commands/        # Slash commands for Claude Code
 ├── cursor/          # Cursor configurations (coming soon)
 ├── docs/            # Documentation
+│   ├── images/          # Project images and diagrams
 │   └── CONFIGURATION.md # Detailed configuration guide
 └── install.sh       # Installation script
 ```

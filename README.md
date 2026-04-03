@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="docs/images/party.jpg" alt="AI TPK — The Adventuring Party" width="640" />
+</div>
+
 # AI TPK
 
 Configuration files for AI coding assistants, managed centrally and deployed to your home directory.
@@ -26,6 +30,7 @@ Keep AI tool configurations version-controlled and portable across machines. The
 │   └── commands/        # Slash commands for Claude Code
 ├── cursor/          # Cursor configurations (coming soon)
 ├── docs/            # Documentation
+│   ├── images/          # Project images and diagrams
 │   └── CONFIGURATION.md # Detailed configuration guide
 └── install.sh       # Installation script
 ```

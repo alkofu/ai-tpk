@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash claude/hooks/talekeeper-capture.sh",
+            "command": "bash ~/.claude/hooks/talekeeper-capture.sh",
             "timeout": 5
           }
         ]
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash claude/hooks/talekeeper-enrich.sh",
+            "command": "bash ~/.claude/hooks/talekeeper-enrich.sh",
             "timeout": 60
           }
         ]

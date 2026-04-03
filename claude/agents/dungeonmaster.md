@@ -285,10 +285,41 @@ When not triggered: proceed directly to step 3.
    - If Ruinor and all invoked specialists issue ACCEPT or ACCEPT-WITH-RESERVATIONS: Proceed to execution
 
 4. If revision needed:
-   - Provide Pathfinder with **consolidated feedback from Ruinor and all invoked specialists**
+   - Provide Pathfinder with **consolidated feedback from Ruinor and all invoked specialists** using the delegation template below
    - Wait for Pathfinder to revise the plan file
    - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations)
    - Continue this review-revise loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS
+
+   **Revision delegation template** (use this every time DM re-delegates to Pathfinder from Phase 2 step 4, including subsequent revision rounds after repeated REVISE/REJECT verdicts — every iteration of the review-revise loop uses this same template with updated feedback):
+   ```
+   REVISION_MODE: true
+   WORKING_DIRECTORY: {WORKTREE_PATH}
+   WORKTREE_BRANCH: {WORKTREE_BRANCH}
+   All file operations and Bash commands must use this directory as the working root.
+
+   ## Plan to Revise
+   {WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md
+
+   ## Reviewer Feedback
+
+   **Reviewer:** {reviewer name}
+   **Verdict:** {REVISE | REJECT}
+
+   ### F-1 ({severity}) -- {finding summary}
+   {finding body}
+
+   ### F-2 ({severity}) -- {finding summary}
+   {finding body}
+
+   **Reviewer:** {reviewer name}
+   **Verdict:** {REVISE | REJECT}
+
+   ### F-1 ({severity}) -- {finding summary}
+   {finding body}
+
+   ## Instructions
+   Revise the plan at the path listed above to address all reviewer findings. Overwrite the existing file when done. Do not re-interview the user — the reviewer feedback above is your requirements input for this revision.
+   ```
 
 ### Phase 3: Execution
 
@@ -459,8 +490,8 @@ Action:
   - Plan contains "OAuth" keyword → confirms security-sensitive
   - Invoke Riskmancer for deep security review
   - Ruinor: ACCEPT-WITH-RESERVATIONS, Riskmancer: REVISE (missing CSRF, token expiry too long)
-  - Send consolidated feedback to Pathfinder
-  - Pathfinder revises plan
+  - Delegate to Pathfinder with `REVISION_MODE: true` and consolidated feedback
+  - Pathfinder revises plan (skips user confirmation, overwrites plan file directly)
   - Re-run Ruinor + Riskmancer → both ACCEPT
 - Once plan approved, delegate implementation steps to Bitsmith
 - **Implementation Review Gate:**

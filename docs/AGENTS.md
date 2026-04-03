@@ -37,7 +37,6 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 > For detailed operational specs, tool lists, workflows, and output formats, see each agent's config file: `claude/agents/{name}.md`
 
 ## Detailed Agent Profiles
-
 ### Dungeon Master - Orchestrator
 
 <img src="avatars/dungeonmaster.png" alt="Dungeon Master Avatar" width="300">
@@ -53,7 +52,6 @@ Meta-analysis / team improvement → Everwise (manual invocation, analyzes past 
 **Configuration File:** `/claude/agents/dungeonmaster.md`
 
 ---
-
 ### Askmaw - Intake and Elaboration Clerk
 
 <img src="avatars/askmaw.png" alt="Askmaw Avatar" width="300">
@@ -71,7 +69,6 @@ A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks pur
 **Configuration File:** `/claude/agents/askmaw.md`
 
 ---
-
 ### Quill - Documentation Specialist
 
 <img src="avatars/quill.png" alt="Quill Avatar" width="300">
@@ -208,7 +205,7 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 
 **When to invoke:** Invoke when a plan already exists and needs to be executed, making targeted code changes with minimal diff requirements, or incremental verified implementation with build and test validation.
 
-**Key constraint:** Must escalate to Dungeon Master after 3 failed attempts on any issue; provides a structured failure report with task reference, attempts summary, failure diagnosis, codebase discoveries, and recommended action; does not redesign, only executes the plan.
+**Key constraint:** Must escalate to Pathfinder after 3 failed attempts on any issue; does not redesign, only executes the plan.
 
 **Best Practice:** Invoke Bitsmith after Pathfinder has produced a plan and the Dungeon Master is ready to execute. Bitsmith is the executor of the party — she turns blueprints into shipped code with the smallest viable change and the highest craft standard.
 

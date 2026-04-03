@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="docs/images/party.png" alt="AI TPK — The Adventuring Party" width="640" style="max-width: 100%" />
+</div>
+
 # AI TPK
 
 Configuration files for AI coding assistants, managed centrally and deployed to your home directory.

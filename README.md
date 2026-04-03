@@ -107,11 +107,12 @@ Reusable capabilities including skill creation, commit message generation, and p
 
 ### Slash Commands
 
-Claude Code slash commands provide quick workflow shortcuts. The `/open-pr`
-command instructs Claude to follow the `open-pull-request` skill workflow
-exactly: conventional branch naming, conventional PR title, draft mode,
-assigned to @me, and full pre-flight checklist. Commands are installed
-alongside skills and agents into `~/.claude/commands/`.
+Claude Code slash commands provide quick workflow shortcuts. Commands are installed alongside skills and agents into `~/.claude/commands/`.
+
+| Command | Purpose |
+|---------|---------|
+| `/open-pr` | Creates a pull request following the `open-pull-request` skill workflow: conventional branch naming, conventional title, draft mode, assigned to @me, and full pre-flight checklist. |
+| `/clean-the-desk` | Cleans up stale local branches (whose upstream PRs have been merged) and removes their associated git worktrees. Prompts for confirmation before any destructive action. |
 
 ## Agent Orchestration Workflow
 

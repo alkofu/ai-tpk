@@ -51,7 +51,13 @@ Agent(subagent_type="Explore", prompt="Find all authentication-related files")
 
 ### 3. Interview User
 
-**First: check for an Askmaw intake brief in the delegation prompt.**
+**First: check for `REVISION_MODE: true` in the delegation prompt.**
+
+If `REVISION_MODE: true` is present:
+- Skip this section (section 3) entirely — the revision context and reviewer feedback supplied in DM's delegation prompt serve as the requirements input
+- Proceed directly to section 4 (Generate Plan)
+
+**Otherwise: check for an Askmaw intake brief in the delegation prompt.**
 
 If the delegation prompt contains an `## Intake Brief` section:
 - Treat its fields (Objective, Scope, Constraints, Preferences, Success Criteria) as pre-answered interview responses
@@ -84,7 +90,7 @@ Once requirements are clear and research is complete:
 2. Create 3-6 actionable steps with verifiable acceptance criteria
 3. Avoid over-specification (not 30 micro-steps)
 4. Avoid vagueness (not "step 1: implement")
-5. Get explicit user confirmation before finalizing
+5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly)
 6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created").
 
 ### 5. Save Plan
@@ -274,7 +280,7 @@ Before considering a plan complete, verify:
 1. ✅ **One question at a time** - Never overwhelmed user with multiple questions
 2. ✅ **Codebase research delegated** - All factual investigation via explore agents
 3. ✅ **3-6 actionable steps** - Not too granular, not too vague
-4. ✅ **Explicit user confirmation** - User approved plan before finalizing
+4. ✅ **Explicit user confirmation** - User approved plan before finalizing (skipped in revision mode)
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
 

@@ -104,7 +104,6 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 | Flag | Effect |
 |------|--------|
 | `--explore-options` | Trigger options exploration before execution planning, even if the DM would otherwise proceed directly |
-| `--no-worktree` | Suppress worktree creation; operate in the main working tree |
 
 ### Worktree Context Block
 
@@ -170,13 +169,7 @@ These are carried in conversation memory alongside `WORKTREE_PATH` and `WORKTREE
 
 Before any planning begins, create an isolated git worktree for this session so it does not conflict with other parallel DM sessions.
 
-**Skip condition:** Skip Phase 0 entirely (and operate in the main working tree) if:
-- The `--no-worktree` flag is present, OR
-- The task is trivially single-file (preliminary assessment — will skip Pathfinder)
-
-Log: "Worktree: skipped (--no-worktree / trivial task)"
-
-**Note on late initialization:** The triviality assessment at Phase 0 is a best-effort, preliminary call. If DM initially skips worktree creation but later determines the task is non-trivial (e.g., decides to invoke Pathfinder), it must create the worktree at that point before proceeding with planning.
+**No skip condition:** A worktree is always created for every session, regardless of task size or complexity. There are no exceptions.
 
 **When creating a worktree:**
 
@@ -386,9 +379,7 @@ When not triggered: proceed directly to step 3.
     - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
     **5d — Worktree cleanup:**
-    If no session worktree is active, skip this step.
-
-    Otherwise, ask the user:
+    Ask the user:
     > "Session branch `{WORKTREE_BRANCH}` is ready. Would you like to: (a) create a PR, (b) merge to main locally, or (c) keep the branch for later?"
 
     - **If PR:** Delegate to Bitsmith to push the branch and create a PR (using the `/open-pr` command or `gh pr create`). Then ask: "PR created. Would you like to keep the worktree for iterating on review feedback, or remove it?" If keep: log "Branch `{WORKTREE_BRANCH}` preserved at `{WORKTREE_PATH}` for PR iteration." If remove: delegate to Bitsmith to run `git worktree remove {WORKTREE_PATH}`.
@@ -469,9 +460,11 @@ Action:
 Example 2:
 User asks: "Rename this variable in one file."
 Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree (always required — no exceptions)
 - Skip Pathfinder if clearly trivial (single-step, no ambiguity)
 - Delegate directly to Bitsmith
 - **Implementation Review:** For trivial changes, run Ruinor only (mandatory baseline still applies). Skip specialist reviewers.
+- **Phase 5:** Offer PR/merge/keep options; clean up worktree based on user choice
 - Return short completion summary
 
 Example 3:

@@ -205,7 +205,7 @@ The plan is the blueprint. The codebase is the existing metalwork. Her job is to
 
 **When to invoke:** Invoke when a plan already exists and needs to be executed, making targeted code changes with minimal diff requirements, or incremental verified implementation with build and test validation.
 
-**Key constraint:** Must escalate to Pathfinder after 3 failed attempts on any issue; does not redesign, only executes the plan.
+**Key constraint:** Must escalate to Dungeon Master after 3 failed attempts on any issue; provides a structured failure report with task reference, attempts summary, failure diagnosis, codebase discoveries, and recommended action; does not redesign, only executes the plan.
 
 **Best Practice:** Invoke Bitsmith after Pathfinder has produced a plan and the Dungeon Master is ready to execute. Bitsmith is the executor of the party — she turns blueprints into shipped code with the smallest viable change and the highest craft standard.
 

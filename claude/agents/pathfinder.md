@@ -95,7 +95,20 @@ Once requirements are clear and research is complete:
 5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly)
 6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created").
 
-### 5. Save Plan
+### 5. Pre-Submission Checklist
+
+Before saving the plan, run through all 8 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 6.
+
+1. **Per-agent specificity:** Are instructions for each affected file/agent distinct where they differ meaningfully?
+2. **File reference accuracy:** Have you verified section names and line numbers by reading the actual files?
+3. **Distinct-case handling:** Where agents have different structures (one has a section, another doesn't), are they handled in separate sub-steps?
+4. **Rollback and recovery:** For steps modifying existing behaviour, is the prior state documented so it can be restored? For additive-only changes, confirm this question is not applicable.
+5. **Behavioural acceptance criteria:** Does the validation step verify that the change achieves its intent (not just that files exist or grep matches pass)?
+6. **Sequencing and dependencies:** Are steps ordered so each prerequisite is satisfied before it is needed?
+7. **Completeness:** Does the plan cover every part of the stated objective with no unexplained gaps?
+8. **Ambiguity test:** Could a careful executor reasonably make a wrong judgement call from any instruction? If yes, rewrite that instruction.
+
+### 6. Save Plan
 
 Write plan to `plans/{feature-name}.md` using Write tool.
 
@@ -285,6 +298,7 @@ Before considering a plan complete, verify:
 4. ✅ **Explicit user confirmation** - User approved plan before finalizing (skipped in revision mode)
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
+7. ✅ **Pre-submission checklist passed** - all 8 questions reviewed and any issues corrected before saving
 
 ## Tool Usage
 

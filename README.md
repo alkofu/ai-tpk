@@ -142,7 +142,8 @@ flowchart LR
 flowchart TD
     Start([DM: Need Planning?]) --> DelegateP[DM Delegates to<br/>Pathfinder]
     DelegateP --> PF[Pathfinder<br/>Creates Plan]
-    PF --> SavePlan[Save to<br/>plans/*.md]
+    PF --> Checklist[Pre-Submission<br/>Checklist ×8]
+    Checklist --> SavePlan[Save to<br/>plans/*.md]
     SavePlan --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
 
     MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}

@@ -34,22 +34,21 @@ Run: `git branch --format='%(refname:short)'`
 
 This produces one short branch name per line.
 
-## Step 5 — Collect worktree-checked-out branches
+## Step 5 — Collect worktree path-to-branch mapping
 
 Run: `git worktree list --porcelain`
 
-Parse every line that starts with `branch `. Strip the `refs/heads/` prefix from the value.
-This gives you the set of branches currently checked out in any active worktree (including the
-main worktree).
-
-Also unconditionally add `main` and `master` to this exclusion set.
+Parse the output to build a map from worktree path to branch name. Each worktree entry begins
+with a `worktree` line (the path) followed later by a `branch` line. Strip the `refs/heads/`
+prefix from the branch value. This map is used in Step 7 to find worktrees associated with
+stale branches.
 
 ## Step 6 — Identify stale branches
 
 A branch is stale if it meets ALL of the following:
 - It exists in the local branch list (Step 4)
 - Its name appears in the merged PR branch list (Step 3)
-- Its name is NOT in the worktree-checked-out exclusion set (Step 5)
+- Its name is NOT `main` or `master`
 
 ## Step 7 — Find associated worktrees
 

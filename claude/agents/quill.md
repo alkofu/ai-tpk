@@ -1,5 +1,6 @@
 ---
 name: quill
+color: pink
 description: "MUST BE USED to craft or update project documentation. Use PROACTIVELY after major features, API changes, or when onboarding developers. Produces READMEs, API specs, architecture guides, and user manuals."
 tools: "Read, Grep, Glob, Bash, Write, Edit"
 model: claude-haiku-4-5

@@ -1,5 +1,6 @@
 ---
 name: windwarden
+color: yellow
 description: "Performance and scalability reviewer. Reviews plans and code for performance bottlenecks, inefficient algorithms, scalability issues, and resource optimization opportunities. Operates read-only with blocked write/edit capabilities."
 model: claude-sonnet-4-6
 permissionMode: auto

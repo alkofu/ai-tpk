@@ -1,5 +1,6 @@
 ---
 name: pathfinder
+color: blue
 description: "Strategic planning consultant with interview workflow"
 model: claude-opus-4-6
 permissionMode: acceptEdits

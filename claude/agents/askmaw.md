@@ -1,5 +1,6 @@
 ---
 name: askmaw
+color: cyan
 description: "Stateless intake and elaboration clerk. Receives an ambiguous user request plus accumulated Q&A history from DM. Returns exactly one output per invocation: either a single clarifying question (Mode A) or a completed structured brief (Mode B). Invoked by DM in a loop before Pathfinder for ambiguous requests."
 model: claude-sonnet-4-6
 permissionMode: acceptEdits

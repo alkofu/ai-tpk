@@ -1,5 +1,6 @@
 ---
 name: talekeeper
+color: cyan
 description: "Manual narrator agent. Reads enriched session chronicle files and produces human-readable narrative summaries. Must ONLY be invoked by the user directly — never by hooks, the Dungeon Master, or any automated system."
 tools: "Read, Write, Glob"
 model: claude-haiku-4-5

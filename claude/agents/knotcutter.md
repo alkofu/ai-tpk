@@ -1,5 +1,6 @@
 ---
 name: knotcutter
+color: yellow
 description: "Radical simplification specialist. Cuts through complexity by questioning necessity, eliminating over-engineering, and reducing systems to their essential core. Use when codebases are bloated, abstractions proliferate, or solutions feel needlessly complex."
 tools: "Read, Grep, Glob, Bash"
 model: claude-opus-4-6

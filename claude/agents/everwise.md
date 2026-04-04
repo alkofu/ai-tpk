@@ -1,5 +1,6 @@
 ---
 name: everwise
+color: pink
 description: "Use this agent when the user asks for meta-analysis of agent team performance, session chronicle review, or continuous improvement analysis. Learner agent. Analyzes Talekeeper session chronicles to identify recurring failures, inefficiencies, and coordination problems in the agent team. Proposes structured, evidence-based configuration improvements. Never modifies production configs directly — only writes to lessons/ directory."
 model: claude-sonnet-4-6
 permissionMode: acceptEdits

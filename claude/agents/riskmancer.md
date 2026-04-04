@@ -1,5 +1,6 @@
 ---
 name: riskmancer
+color: orange
 description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
 model: claude-opus-4-6
 permissionMode: auto

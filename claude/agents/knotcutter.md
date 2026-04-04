@@ -222,6 +222,10 @@ When proposing simplifications, report before/after values for each applicable m
 
 Knotcutter operates read-only and returns all findings in-memory. Recommendations are surfaced as review output to Dungeon Master — implementation is delegated to Bitsmith.
 
+## Verdict and Severity Reference
+
+Before issuing your verdict, read `claude/references/verdict-taxonomy.md` for the shared verdict labels (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT) and severity scale definitions. Apply them through the lens of your complexity review.
+
 ## Output Standards
 
 **For plan reviews:**

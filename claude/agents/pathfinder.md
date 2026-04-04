@@ -16,12 +16,13 @@ Interview users to gather requirements, research codebases via agents, and produ
 
 ## Worktree Awareness
 
-When a delegation prompt contains a `WORKING_DIRECTORY:` context line:
+When a delegation prompt contains a `WORKING_DIRECTORY:` context line, read `claude/references/worktree-protocol.md` immediately and apply its rules for the remainder of this task.
+
+### Pathfinder-Specific Worktree Rules
 
 - Write all plan files to `{WORKING_DIRECTORY}/plans/{name}.md` instead of `plans/{name}.md`
 - Write `open-questions.md` to `{WORKING_DIRECTORY}/plans/open-questions.md`
 - All codebase research (Grep, Glob, Read, Bash) should target `{WORKING_DIRECTORY}` as the search root
-- When `WORKING_DIRECTORY` is absent, behavior is unchanged — write to `plans/{name}.md` as before
 
 ## Key Responsibilities
 

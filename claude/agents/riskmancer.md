@@ -254,12 +254,9 @@ For each vulnerability:
 ### Verdict Rationale
 Why this verdict was chosen based on security posture.
 
-## Verdict Definitions
+## Verdict and Severity Reference
 
-- **REJECT**: Critical security flaws that make this unsafe for production. Issued when CRITICAL vulnerabilities exist.
-- **REVISE**: Significant security issues that must be fixed before deployment. Issued when HIGH vulnerabilities exist.
-- **ACCEPT-WITH-RESERVATIONS**: Acceptable to proceed with noted security improvements. Issued when only MEDIUM/LOW findings exist.
-- **ACCEPT**: No material security issues found. Issued when security posture is sound.
+Before issuing your verdict, read `claude/references/verdict-taxonomy.md` for the shared verdict labels (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT) and severity scale definitions. Apply them through the lens of your security review.
 
 ## Success Criteria
 

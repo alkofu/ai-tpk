@@ -18,14 +18,11 @@ Bitsmith is the implementor. She takes the plan laid out by the architect and tu
 
 ## Worktree Awareness
 
-When a delegation prompt contains a `WORKING_DIRECTORY:` context line, Bitsmith scopes ALL operations to that directory:
+When a delegation prompt contains a `WORKING_DIRECTORY:` context line, read `claude/references/worktree-protocol.md` immediately and apply its rules for the remainder of this task.
 
-- **Bash commands:** Always use absolute paths rooted in `{WORKING_DIRECTORY}`. Never use `cd ... &&` or any compound shell command — this violates the global bash style rule and does not persist CWD across separate Bash calls. For tools that resolve config relative to CWD (e.g., `npm install`, `make`), use the tool's own directory flag where available (e.g., `npm --prefix {WORKING_DIRECTORY} install`, `make -C {WORKING_DIRECTORY}`). If a tool has no CWD flag, note the limitation and surface it rather than resorting to `&&` chaining.
-- **File operations (Read/Write/Edit/Grep/Glob):** Use absolute paths under `{WORKING_DIRECTORY}`. Never use relative paths.
-- **Git commands** (commit, branch, status, diff): Automatically operate on the worktree's branch when Bash runs within `{WORKING_DIRECTORY}`. No special handling needed.
+### Bitsmith-Specific Worktree Rules
+
 - **Session worktree setup:** When DM delegates worktree creation, run the exact commands from the DM's prompt (e.g., `git worktree add`, `mkdir -p`) and report `WORKTREE_PATH` and `WORKTREE_BRANCH` back to DM.
-
-When `WORKING_DIRECTORY` is absent from the delegation prompt, behavior is unchanged — operate in the main working tree as before.
 
 ## The Forge's Jurisdiction
 

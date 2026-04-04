@@ -5,6 +5,7 @@ description: "Use this agent when the user asks for meta-analysis of agent team 
 model: claude-sonnet-4-6
 permissionMode: acceptEdits
 tools: "Read, Grep, Glob, Write"
+memory: user
 ---
 
 # Everwise — The Lorekeeper

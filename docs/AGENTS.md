@@ -120,7 +120,7 @@ Quill has a single professional rival: documentation written by someone who clea
 
 **When to invoke:** Invoke when starting a new feature or major change, breaking down complex work into actionable steps, or when structured requirements gathering and decision support are needed.
 
-**Key constraint:** Plans only, never implements; produces plans for others to execute.
+**Key constraint:** Plans only, never implements; produces plans for others to execute. Runs an 8-question pre-submission checklist before saving every plan to catch common review failure points (per-agent specificity, file reference accuracy, distinct-case handling, rollback documentation, behavioural acceptance criteria, sequencing, completeness, and ambiguity).
 
 **Best Practice:** Invoke Pathfinder before starting significant work to ensure clear requirements, structured approach, and stakeholder alignment. The agent explicitly does NOT implement code - it creates plans for others to execute.
 

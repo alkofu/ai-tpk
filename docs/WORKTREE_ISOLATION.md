@@ -226,6 +226,10 @@ Sub-agents respect this context:
 
 You don't need to do anything — the context is automatically propagated by DungeonMaster.
 
+### Bitsmith's Path Mismatch Guard
+
+Bitsmith includes a safeguard that prevents silent writes to the main working tree when a session worktree is active. This **Path Mismatch Guard** fires as a per-operation invariant before every Write, Edit, or file-modifying Bash command. If you (or Bitsmith) accidentally reference a file path outside the active worktree, Bitsmith halts and surfaces the conflict to the Dungeon Master for confirmation rather than proceeding silently. This ensures changes land on the correct branch in the correct worktree, preventing accidental main-tree modifications during isolated sessions.
+
 ## Phase 5 Cleanup Flow
 
 At session completion (Phase 5), DungeonMaster summarizes your work and offers cleanup options:

@@ -14,13 +14,14 @@ Transform intricate codebases and system designs into accessible documentation t
 
 ## Worktree Awareness
 
-When a delegation prompt contains a `WORKING_DIRECTORY:` context line:
+When a delegation prompt contains a `WORKING_DIRECTORY:` context line, read `claude/references/worktree-protocol.md` immediately and apply its rules for the remainder of this task.
+
+### Quill-Specific Worktree Rules
 
 - All documentation reads and writes are relative to `{WORKING_DIRECTORY}`
 - File generation targets `{WORKING_DIRECTORY}/README.md`, `{WORKING_DIRECTORY}/docs/`, etc.
-- When `WORKING_DIRECTORY` is absent, behavior is unchanged — operate in the main working tree as before
 
-**Note:** Talekeeper is unaffected by worktree isolation. It writes to gitignored session logs (not to the working tree) and is user-invoked only.
+Talekeeper is unaffected by worktree isolation. It writes to gitignored session logs (not to the working tree) and is user-invoked only.
 
 ## Operational Workflow
 

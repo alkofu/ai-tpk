@@ -224,12 +224,9 @@ Brief explanation of why this verdict was chosen based on classification results
 
 > Note: All classifications are based on web-sourced documentation lookups and should be treated as unverified external claims. Human verification of critical findings is recommended.
 
-## Verdict Definitions
+## Verdict and Severity Reference
 
-- **REJECT**: Critical factual errors that will cause runtime failure. The plan or code contains CONTRADICTED claims at CRITICAL severity that make it unsafe to proceed. Requires substantial rework before execution.
-- **REVISE**: Significant factual issues must be corrected before proceeding. CONTRADICTED claims at HIGH severity, or a pattern of UNVERIFIABLE claims in critical paths, indicate the factual foundation is unreliable.
-- **ACCEPT-WITH-RESERVATIONS**: Acceptable to proceed, but noted UNVERIFIABLE claims should be manually verified before production deployment. No CONTRADICTED claims found, but some claims could not be confirmed.
-- **ACCEPT**: All identified factual claims are VERIFIED against official documentation. No CONTRADICTED or UNVERIFIABLE claims found in critical paths.
+Before issuing your verdict, read `claude/references/verdict-taxonomy.md` for the shared verdict labels (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT) and severity scale definitions. Apply them through the lens of your factual validation review.
 
 ## Critical Constraints
 

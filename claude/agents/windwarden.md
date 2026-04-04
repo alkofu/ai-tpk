@@ -194,29 +194,33 @@ Flag designs that trade infrastructure cost for developer convenience:
 - Identify hot-path operations that will dominate infrastructure spend at scale.
 - Flag when a design choice improves developer experience at the cost of a significantly more expensive runtime profile.
 
-## Performance Severity Levels
+## Verdict and Severity Reference
 
-**CRITICAL** - Blocks production deployment. Performance flaw will cause system failure, outages, or user-facing timeouts under expected load.
+Before issuing your verdict, read `claude/references/verdict-taxonomy.md` for the shared verdict labels (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT) and severity scale definitions. Apply them through the lens of your performance review.
+
+### Performance-Specific Severity Examples
+
+**CRITICAL:**
 - Unbounded loops over large datasets
 - Missing pagination on list endpoints
-- O(n²) or worse where data grows unbounded
+- O(n^2) or worse where data grows unbounded
 - Memory leaks that accumulate over time
 - Database queries without indexes on large tables
 
-**HIGH** - Requires immediate optimization. Significant performance degradation under normal load that impacts user experience.
+**HIGH:**
 - N+1 query patterns
 - Missing database indexes on frequently queried columns
 - Synchronous API calls in request path
-- Inefficient algorithms (O(n²) where O(n log n) possible)
+- Inefficient algorithms (O(n^2) where O(n log n) possible)
 - Large objects loaded when only subset needed
 
-**MEDIUM** - Optimization opportunity. Noticeable but not critical performance impact.
+**MEDIUM:**
 - Missing caching on expensive operations
 - Inefficient data structures
 - Redundant computations
 - Suboptimal serialization
 
-**LOW** - Minor inefficiency. Measurable but negligible impact on user experience.
+**LOW:**
 - Small allocations in loops
 - Minor query inefficiencies
 - Opportunity for micro-optimization
@@ -254,13 +258,6 @@ Suggested performance tests or metrics to validate the fix.
 
 ### Verdict Rationale
 Brief explanation of why this verdict was chosen based on performance impact.
-
-## Verdict Definitions
-
-- **REJECT**: Critical performance flaws that will cause system failure or unacceptable user experience under expected load. Requires fundamental redesign.
-- **REVISE**: Significant performance issues that must be optimized before deployment. Approach is viable but needs optimization work.
-- **ACCEPT-WITH-RESERVATIONS**: Acceptable to proceed with noted performance improvements recommended for future iterations.
-- **ACCEPT**: Performance characteristics are sound. No material performance issues identified.
 
 ## Critical Constraints
 
@@ -310,4 +307,3 @@ Brief explanation of why this verdict was chosen based on performance impact.
 - Performance gaps are identified with concrete remediation steps
 - Benchmark recommendations help validate improvements
 - False approval rate is minimized (don't let performance issues slip through)
-

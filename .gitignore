@@ -10,6 +10,8 @@ claude/**
 !claude/hooks/**
 !claude/commands/
 !claude/commands/**
+!claude/references/
+!claude/references/**
 
 # Git worktrees
 .worktrees/

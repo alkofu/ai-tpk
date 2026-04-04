@@ -22,10 +22,11 @@ Keep AI tool configurations version-controlled and portable across machines. The
 
 ```
 .
-├── claude/          # Claude Code configs (whitelist: settings.json, CLAUDE.md, skills/, agents/, commands/)
+├── claude/          # Claude Code configs (whitelist: settings.json, CLAUDE.md, skills/, agents/, commands/, references/)
 │   ├── CLAUDE.md         # User-global instructions (skill mandates)
 │   ├── settings.json     # Plugin config, hooks, marketplace settings
 │   ├── agents/          # Specialized AI assistants (e.g., Quill for docs)
+│   ├── references/       # Shared reference files loaded by agents at runtime
 │   ├── skills/          # Reusable capabilities
 │   └── commands/        # Slash commands for Claude Code
 ├── cursor/          # Cursor configurations (coming soon)
@@ -35,7 +36,7 @@ Keep AI tool configurations version-controlled and portable across machines. The
 └── install.sh       # Installation script
 ```
 
-The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, `agents/`, and `commands/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
+The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, and `references/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
 
 ## Installation
 
@@ -52,14 +53,14 @@ Run the installation script:
 ./install.sh
 ```
 
-Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
+Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
 
 ### Option 2: Copy Files
 ```bash
 ./install.sh --copy
 ```
 
-Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`) into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
+Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp.
 
@@ -288,6 +289,15 @@ When updating configurations:
 4. Pull on other machines to sync
 
 When adding new hooks, agents, or skills, update the relevant documentation in `/docs/CONFIGURATION.md`.
+
+### Shared Agent References
+
+Agent definitions can reference shared behavioral vocabulary defined in `claude/references/`. This eliminates duplication across multiple agents:
+
+- **`claude/references/verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales. Agents load this reference when issuing verdicts to ensure consistent evaluation vocabulary.
+- **`claude/references/worktree-protocol.md`** — Shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. Agents load this reference when operating in isolated worktrees to ensure consistent path handling.
+
+When modifying the verdict taxonomy or worktree protocol, update the reference file — changes apply automatically to all agents that load it.
 
 ## License
 

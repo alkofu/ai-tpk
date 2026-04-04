@@ -25,7 +25,7 @@ while [[ $# -gt 0 ]]; do
       echo "Install AI TPK to your home directory."
       echo ""
       echo "Claude Code:"
-      echo "  - Whitelisted paths: settings.json, CLAUDE.md, skills/, agents/"
+      echo "  - Whitelisted paths: settings.json, CLAUDE.md, skills/, agents/, references/"
       echo ""
       echo "Options:"
       echo "  --copy    Copy files instead of creating symlinks (default: symlink)"
@@ -126,7 +126,7 @@ install_claude_whitelist() {
   fi
 
   local name
-  for name in skills agents hooks commands; do
+  for name in skills agents hooks commands references; do
     local sub_src="${claude_src}/${name}"
     if [[ -d "$sub_src" ]]; then
       install_path "$sub_src" "${HOME}/.claude/${name}"

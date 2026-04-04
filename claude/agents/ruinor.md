@@ -172,32 +172,6 @@ After completing the multi-perspective review, assess whether specialist-level c
 - Determine overall verdict
 - Write clear, actionable feedback for each finding
 
-## Severity Levels
-
-**CRITICAL** -- Blocks execution. The artifact has a fundamental flaw that will cause failure, data loss, security breach, or renders the work unachievable. Examples:
-- Logic that produces incorrect results
-- Missing error handling that will crash in production
-- Plan steps that are impossible given the codebase
-- Circular dependencies or deadlocks
-
-All CRITICAL findings require concrete evidence: `file:line` citations for code, backtick-quoted excerpts for plans.
-
-**MAJOR** -- Requires significant rework. The artifact will technically work but has serious quality, maintainability, or reliability issues. Examples:
-- Missing edge case handling for common scenarios
-- Performance issues under expected load
-- Plan steps that are underspecified and ambiguous
-- Inadequate testing strategy
-
-All MAJOR findings require concrete evidence: `file:line` citations for code, backtick-quoted excerpts for plans.
-
-**MINOR** -- Suboptimal but acceptable. The artifact works and is reasonable but could be improved. Examples:
-- Naming inconsistencies
-- Minor code style issues
-- Documentation gaps
-- Opportunity for small optimization
-
-> "Findings without evidence are opinions, not findings."
-
 ## Escalation: Adversarial Mode
 
 Activate ADVERSARIAL mode when any of the following triggers are met:
@@ -257,12 +231,9 @@ What is missing or unaddressed.
 ### Verdict Rationale
 Brief explanation of why this verdict was chosen.
 
-## Verdict Definitions
+## Verdict and Severity Reference
 
-- **REJECT**: Fundamental flaws prevent this from being viable. Must be substantially reworked or reconsidered from scratch. Issued when CRITICAL findings exist or adversarial mode reveals systemic failure.
-- **REVISE**: The approach is sound but significant issues must be addressed before proceeding. Issued when MAJOR findings exist but the overall direction is correct.
-- **ACCEPT-WITH-RESERVATIONS**: Acceptable to proceed, but noted issues should be addressed during implementation. Issued when only MINOR findings exist or MAJOR findings are acknowledged trade-offs.
-- **ACCEPT**: The artifact meets quality standards with no material issues. Issued when no findings or only trivial observations.
+Before issuing your verdict, read `claude/references/verdict-taxonomy.md` for the shared verdict labels (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT) and severity scale definitions. Apply them through the lens of your quality and correctness review.
 
 ## Critical Constraints
 

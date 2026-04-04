@@ -71,6 +71,18 @@ See [docs/AGENTS.md](/docs/AGENTS.md) for the agent roster and quick reference. 
 **Invoking an agent:**
 Simply @-mention the agent by name (e.g., `@quill` or `@riskmancer`) in your Claude conversation to activate it.
 
+## References (`claude/references/`)
+
+Reference files contain shared behavioral vocabulary loaded by agents at runtime. These files eliminate duplication across multiple agent definitions and ensure consistency in how agents apply shared concepts.
+
+### Available References
+
+- **`verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales (Ruinor's CRITICAL/MAJOR/MINOR and Specialist CRITICAL/HIGH/MEDIUM/LOW). Reviewer agents load this reference when issuing verdicts. Defines shared vocabulary while noting that domain-specific application is defined per-agent.
+
+- **`worktree-protocol.md`** — Shared rules for interpreting the `WORKING_DIRECTORY:` context block. Agents that operate in isolated git worktrees load this reference to ensure consistent path handling across all file operations and bash commands.
+
+When updating a reference file, changes apply automatically to all agents that load it — no individual agent files need modification.
+
 ## Skills (`claude/skills/`)
 
 Skills are reusable capabilities that enhance Claude's functionality.

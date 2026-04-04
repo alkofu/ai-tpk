@@ -108,6 +108,8 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 
 ### Worktree Context Block
 
+See `claude/references/worktree-protocol.md` for the shared protocol that sub-agents follow when this block is present.
+
 When a session worktree is active, prepend the following block to every Pathfinder, Bitsmith, and Quill delegation prompt:
 
 ```

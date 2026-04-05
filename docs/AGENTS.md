@@ -6,7 +6,7 @@
 |-------|---------|-------------------|-------|-------------|
 | **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
 | **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | N/A |
-| **Tracebloom** | Read-only investigative specialist | Open-ended "why is this broken?" diagnosis before any plan exists | claude-sonnet-4-6 | N/A |
+| **Tracebloom** | Read-only investigative tracker | Open-ended "why is this broken?" diagnosis, pre-plan root cause analysis | claude-sonnet-4-6 | N/A |
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 | N/A |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 | Specialist (opt-in) |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 | N/A |
@@ -22,7 +22,7 @@
 
 ```
 Ambiguous or underspecified request → Askmaw
-Open-ended "why is X broken?" investigation → Tracebloom
+Open-ended investigative diagnosis → Tracebloom
 Multi-step coordination → Dungeon Master
 Documentation needs → Quill
 Security review → Riskmancer
@@ -78,7 +78,11 @@ A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks pur
 
 <img src="avatars/tracebloom.png" alt="Tracebloom Avatar" width="300">
 
-A druid who understands how systems breathe. Tracebloom reads the signs a codebase leaves behind — the error messages like sap on a wounded tree, the git history like rings in old wood, the config files like soil composition beneath a failing crop. He is grounded, patient, observational. He does not rush to conclusions. He gathers until the evidence speaks.
+Tracebloom is a black, bald druid who lives in the desert and does not miss a thing. He reads a system the way a tracker reads cracked earth — one finger pressed to the ground, eyes half-closed, listening for what the soil remembers. The error messages are sap on a wounded tree. The git history is rings in old wood. The config files are soil composition beneath a failing crop.
+
+He is grounded, patient, observational. He does not rush to a conclusion. He gathers until the evidence speaks. He does not theorize without evidence. He does not act on what he finds. He reads, he traces, he reports — and then he stops.
+
+> *"The desert does not lie. It only asks whether you know how to read it."*
 
 **Core Mission:** Investigate open-ended "why doesn't X work?" problems before any plan or fix exists, producing a structured Diagnostic Report that feeds the planning pipeline.
 

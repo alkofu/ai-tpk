@@ -57,7 +57,14 @@ Talekeeper is unaffected by worktree isolation. It writes to gitignored session 
 
 ## Tool Usage
 
-- Bash: Run read-only investigation commands (git log, file stats) to support documentation research. **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
+| Tool | Purpose |
+|------|---------|
+| `Read` | Examine existing files, source code, and configuration to understand what needs documenting |
+| `Grep` | Search for patterns, function signatures, and usage examples across the codebase |
+| `Glob` | Locate files by name or pattern during documentation gap analysis |
+| `Bash` | Run read-only investigation commands (git log, file stats) to support documentation research. **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style. |
+| `Write` | Create new documentation files (README, API specs, architecture guides) |
+| `Edit` | Update existing documentation files with targeted, minimal changes |
 
 ## Documentation Standards
 

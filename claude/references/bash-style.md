@@ -4,9 +4,11 @@ This file defines the required Bash command style for all agents. It is the auth
 
 ## Rule: No Compound Commands
 
-Never chain commands using `&&`, `;`, or `|`. Always issue each command as a separate, standalone Bash call.
+Never chain commands using `&&` or `;` as sequential execution operators. Always issue each command as a separate, standalone Bash call.
 
-**Wrong:**
+Pipes (`|`) are permitted **only for data transformation** (feeding the output of one command into a filter). Do not use pipes as a substitute for sequential control flow.
+
+**Wrong — sequential chaining:**
 ```bash
 mkdir -p foo && cd foo && git init
 ```
@@ -15,6 +17,21 @@ mkdir -p foo && cd foo && git init
 1. `mkdir -p foo`
 2. `cd foo`
 3. `git init`
+
+**Wrong — pipe as control flow:**
+```bash
+git stash && git pull | grep "Already up to date"
+```
+
+**Right:** Separate calls; use tool-native flags where possible:
+1. `git stash`
+2. `git pull`
+3. `git log --oneline -5`  ← prefer `-5` flag over `git log | head -5`
+
+**Acceptable — pipe for data transformation (no tool-native alternative):**
+```bash
+grep "ERROR" app.log | wc -l
+```
 
 ## Rationale
 

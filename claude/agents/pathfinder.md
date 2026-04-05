@@ -67,7 +67,16 @@ If the delegation prompt contains an `## Intake Brief` section:
 - Use the brief's content directly as requirements input for the plan
 - You may still ask follow-up questions **only** for gaps the brief left open or that codebase research revealed as decision-critical
 
-If no Askmaw brief is present, conduct the full interview:
+**Otherwise: check for a Tracebloom Diagnostic Report in the delegation prompt.**
+
+If the delegation prompt contains a `## Diagnostic Report` section:
+- Treat the report's fields (Symptom, Investigation summary, Root cause, Evidence, Recommended next action) as pre-researched context — Tracebloom has already investigated the problem
+- Do **not** re-investigate facts already established in the report
+- Use the report's root cause and evidence directly as the problem definition for the plan
+- You may still ask the user follow-up questions about priorities, preferences, or scope (e.g., "The report identifies two contributing factors — should we fix both or just the critical one?")
+- If the report's "Recommended next action" suggests the fix is trivial, note this in the plan — the plan may be a single step
+
+If no Askmaw brief or Diagnostic Report is present, conduct the full interview:
 
 Ask about preferences and priorities using AskUserQuestion tool.
 

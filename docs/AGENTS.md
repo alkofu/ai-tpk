@@ -6,6 +6,7 @@
 |-------|---------|-------------------|-------|-------------|
 | **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
 | **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | N/A |
+| **Tracebloom** | Read-only investigative specialist | Open-ended "why is this broken?" diagnosis before any plan exists | claude-sonnet-4-6 | N/A |
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4.5 | N/A |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-6 | Specialist (opt-in) |
 | **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-6 | N/A |
@@ -21,6 +22,7 @@
 
 ```
 Ambiguous or underspecified request → Askmaw
+Open-ended "why is X broken?" investigation → Tracebloom
 Multi-step coordination → Dungeon Master
 Documentation needs → Quill
 Security review → Riskmancer
@@ -69,6 +71,24 @@ A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks pur
 **Best Practice:** Invoke Dungeon Master as the entry point for ambiguous work. DM automatically routes through Askmaw when ambiguity is detected, manages the interview loop, and transitions to Pathfinder once requirements are clarified. Askmaw is stateless by design — DM maintains full context between invocations.
 
 **Configuration File:** `/claude/agents/askmaw.md`
+
+---
+
+### Tracebloom - Read-Only Investigative Specialist
+
+<img src="avatars/tracebloom.png" alt="Tracebloom Avatar" width="300">
+
+A druid who understands how systems breathe. Tracebloom reads the signs a codebase leaves behind — the error messages like sap on a wounded tree, the git history like rings in old wood, the config files like soil composition beneath a failing crop. He is grounded, patient, observational. He does not rush to conclusions. He gathers until the evidence speaks.
+
+**Core Mission:** Investigate open-ended "why doesn't X work?" problems before any plan or fix exists, producing a structured Diagnostic Report that feeds the planning pipeline.
+
+**When to invoke:** Invoke when a user reports a symptom or problem with unknown root cause and no plan has been made yet. Tracebloom runs before Pathfinder (planning) and feeds his findings directly into the planning process.
+
+**Key constraint:** Strictly read-only; Read, Grep, Glob, and Bash tools only (no Write, Edit, or implementation commands). Produces a structured Diagnostic Report, then halts.
+
+**Best Practice:** Invoke Tracebloom as the pre-planning entry point for investigative tasks. The Dungeon Master automatically routes through Tracebloom when it detects a "why is X broken?" request, waits for the Diagnostic Report, then routes the findings to Pathfinder for planning. The report becomes the problem definition for the plan — no re-investigation needed.
+
+**Configuration File:** `/claude/agents/tracebloom.md`
 
 ---
 

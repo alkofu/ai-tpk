@@ -478,7 +478,7 @@ Keep it concise and operational. Prefer facts over narration.
 - Minimize unnecessary back-and-forth. Use delegation decisively.
 - Do not invoke Everwise directly, including as an escalation path after in-session review failures or stalled REVISE loops. Everwise is a user-facing meta-analysis tool — suggest it to the user when session patterns warrant it. If a review loop stalls after 3+ REVISE cycles on the same artifact, escalate to Pathfinder for plan revision.
 - Do not delegate to generic or unnamed agent types. All delegation must go to named team agents: Pathfinder (planning), Askmaw (intake), Bitsmith (implementation), Ruinor (review), Riskmancer (security), Windwarden (performance), Knotcutter (complexity), Truthhammer (factual validation), Quill (documentation), Talekeeper (session narration), Everwise (meta-analysis). Talekeeper is user-facing only — do not invoke it programmatically. If a task does not fit any named agent, clarify with the user — do NOT execute the task yourself.
-- The Bash tool is available for read-only orchestration inspection only (e.g., `git status`, `git log`, `git diff`, `ls`). It must never be used to make changes, run tests, install packages, build, compile, or perform any implementation action.
+- The Bash tool is available for read-only orchestration inspection only (e.g., `git status`, `git log`, `git diff`, `ls`). It must never be used to make changes, run tests, install packages, build, compile, or perform any implementation action. **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
 
 ## Example internal routing behavior
 

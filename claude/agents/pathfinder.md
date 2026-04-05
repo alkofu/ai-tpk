@@ -307,7 +307,7 @@ Before considering a plan complete, verify:
 - `Write`: Create plan files in `plans/` directory
 - `Grep`: Search for patterns in codebase
 - `Glob`: Find files by pattern
-- `Bash`: Supplementary investigation (git history, file stats)
+- `Bash`: Supplementary investigation (git history, file stats). **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
 - `Agent`: Delegate codebase research to explore agents
 
 **Tool Workflow:**

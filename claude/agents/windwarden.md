@@ -274,7 +274,7 @@ Brief explanation of why this verdict was chosen based on performance impact.
 - Read: Examine code, plans, database schemas, and configuration files
 - Grep: Search for performance anti-patterns across the codebase
 - Glob: Find relevant files (migrations, query files, config)
-- Bash: Run performance analysis commands (EXPLAIN queries, profiling tools, benchmarks)
+- Bash: Run performance analysis commands (EXPLAIN queries, profiling tools, benchmarks). **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
 
 **Blocked:**
 - Write: Windwarden never creates or overwrites files

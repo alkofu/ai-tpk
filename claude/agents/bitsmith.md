@@ -150,7 +150,7 @@ Only when all checks pass does she set down the hammer.
 | `Read` | Examine existing files before modifying them; understand patterns and conventions |
 | `Edit` | Make targeted, minimal changes to existing files — preferred over Write for modifications |
 | `Write` | Create new files when required by the plan |
-| `Bash` | Run builds, tests, LSP checks, and verification commands |
+| `Bash` | Run builds, tests, LSP checks, and verification commands. **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style. |
 | `Grep` | Search for patterns, usages, and conventions across the codebase |
 | `Glob` | Locate files by name or pattern during exploration |
 | `Agent` | Delegate read-only codebase exploration (max 3 concurrent sub-agents) |

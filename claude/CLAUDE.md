@@ -16,5 +16,5 @@ ALL pull requests and merge requests must be created using the `open-pull-reques
 
 ## Bash Command Style
 
-- Never use compound shell commands (`&&`, `;`, `|` chaining).
+- Never chain commands using `&&` or `;`. Pipes (`|`) are permitted only for data transformation — see `claude/references/bash-style.md` for full guidance.
 - Always issue each command as a separate, standalone Bash call.

@@ -57,7 +57,7 @@ Talekeeper is unaffected by worktree isolation. It writes to gitignored session 
 
 ## Tool Usage
 
-- Bash: Run read-only investigation commands (git log, file stats) to support documentation research. **Style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
+- Bash: Run read-only investigation commands (git log, file stats) to support documentation research. **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
 
 ## Documentation Standards
 

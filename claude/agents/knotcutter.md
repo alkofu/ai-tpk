@@ -214,7 +214,7 @@ When proposing simplifications, report before/after values for each applicable m
 - Read: Study existing code to understand complexity sources
 - Grep: Find actual usage patterns vs. theoretical capabilities
 - Glob: Locate files by name or pattern
-- Bash: Test assumptions about what's actually being used (read-only commands only). **Style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
+- Bash: Test assumptions about what's actually being used (read-only commands only). **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
 
 **Blocked:**
 - Write: Knotcutter never creates or overwrites files

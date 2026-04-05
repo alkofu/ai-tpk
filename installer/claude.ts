@@ -3,8 +3,9 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { c } from "./colors.js";
 import { backupIfExists, installPath } from "./fs-utils.js";
+import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "./constants.js";
 
-export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "copy"): void {
+export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "copy", destRoot: string = os.homedir()): void {
   const claudeSrc = path.join(scriptDir, "claude");
 
   try {
@@ -21,7 +22,7 @@ export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "cop
     throw err;
   }
 
-  const dotClaudePath = path.join(os.homedir(), ".claude");
+  const dotClaudePath = path.join(destRoot, ".claude");
 
   // Replace legacy full-tree ~/.claude symlink with a real directory
   try {
@@ -38,42 +39,28 @@ export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "cop
 
   fs.mkdirSync(dotClaudePath, { recursive: true });
 
-  // settings.json
-  const settingsSrc = path.join(claudeSrc, "settings.json");
-  try {
-    const settingsStat = fs.statSync(settingsSrc);
-    if (settingsStat.isFile()) {
-      installPath(settingsSrc, path.join(dotClaudePath, "settings.json"), mode);
-    } else {
-      console.log(c.yellow("Skipping claude/settings.json (not found in repository)"));
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
-      console.log(c.yellow("Skipping claude/settings.json (not found in repository)"));
-    } else {
-      throw err;
-    }
-  }
-
-  // CLAUDE.md
-  const claudeMdSrc = path.join(claudeSrc, "CLAUDE.md");
-  try {
-    const claudeMdStat = fs.statSync(claudeMdSrc);
-    if (claudeMdStat.isFile()) {
-      installPath(claudeMdSrc, path.join(dotClaudePath, "CLAUDE.md"), mode);
-    } else {
-      console.log(c.yellow("Skipping claude/CLAUDE.md (not found in repository)"));
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
-      console.log(c.yellow("Skipping claude/CLAUDE.md (not found in repository)"));
-    } else {
-      throw err;
+  // Standalone files
+  for (const fileName of CLAUDE_WHITELIST_FILES) {
+    const fileSrc = path.join(claudeSrc, fileName);
+    const fileDest = path.join(dotClaudePath, fileName);
+    try {
+      const stat = fs.statSync(fileSrc);
+      if (stat.isFile()) {
+        installPath(fileSrc, fileDest, mode);
+      } else {
+        console.log(c.yellow(`Skipping claude/${fileName} (not a regular file)`));
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        console.log(c.yellow(`Skipping claude/${fileName} (not found in repository)`));
+      } else {
+        throw err;
+      }
     }
   }
 
   // Sub-directories
-  for (const name of ["skills", "agents", "hooks", "commands", "references"]) {
+  for (const name of CLAUDE_WHITELIST_DIRS) {
     const subSrc = path.join(claudeSrc, name);
     try {
       const subStat = fs.statSync(subSrc);

@@ -5,6 +5,7 @@ import { installMcpServers } from "./mcp.js";
 import { c } from "./colors.js";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
+import * as os from "node:os";
 
 // Resolve scriptDir = repo root (parent of installer/)
 const __filename = fileURLToPath(import.meta.url);
@@ -21,11 +22,11 @@ try {
   console.log(`Source directory: ${scriptDir}`);
   console.log("");
 
-  installClaudeWhitelist(scriptDir, mode);
-  installDir(scriptDir, "cursor", ".cursor", mode);
+  installClaudeWhitelist(scriptDir, mode, os.homedir());
+  installDir(scriptDir, "cursor", ".cursor", mode, os.homedir());
 
   console.log("");
-  installMcpServers();
+  installMcpServers(os.homedir());
 
   console.log("");
   console.log(c.green("✓ Installation complete!"));

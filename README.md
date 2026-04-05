@@ -42,6 +42,7 @@ The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUD
 
 The installation logic is implemented in TypeScript under the `installer/` directory:
 
+- `installer/constants.ts` — Single source of truth for whitelisted Claude paths, MCP server definitions, and Node.js version requirements
 - `installer/main.ts` — Main entrypoint; orchestrates the install workflow
 - `installer/cli.ts` — CLI argument parser (handles `--copy`, `--help`/`-h`)
 - `installer/colors.ts` — ANSI color output helper
@@ -49,11 +50,21 @@ The installation logic is implemented in TypeScript under the `installer/` direc
 - `installer/claude.ts` — Claude config whitelist installer
 - `installer/mcp.ts` — MCP server setup
 
-The `install.sh` shim in the repo root bootstraps the TypeScript entrypoint and verifies Node.js >= 18 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
+The `install.sh` shim in the repo root bootstraps the TypeScript entrypoint and verifies Node.js >= 18.18.0 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
+
+#### Running Tests
+
+The installer includes a comprehensive test suite using `node:test`:
+
+```bash
+npm test
+```
+
+This runs all test files in `installer/test/` with isolated temporary directories. Tests cover filesystem utilities, CLI argument parsing, color output, and the Claude whitelist installer. For more details, see the test files under `installer/test/`.
 
 ## Installation
 
-**Prerequisites:** Node.js >= 18 is required to run `install.sh`. The installer is implemented in TypeScript and executed via `tsx` at runtime.
+**Prerequisites:** Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented in TypeScript and executed via `tsx` at runtime.
 
 Clone the repository:
 ```bash

@@ -46,10 +46,11 @@ export function installDir(
   scriptDir: string,
   srcName: string,
   destName: string,
-  mode: "symlink" | "copy"
+  mode: "symlink" | "copy",
+  destRoot: string = os.homedir()
 ): void {
   const srcPath = path.join(scriptDir, srcName);
-  const destPath = path.join(os.homedir(), destName);
+  const destPath = path.join(destRoot, destName);
 
   try {
     const srcStat = fs.statSync(srcPath);

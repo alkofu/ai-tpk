@@ -3,27 +3,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import { c } from "./colors.js";
+import { MCP_SERVERS, type McpServerDef } from "./constants.js";
 
-interface McpServerDef {
-  name: string;
-  prereqPath?: string;
-  addArgs: string[];
-}
-
-const MCP_SERVERS: McpServerDef[] = [
-  {
-    name: "kubernetes",
-    prereqPath: path.join(os.homedir(), ".kube", "config"),
-    addArgs: [
-      "-s", "user",
-      "-t", "stdio",
-      "-e", `KUBECONFIG=${path.join(os.homedir(), ".kube", "config")}`,
-      "--", "kubernetes", "npx", "mcp-server-kubernetes@3.4.0",
-    ],
-  },
-];
-
-export function installMcpServers(): void {
+export function installMcpServers(destRoot: string = os.homedir()): void {
   // Check claude CLI availability
   try {
     execFileSync("claude", ["--version"], { stdio: "pipe" });
@@ -45,14 +27,14 @@ export function installMcpServers(): void {
     }
 
     // Check prereq
-    if (server.prereqPath !== undefined) {
+    if (server.prereqRelPath !== undefined) {
       try {
-        fs.statSync(server.prereqPath);
+        fs.statSync(path.join(destRoot, server.prereqRelPath));
       } catch (err: unknown) {
         if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
           console.log(
             c.yellow(
-              `Warning: ${server.prereqPath} not found -- ${server.name} MCP will fail until this file is created`
+              `Warning: ${path.join(destRoot, server.prereqRelPath)} not found -- ${server.name} MCP will fail until this file is created`
             )
           );
         }
@@ -61,7 +43,7 @@ export function installMcpServers(): void {
 
     // Add the server
     try {
-      execFileSync("claude", ["mcp", "add", ...server.addArgs], { stdio: "pipe" });
+      execFileSync("claude", ["mcp", "add", ...server.addArgs(destRoot)], { stdio: "pipe" });
       console.log(c.green(`MCP server '${server.name}' added`));
     } catch {
       console.log(c.red(`Failed to add MCP server '${server.name}'`));

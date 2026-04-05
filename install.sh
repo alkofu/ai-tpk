@@ -26,6 +26,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Claude Code:"
       echo "  - Whitelisted paths: settings.json, CLAUDE.md, skills/, agents/, references/"
+      echo "  - MCP servers: kubernetes (user scope, via claude mcp add)"
       echo ""
       echo "Options:"
       echo "  --copy    Copy files instead of creating symlinks (default: symlink)"
@@ -136,8 +137,54 @@ install_claude_whitelist() {
   done
 }
 
+add_mcp_if_missing() {
+  local server_name="$1"
+  local prereq_path="$2"
+  shift 2
+
+  # Defensive: safe to call standalone
+  if ! command -v claude >/dev/null 2>&1; then
+    echo -e "${YELLOW}Warning: claude CLI not found -- skipping MCP server '${server_name}'${NC}"
+    return
+  fi
+
+  if claude mcp get "$server_name" >/dev/null 2>&1; then
+    echo -e "${GREEN}MCP server '${server_name}' already configured, skipping${NC}"
+    return
+  fi
+
+  if [[ -n "$prereq_path" ]] && [[ ! -e "$prereq_path" ]]; then
+    echo -e "${YELLOW}Warning: ${prereq_path} not found -- ${server_name} MCP will fail until this file is created${NC}"
+  fi
+
+  if claude mcp add "$@"; then
+    echo -e "${GREEN}MCP server '${server_name}' added${NC}"
+  else
+    echo -e "${RED}Failed to add MCP server '${server_name}'${NC}"
+    return 0
+  fi
+}
+
+install_mcp_servers() {
+  echo -e "${BLUE}Configuring MCP servers (user scope)...${NC}"
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo -e "${YELLOW}Skipping MCP server setup (claude CLI not found)${NC}"
+    return
+  fi
+
+  add_mcp_if_missing "kubernetes" \
+    "${HOME}/.kube/config" \
+    -s user -t stdio \
+    -e KUBECONFIG="${HOME}/.kube/config" \
+    -- kubernetes npx mcp-server-kubernetes@3.4.0
+}
+
 install_claude_whitelist
 install_dir "cursor" ".cursor"
+
+echo ""
+install_mcp_servers
 
 echo ""
 echo -e "${GREEN}✓ Installation complete!${NC}"

@@ -24,3 +24,7 @@ logs/
 
 # Planning documents (local only, not for version control)
 plans/
+
+# Node.js
+node_modules/
+dist/

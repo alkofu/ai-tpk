@@ -1,0 +1,13 @@
+{
+  "name": "ai-tpk",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsx": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "setup": "tsx installer/main.ts"
+  }
+}

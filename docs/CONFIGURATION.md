@@ -47,6 +47,23 @@ Processes the raw sub-agent event log captured during the session into a structu
 4. Writes an enriched JSONL chronicle to `logs/talekeeper-{session_id}.jsonl`
 5. Clears the raw log on success
 
+**Enriched Chronicle Schema:**
+
+Each JSONL line in `logs/talekeeper-{session_id}.jsonl` contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | string (ISO 8601) | When the sub-agent event was captured |
+| `event_type` | string | Hook event name (typically `SubagentStop`) |
+| `agent_type` | string | Name of the agent (e.g., `pathfinder`, `bitsmith`, `ruinor`) |
+| `agent_id` | string | Unique identifier for the agent invocation |
+| `session_id` | string | Session ID correlating all events in a session |
+| `summary` | string | Structural summary of the agent's completion (not free-text input) |
+| `verdict` | string or null | For reviewer agents only: `ACCEPT`, `REVISE`, `REJECT`, or `ACCEPT-WITH-RESERVATIONS`; `null` otherwise |
+| `agent_transcript_path` | string or null | For SubagentStop events: path to the agent's JSONL transcript in `~/.claude/projects/`; `null` for non-SubagentStop events |
+
+The `agent_transcript_path` field enables downstream tools (like Everwise Scout) to discover and read raw subagent transcripts for deeper analysis.
+
 **Configuration:**
 - Script: `claude/hooks/talekeeper-enrich.sh`
 - Type: Async command hook

@@ -38,7 +38,22 @@ Keep AI tool configurations version-controlled and portable across machines. The
 
 The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, and `references/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
 
+### Developer Notes
+
+The installation logic is implemented in TypeScript under the `installer/` directory:
+
+- `installer/main.ts` — Main entrypoint; orchestrates the install workflow
+- `installer/cli.ts` — CLI argument parser (handles `--copy`, `--help`/`-h`)
+- `installer/colors.ts` — ANSI color output helper
+- `installer/fs-utils.ts` — Filesystem utilities (backup, symlink, copy operations)
+- `installer/claude.ts` — Claude config whitelist installer
+- `installer/mcp.ts` — MCP server setup
+
+The `install.sh` shim in the repo root bootstraps the TypeScript entrypoint and verifies Node.js >= 18 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
+
 ## Installation
+
+**Prerequisites:** Node.js >= 18 is required to run `install.sh`. The installer is implemented in TypeScript and executed via `tsx` at runtime.
 
 Clone the repository:
 ```bash
@@ -54,6 +69,11 @@ Run the installation script:
 ```
 
 Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
+
+Alternatively, if you have Node.js installed:
+```bash
+npm run setup
+```
 
 ### Option 2: Copy Files
 ```bash

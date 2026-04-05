@@ -2,198 +2,21 @@
 
 set -euo pipefail
 
-# Colors for output
 RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Default installation method
-INSTALL_METHOD="symlink"
+if ! command -v node >/dev/null 2>&1; then
+  printf "${RED}Error: node is not installed or not in PATH. Please install Node.js >= 18.${NC}\n" >&2
+  exit 1
+fi
 
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --copy)
-      INSTALL_METHOD="copy"
-      shift
-      ;;
-    --help|-h)
-      echo "Usage: $0 [--copy]"
-      echo ""
-      echo "Install AI TPK to your home directory."
-      echo ""
-      echo "Claude Code:"
-      echo "  - Whitelisted paths: settings.json, CLAUDE.md, skills/, agents/, references/"
-      echo "  - MCP servers: kubernetes (user scope, via claude mcp add)"
-      echo ""
-      echo "Options:"
-      echo "  --copy    Copy files instead of creating symlinks (default: symlink)"
-      echo "  --help    Show this help message"
-      echo ""
-      echo "Installation methods:"
-      echo "  symlink (default): Creates symbolic links. Changes sync automatically."
-      echo "  copy:              Copies files. Manual sync required with git pull."
-      exit 0
-      ;;
-    *)
-      echo -e "${RED}Error: Unknown option $1${NC}"
-      echo "Run '$0 --help' for usage information."
-      exit 1
-      ;;
-  esac
-done
+NODE_VERSION=$(node -e 'process.stdout.write(process.versions.node)')
+NODE_MAJOR="${NODE_VERSION%%.*}"
+if [[ "$NODE_MAJOR" -lt 18 ]]; then
+  printf "${RED}Error: Node.js >= 18 required (found ${NODE_VERSION}).${NC}\n" >&2
+  exit 1
+fi
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo -e "${BLUE}AI TPK Installer${NC}"
-echo -e "${BLUE}=====================${NC}"
-echo ""
-echo "Installation method: ${GREEN}${INSTALL_METHOD}${NC}"
-echo "Source directory: ${SCRIPT_DIR}"
-echo ""
-
-# Function to backup existing path if present (always returns 0 so set -e is safe)
-backup_if_exists() {
-  local target="$1"
-  if [[ -e "$target" ]]; then
-    local backup="${target}.backup.$(date +%Y%m%d_%H%M%S)"
-    echo -e "${YELLOW}Backing up existing ${target} to ${backup}${NC}"
-    mv "$target" "$backup"
-  fi
-  return 0
-}
-
-# Install a source path to a destination path (file or directory)
-install_path() {
-  local src_path="$1"
-  local dest_path="$2"
-
-  backup_if_exists "$dest_path"
-
-  if [[ "$INSTALL_METHOD" == "symlink" ]]; then
-    echo -e "${GREEN}Creating symlink:${NC} ${dest_path} -> ${src_path}"
-    ln -s "$src_path" "$dest_path"
-  else
-    echo -e "${GREEN}Copying:${NC} ${src_path} -> ${dest_path}"
-    cp -r "$src_path" "$dest_path"
-  fi
-}
-
-# Function to install a top-level directory from the repo into the home directory
-install_dir() {
-  local src_name="$1"
-  local dest_name="$2"
-  local src_path="${SCRIPT_DIR}/${src_name}"
-  local dest_path="${HOME}/${dest_name}"
-
-  if [[ ! -d "$src_path" ]]; then
-    echo -e "${YELLOW}Skipping ${src_name} (not found in repository)${NC}"
-    return
-  fi
-
-  install_path "$src_path" "$dest_path"
-}
-
-# Whitelist only: ~/.claude/settings.json, ~/.claude/CLAUDE.md, ~/.claude/skills/, ~/.claude/agents/
-install_claude_whitelist() {
-  local claude_src="${SCRIPT_DIR}/claude"
-
-  if [[ ! -d "$claude_src" ]]; then
-    echo -e "${YELLOW}Skipping claude/ (not found in repository)${NC}"
-    return
-  fi
-
-  # Replace legacy full-tree ~/.claude symlink with a real directory
-  if [[ -L "${HOME}/.claude" ]]; then
-    backup_if_exists "${HOME}/.claude"
-  fi
-  mkdir -p "${HOME}/.claude"
-
-  local settings_src="${claude_src}/settings.json"
-  if [[ -f "$settings_src" ]]; then
-    install_path "$settings_src" "${HOME}/.claude/settings.json"
-  else
-    echo -e "${YELLOW}Skipping claude/settings.json (not found in repository)${NC}"
-  fi
-
-  local claude_md_src="${claude_src}/CLAUDE.md"
-  if [[ -f "$claude_md_src" ]]; then
-    install_path "$claude_md_src" "${HOME}/.claude/CLAUDE.md"
-  else
-    echo -e "${YELLOW}Skipping claude/CLAUDE.md (not found in repository)${NC}"
-  fi
-
-  local name
-  for name in skills agents hooks commands references; do
-    local sub_src="${claude_src}/${name}"
-    if [[ -d "$sub_src" ]]; then
-      install_path "$sub_src" "${HOME}/.claude/${name}"
-    else
-      echo -e "${YELLOW}Skipping claude/${name}/ (not found in repository)${NC}"
-    fi
-  done
-}
-
-add_mcp_if_missing() {
-  local server_name="$1"
-  local prereq_path="$2"
-  shift 2
-
-  # Defensive: safe to call standalone
-  if ! command -v claude >/dev/null 2>&1; then
-    echo -e "${YELLOW}Warning: claude CLI not found -- skipping MCP server '${server_name}'${NC}"
-    return
-  fi
-
-  if claude mcp get "$server_name" >/dev/null 2>&1; then
-    echo -e "${GREEN}MCP server '${server_name}' already configured, skipping${NC}"
-    return
-  fi
-
-  if [[ -n "$prereq_path" ]] && [[ ! -e "$prereq_path" ]]; then
-    echo -e "${YELLOW}Warning: ${prereq_path} not found -- ${server_name} MCP will fail until this file is created${NC}"
-  fi
-
-  if claude mcp add "$@"; then
-    echo -e "${GREEN}MCP server '${server_name}' added${NC}"
-  else
-    echo -e "${RED}Failed to add MCP server '${server_name}'${NC}"
-    return 0
-  fi
-}
-
-install_mcp_servers() {
-  echo -e "${BLUE}Configuring MCP servers (user scope)...${NC}"
-
-  if ! command -v claude >/dev/null 2>&1; then
-    echo -e "${YELLOW}Skipping MCP server setup (claude CLI not found)${NC}"
-    return
-  fi
-
-  add_mcp_if_missing "kubernetes" \
-    "${HOME}/.kube/config" \
-    -s user -t stdio \
-    -e KUBECONFIG="${HOME}/.kube/config" \
-    -- kubernetes npx mcp-server-kubernetes@3.4.0
-}
-
-install_claude_whitelist
-install_dir "cursor" ".cursor"
-
-echo ""
-install_mcp_servers
-
-echo ""
-echo -e "${GREEN}✓ Installation complete!${NC}"
-echo ""
-
-if [[ "$INSTALL_METHOD" == "symlink" ]]; then
-  echo "Your configurations are now symlinked to this repository."
-  echo "To update: cd ${SCRIPT_DIR} && git pull"
-else
-  echo "Your configurations have been copied from this repository."
-  echo "To update: cd ${SCRIPT_DIR} && git pull && ./install.sh --copy"
-fi
+exec npx tsx "${SCRIPT_DIR}/installer/main.ts" "$@"

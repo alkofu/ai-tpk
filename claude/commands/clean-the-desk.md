@@ -5,6 +5,9 @@ description: Delete local branches whose PRs have been merged, and remove their 
 You are cleaning up stale local branches and their associated worktrees. Follow every step below
 in order. Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
 
+**Note for DM:** Steps that perform write operations (file edits, destructive git commands) must
+be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.
+
 **Known limitation:** `--limit 1000` captures at most the 1000 most-recently merged PRs.
 Branches from PRs merged long ago may not appear in the list and will not be cleaned up.
 
@@ -67,17 +70,21 @@ Ask the user: "Proceed with deletion? (yes/no)"
 
 If the user answers anything other than `yes`, abort without making any changes.
 
-## Step 9 — Remove worktrees
+## Step 9 — Remove worktrees [write operation — delegate to Bitsmith]
 
-For each worktree path identified in Step 7, run:
+For each worktree path identified in Step 7, delegate to Bitsmith to run:
 `git worktree remove --force {path}`
+
+(Per DM delegation policy, write operations must not be executed directly by the DM.)
 
 Report each removal as it completes.
 
-## Step 10 — Delete stale branches
+## Step 10 — Delete stale branches [write operation — delegate to Bitsmith]
 
-For each stale branch, run:
+For each stale branch, delegate to Bitsmith to run:
 `git branch -D {branch}`
+
+(Per DM delegation policy, write operations must not be executed directly by the DM.)
 
 If the command fails (e.g., because the branch is still checked out somewhere), treat it as a
 skip — do not treat it as a fatal error. Note the branch as skipped.

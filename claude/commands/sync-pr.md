@@ -6,6 +6,9 @@ You are rebasing the current PR branch onto the latest `main` and force-pushing 
 in sync. Follow every step below in order. Run each command as a standalone call — do not chain
 commands with `&&`, `;`, or `|`.
 
+**Note for DM:** Steps that perform write operations (file edits, destructive git commands) must
+be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.
+
 ## Step 1 — Verify GitHub authentication
 
 Run: `gh auth status`
@@ -48,20 +51,24 @@ Run: `git status --porcelain`
 If the output is non-empty, abort immediately and tell the user: "Working tree is dirty. Commit
 or stash your changes before syncing."
 
-## Step 7 — Rebase onto origin/main
+## Step 7 — Rebase onto origin/main [write operation — delegate to Bitsmith]
 
-Run: `git rebase origin/main`
+Delegate to Bitsmith to run: `git rebase origin/main`
 
-If the command exits with a non-zero status (indicating conflicts or another failure), immediately
-run the following as a separate standalone call: `git rebase --abort`
+(Per DM delegation policy, write operations must not be executed directly by the DM.)
+
+If the rebase exits with a non-zero status (indicating conflicts or another failure), instruct
+Bitsmith to run the following as a separate standalone call: `git rebase --abort`
 
 Then abort the entire command and tell the user: "Rebase conflicts detected. The rebase has been
 aborted. Resolve conflicts manually by running `git rebase origin/main`, fixing each conflict, and
 running `git rebase --continue`."
 
-## Step 8 — Force-push and report success
+## Step 8 — Force-push and report success [write operation — delegate to Bitsmith]
 
-Run: `git push --force-with-lease origin <branch>`
+Delegate to Bitsmith to run: `git push --force-with-lease origin <branch>`
+
+(Per DM delegation policy, write operations must not be executed directly by the DM.)
 
 If the push fails (e.g., lease rejected because the remote has new commits), report the error and
 abort: "Force-push failed. The remote has changes not present locally. Run `git fetch origin` and

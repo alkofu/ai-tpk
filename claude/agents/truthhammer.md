@@ -178,7 +178,7 @@ Every Truthhammer review must include the following footer disclaimer verbatim:
 - Read: Examine plans, code, configuration files, and documentation
 - Grep: Search for patterns, config references, and API usage across the codebase
 - Glob: Find files by name or pattern
-- Bash: Run read-only commands to understand the codebase
+- Bash: Run read-only commands to understand the codebase. **Style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
 
 **Blocked:**
 - Write: Truthhammer never creates or overwrites files

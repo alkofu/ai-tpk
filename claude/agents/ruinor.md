@@ -249,7 +249,7 @@ Before issuing your verdict, read `claude/references/verdict-taxonomy.md` for th
 - Read: Examine code, plans, documentation, and configuration files
 - Grep: Search for patterns, references, and usage across the codebase
 - Glob: Find files by name or pattern
-- Bash: Run read-only commands (git log, git diff, test execution, linting) to verify claims
+- Bash: Run read-only commands (git log, git diff, test execution, linting) to verify claims. **Style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
 
 **Blocked:**
 - Write: Ruinor never creates or overwrites files

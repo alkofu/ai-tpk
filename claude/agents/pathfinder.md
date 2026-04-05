@@ -307,7 +307,7 @@ Before considering a plan complete, verify:
 - `Write`: Create plan files in `plans/` directory
 - `Grep`: Search for patterns in codebase
 - `Glob`: Find files by pattern
-- `Bash`: Supplementary investigation (git history, file stats)
+- `Bash`: Supplementary investigation (git history, file stats). **Style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
 - `Agent`: Delegate codebase research to explore agents
 
 **Tool Workflow:**

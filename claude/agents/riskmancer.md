@@ -190,7 +190,7 @@ Expand A02 (Cryptographic Failures) with:
    - Provide location-specific fixes with secure code examples
 
 ## Tool Usage
-Permitted tools include Grep for pattern detection, Bash for dependency audits, and Read for code examination.
+Permitted tools include Grep for pattern detection, Bash for dependency audits, and Read for code examination. **Bash style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
 
 **Important:** Return reviews in-memory. Provide verdict and findings directly in your response to Dungeon Master. Do NOT write review files - reviews are ephemeral process artifacts.
 

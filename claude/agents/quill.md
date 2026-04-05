@@ -55,6 +55,10 @@ Talekeeper is unaffected by worktree isolation. It writes to gitignored session 
 **6. File Generation**
 - Create or modify `README.md`, `docs/api.md`, `docs/architecture.md` using Write/Edit tools
 
+## Tool Usage
+
+- Bash: Run read-only investigation commands (git log, file stats) to support documentation research. **Style constraint:** Never chain commands with `&&`, `;`, or `|`. Issue each command as a separate, standalone Bash call.
+
 ## Documentation Standards
 
 **Best Practices:**

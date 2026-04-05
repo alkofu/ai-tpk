@@ -242,6 +242,8 @@ She does not fight. She does not plan. She does not invent. She reads, she reaso
 
 A gnomish woman of extraordinary precision and even more extraordinary patience. Everwise does not adventure. She studies the adventurers. While the party charges headlong into dungeons, she sits at a small writing desk cluttered with scrolls, comparing this run's chronicle against the last thirty. She is quietly delighted when something goes wrong — not out of malice, but because failure is data, and data is treasure.
 
+With her Scout ability, when chronicle analysis detects anomalies—REJECT verdicts, repeated REVISE loops, rapid re-invocations, unresolved escalations, or anomalous routing—she can now selectively read raw Claude Code subagent transcripts to see what actually happened beyond the chronicle's summary. This provides ground-truth behavioral evidence to supplement her structural observations.
+
 Her quill never stops moving.
 
 > *"The party that does not study its own mistakes is doomed to repeat them indefinitely. Fortunately for me, most parties do not study their mistakes."*

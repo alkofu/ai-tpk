@@ -49,6 +49,7 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
   captured_at=$(echo "$entry" | jq -r '._captured_at // ""')
   hook_event_name=$(echo "$entry" | jq -r '.hook_event_name // "SubagentStop"')
   last_msg=$(echo "$entry" | jq -r '.last_assistant_message // ""')
+  agent_transcript_path=$(echo "$entry" | jq -r '.agent_transcript_path // ""')
 
   # Build summary from structural metadata only (not interpreting free-text)
   summary="${agent_type} completed (${hook_event_name})"
@@ -64,6 +65,12 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
   fi
 
   # Emit enriched JSONL line
+  # Build agent_transcript_path arg — emit null when field is absent in raw event
+  atp_arg="null"
+  if [ -n "$agent_transcript_path" ]; then
+    atp_arg="\"$agent_transcript_path\""
+  fi
+
   jq -cn \
     --arg ts "$captured_at" \
     --arg event_type "$hook_event_name" \
@@ -72,7 +79,8 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
     --arg session_id "$session_id" \
     --arg summary "$summary" \
     --argjson verdict "$verdict" \
-    '{timestamp: $ts, event_type: $event_type, agent_type: $agent_type, agent_id: $agent_id, session_id: $session_id, summary: $summary, verdict: $verdict}'
+    --argjson agent_transcript_path "$atp_arg" \
+    '{timestamp: $ts, event_type: $event_type, agent_type: $agent_type, agent_id: $agent_id, session_id: $session_id, summary: $summary, verdict: $verdict, agent_transcript_path: $agent_transcript_path}'
 
 done >> "$OUTPUT_FILE" 2>/dev/null
 

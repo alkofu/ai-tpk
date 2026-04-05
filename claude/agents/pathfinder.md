@@ -16,7 +16,7 @@ Interview users to gather requirements, research codebases via agents, and produ
 
 ## Worktree Awareness
 
-When a delegation prompt contains a `WORKING_DIRECTORY:` context line, read `claude/references/worktree-protocol.md` immediately and apply its rules for the remainder of this task.
+See `claude/references/worktree-protocol.md` for the shared activation rule.
 
 ### Pathfinder-Specific Worktree Rules
 
@@ -316,7 +316,7 @@ Before considering a plan complete, verify:
 - `Write`: Create plan files in `plans/` directory
 - `Grep`: Search for patterns in codebase
 - `Glob`: Find files by pattern
-- `Bash`: Supplementary investigation (git history, file stats). **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style.
+- `Bash`: Supplementary investigation (git history, file stats).
 - `Agent`: Delegate codebase research to explore agents
 
 **Tool Workflow:**

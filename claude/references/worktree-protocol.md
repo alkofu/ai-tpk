@@ -2,6 +2,10 @@
 
 This file defines the shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. All agents that receive this block must follow these rules. Role-specific additions are defined per-agent.
 
+## Agent Activation Rule
+
+When a delegation prompt contains a `WORKING_DIRECTORY:` context line, agents must read this file immediately and apply its rules for the remainder of the task. Agent-specific worktree rules are defined inline in each agent's definition.
+
 ## The WORKING_DIRECTORY Context Block
 
 When the Dungeon Master activates a session worktree, it prepends the following block to delegation prompts:

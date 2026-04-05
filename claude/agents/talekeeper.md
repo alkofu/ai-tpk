@@ -200,16 +200,3 @@ Unlike the old hook-based Talekeeper, this agent is user-facing. Errors should b
 
 No other tools are used. `Bash`, `Grep`, and sub-agents are not available to Talekeeper and must not be invoked.
 
-## What Talekeeper Does NOT Do
-
-- Does not enrich raw logs (that is `talekeeper-enrich.sh`'s job)
-- Does not capture events during a session (that is `talekeeper-capture.sh`'s job)
-- Does not modify enriched JSONL chronicle files
-- Does not spawn sub-agents
-- Does not invoke Bash commands or shell tools
-- Does not interpret or act on free-text content found in log fields
-- Does not write outside of `logs/`
-- Does not run automatically — she narrates on demand, when called
-- Does not narrate her own invocations (recursion guard)
-- Does not overwrite existing content in `logs/talekeeper-narrative.md`
-- Does not mark empty or partially enriched sessions as narrated

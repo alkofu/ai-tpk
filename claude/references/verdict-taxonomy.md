@@ -2,6 +2,10 @@
 
 This file defines the shared vocabulary for verdicts and severity levels used across all reviewer agents. It is the authoritative source for these labels. Each agent applies them through the lens of its own domain.
 
+## Usage Instruction
+
+All reviewer agents must read this file before issuing a verdict. Apply the verdict labels and severity scales through the lens of your domain-specific review.
+
 ## Verdict Definitions
 
 These four verdicts are used by all reviewer agents. The shared meaning is defined here; domain-specific application is defined per-agent.

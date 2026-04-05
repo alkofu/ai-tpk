@@ -142,6 +142,7 @@ add_mcp_if_missing() {
   local prereq_path="$2"
   shift 2
 
+  # Defensive: safe to call standalone
   if ! command -v claude >/dev/null 2>&1; then
     echo -e "${YELLOW}Warning: claude CLI not found -- skipping MCP server '${server_name}'${NC}"
     return
@@ -160,7 +161,7 @@ add_mcp_if_missing() {
     echo -e "${GREEN}MCP server '${server_name}' added${NC}"
   else
     echo -e "${RED}Failed to add MCP server '${server_name}'${NC}"
-    return 1
+    return 0
   fi
 }
 

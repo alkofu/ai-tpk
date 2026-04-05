@@ -64,7 +64,13 @@ Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp.
 
-For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
+### Automatic MCP Server Setup
+
+The installer automatically configures user-scoped MCP (Model Context Protocol) servers in `~/.claude.json` when the `claude` CLI is available. Currently, it sets up:
+
+- **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) - Provides read-only access to Kubernetes cluster information via your `~/.kube/config`. Gracefully skips setup if `~/.kube/config` doesn't exist yet (useful for fresh machine setup). The server is only added if not already configured, making the installation idempotent.
+
+MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
 
 ## Updating
 

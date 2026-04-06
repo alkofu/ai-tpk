@@ -25,12 +25,7 @@
       "name": "grafana",
       "scope": "user",
       "transport": "stdio",
-      "env": {
-        "GRAFANA_URL": "$GRAFANA_URL",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "$GRAFANA_SERVICE_ACCOUNT_TOKEN"
-      },
-      "command": "uvx",
-      "args": ["mcp-grafana"]
+      "wrapper": "wrappers/mcp-grafana.sh"
     }
   ]
 }

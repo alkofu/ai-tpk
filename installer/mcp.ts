@@ -10,8 +10,9 @@ interface McpServerConfig {
   transport: "stdio" | "sse" | "streamable-http";
   prereq?: string;
   env?: Record<string, string>;
-  command: string;
+  command?: string;
   args?: string[];
+  wrapper?: string;
 }
 
 interface McpServersFile {
@@ -108,12 +109,22 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
       );
     }
 
-    if (
-      typeof server["command"] !== "string" ||
-      server["command"].trim() === ""
-    ) {
+    const hasWrapper =
+      typeof server["wrapper"] === "string" &&
+      (server["wrapper"] as string).trim() !== "";
+    const hasCommand =
+      typeof server["command"] === "string" &&
+      (server["command"] as string).trim() !== "";
+
+    if (hasWrapper && hasCommand) {
       throw new Error(
-        `mcp-servers.json: server '${name}' missing required non-empty 'command' field`,
+        `mcp-servers.json: server '${name}' must not have both 'wrapper' and 'command' fields`,
+      );
+    }
+
+    if (!hasWrapper && !hasCommand) {
+      throw new Error(
+        `mcp-servers.json: server '${name}' must have either 'wrapper' or 'command' field`,
       );
     }
   }
@@ -124,12 +135,50 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
 /**
  * Constructs the argument array for `claude mcp add` from a structured server
  * config. Variable expansion is applied to env values and args entries.
+ *
+ * For wrapper-based servers, the wrapper script path is resolved to an absolute
+ * path and validated to exist on disk. No `-e` flags are emitted.
  */
-export function buildAddArgs(server: McpServerConfig): string[] {
+export function buildAddArgs(
+  server: McpServerConfig,
+  repoRoot: string,
+): string[] {
+  if (server.wrapper !== undefined) {
+    const absoluteWrapperPath = path.join(repoRoot, server.wrapper);
+    try {
+      fs.statSync(absoluteWrapperPath);
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException).code === "ENOENT"
+      ) {
+        throw new Error(
+          `Wrapper script not found: ${absoluteWrapperPath} (defined in server '${server.name}')`,
+          { cause: err },
+        );
+      }
+      throw err;
+    }
+    return [
+      "-s",
+      server.scope,
+      "-t",
+      server.transport,
+      "--",
+      server.name,
+      absoluteWrapperPath,
+    ];
+  }
+
   const result: string[] = ["-s", server.scope, "-t", server.transport];
 
   for (const [key, value] of Object.entries(server.env ?? {})) {
     result.push("-e", `${key}=${expandVars(value)}`);
+  }
+
+  if (!server.command) {
+    // Should not be reachable: loadMcpServers ensures exactly one of wrapper/command is set.
+    throw new Error(`Server '${server.name}' has no command or wrapper field`);
   }
 
   result.push("--", server.name, server.command);
@@ -153,15 +202,27 @@ export function installMcpServers(repoRoot: string): void {
   console.log(c.blue("Configuring MCP servers (user scope)..."));
 
   for (const server of loadMcpServers(repoRoot)) {
-    // Check if already configured
-    try {
-      execFileSync("claude", ["mcp", "get", server.name], { stdio: "pipe" });
-      console.log(
-        c.green(`MCP server '${server.name}' already configured, skipping`),
-      );
-      continue;
-    } catch {
-      // Not yet configured — proceed
+    if (server.wrapper !== undefined) {
+      // Wrapper-based servers: always remove and re-add to self-heal any prior
+      // broken registration (e.g. from when env vars were passed via -e flags).
+      try {
+        execFileSync("claude", ["mcp", "remove", server.name], {
+          stdio: "pipe",
+        });
+      } catch {
+        // Server was not registered — that is fine, proceed to add
+      }
+    } else {
+      // Command-based servers: skip if already configured
+      try {
+        execFileSync("claude", ["mcp", "get", server.name], { stdio: "pipe" });
+        console.log(
+          c.green(`MCP server '${server.name}' already configured, skipping`),
+        );
+        continue;
+      } catch {
+        // Not yet configured — proceed
+      }
     }
 
     // Check prereq
@@ -185,9 +246,13 @@ export function installMcpServers(repoRoot: string): void {
 
     // Add the server
     try {
-      execFileSync("claude", ["mcp", "add", ...buildAddArgs(server)], {
-        stdio: "pipe",
-      });
+      execFileSync(
+        "claude",
+        ["mcp", "add", ...buildAddArgs(server, repoRoot)],
+        {
+          stdio: "pipe",
+        },
+      );
       console.log(c.green(`MCP server '${server.name}' added`));
     } catch {
       console.log(c.red(`Failed to add MCP server '${server.name}'`));

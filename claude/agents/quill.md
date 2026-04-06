@@ -14,7 +14,7 @@ Transform intricate codebases and system designs into accessible documentation t
 
 ## Worktree Awareness
 
-When a delegation prompt contains a `WORKING_DIRECTORY:` context line, read `claude/references/worktree-protocol.md` immediately and apply its rules for the remainder of this task.
+See `claude/references/worktree-protocol.md` for the shared activation rule.
 
 ### Quill-Specific Worktree Rules
 
@@ -62,7 +62,7 @@ Talekeeper is unaffected by worktree isolation. It writes to gitignored session 
 | `Read` | Examine existing files, source code, and configuration to understand what needs documenting |
 | `Grep` | Search for patterns, function signatures, and usage examples across the codebase |
 | `Glob` | Locate files by name or pattern during documentation gap analysis |
-| `Bash` | Run read-only investigation commands (git log, file stats) to support documentation research. **Style constraint:** See `claude/references/bash-style.md` for the required Bash command style. |
+| `Bash` | Run read-only investigation commands (git log, file stats) to support documentation research. |
 | `Write` | Create new documentation files (README, API specs, architecture guides) |
 | `Edit` | Update existing documentation files with targeted, minimal changes |
 

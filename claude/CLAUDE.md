@@ -14,6 +14,10 @@ ALL git commits must follow the `commit-message-guide` skill. Conventional commi
 
 ALL pull requests and merge requests must be created using the `open-pull-request` skill. No other PR creation method is allowed.
 
+### Validate Before PR
+
+The `validate-before-pr` skill MUST be invoked before any PR creation. It runs lint and format checks as a mandatory gate. Only after both checks pass may the `open-pull-request` skill be invoked. No exceptions.
+
 ## Bash Command Style
 
 - Never chain commands using `&&` or `;`. Pipes (`|`) are permitted only for data transformation — see `claude/references/bash-style.md` for full guidance.

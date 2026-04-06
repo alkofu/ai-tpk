@@ -80,6 +80,17 @@ Configuration files:
 - `.oxlintrc.json` — Linting rules (correctness and suspicious errors denied, perf warnings)
 - `.oxfmtrc.json` — Formatting options (2 spaces, double quotes, semicolons)
 
+**Pre-Push Hook:**
+
+The project uses **Lefthook** to automatically validate code quality before pushing. When you run `npm install`, the `prepare` script installs git hooks that run on every push (if JS/TS files have changed):
+
+- `npm run lint` — Checks for code quality issues
+- `npm run format:check` — Verifies code formatting
+
+If either check fails, the push is blocked. Run `npm run format` to auto-fix formatting issues, then try pushing again. These same checks are enforced in CI on all pull requests.
+
+Lefthook config: `lefthook.yml` (glob patterns scope checks to JS/TS files only)
+
 ## Installation
 
 **Prerequisites:** Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented in TypeScript and executed via `tsx` at runtime.
@@ -262,7 +273,11 @@ See [docs/AGENTS.md](/docs/AGENTS.md) for the complete agent catalog, [docs/WORK
 Everwise now includes Scout, a selective transcript analysis capability. When chronicle analysis identifies specific anomalies—REJECT verdicts, repeated REVISE loops (3+), rapid re-invocations (<60 seconds), unresolved escalations, or anomalous agent routing—Everwise can dynamically discover and read raw Claude Code subagent JSONL transcripts to understand what actually happened beyond the chronicle's metadata. Scout uses a two-pass reading algorithm with a 20-line cap per transcript and a 3-transcript budget per session, keeping context consumption bounded while providing ground-truth behavioral evidence. This capability works in full graceful degradation mode when `~/.claude/` data is unavailable.
 
 ### Skills Library
-Reusable capabilities including skill creation, commit message generation, and pull request automation. The `commit-message-guide` and `open-pull-request` skills are mandated globally via `CLAUDE.md` for all projects.
+Reusable capabilities including skill creation, commit message generation, and pull request automation. Three mandatory global skills via `CLAUDE.md`:
+
+- **`commit-message-guide`** — Enforces conventional commit format for all git commits
+- **`validate-before-pr`** — Runs lint and format checks before opening a PR; gates PR creation on passing checks
+- **`open-pull-request`** — Creates pull requests with conventional naming, draft mode, and pre-flight validation
 
 ### Slash Commands
 

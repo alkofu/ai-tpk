@@ -1,0 +1,8 @@
+pre-push:
+  commands:
+    lint:
+      glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"
+      run: npm run lint
+    format-check:
+      glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"
+      run: npm run format:check

@@ -132,6 +132,7 @@ Currently configured servers:
 
 - **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) - Provides read-only access to Kubernetes cluster information via your `~/.kube/config`. Gracefully skips setup if `~/.kube/config` doesn't exist yet (useful for fresh machine setup). The server is only added if not already configured, making the installation idempotent.
 - **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) - Official AWS Labs MCP server providing access to CloudWatch Metrics, Alarms, and Logs (query log groups, run Insights queries, retrieve metrics and alarm history) via your `~/.aws` credentials. Requires `uvx` (`pip install uv` or `brew install uv`). Gracefully skips setup if `~/.aws/credentials` doesn't exist yet. The server is only added if not already configured, making the installation idempotent.
+- **Grafana MCP Server** (`mcp-grafana`) - Access to Grafana dashboards, datasources, metrics, logs, incidents, and more. Uses a wrapper script (`wrappers/mcp-grafana.sh`) that requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` to be exported in your shell environment. Self-healing re-registration: the installer removes and re-adds this server each invocation to fix any prior broken configurations.
 
 MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
 
@@ -140,6 +141,8 @@ MCP servers are available in all repositories once configured. For detailed info
 Server definitions are stored in `/mcp-servers.json` (repository root) using a declarative JSON schema. This allows configuration changes without modifying the installer code.
 
 ##### JSON Schema
+
+**Command-based server example:**
 
 ```json
 {
@@ -151,7 +154,22 @@ Server definitions are stored in `/mcp-servers.json` (repository root) using a d
       "prereq": "$HOME/.kube/config",
       "env": { "KUBECONFIG": "$HOME/.kube/config" },
       "command": "npx",
-      "args": ["mcp-server-kubernetes@3.4.0"]
+      "args": ["--yes", "mcp-server-kubernetes@3.4.0"]
+    }
+  ]
+}
+```
+
+**Wrapper-based server example:**
+
+```json
+{
+  "servers": [
+    {
+      "name": "grafana",
+      "scope": "user",
+      "transport": "stdio",
+      "wrapper": "wrappers/mcp-grafana.sh"
     }
   ]
 }
@@ -161,13 +179,16 @@ Server definitions are stored in `/mcp-servers.json` (repository root) using a d
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Unique server identifier (e.g., `"kubernetes"`) |
+| `name` | string | Yes | Unique server identifier (e.g., `"kubernetes"`, `"grafana"`) |
 | `scope` | string | Yes | Installation scope; must be `"user"` or `"project"` |
 | `transport` | string | Yes | Communication protocol; must be one of: `"stdio"`, `"sse"`, `"streamable-http"` |
 | `prereq` | string | No | Path to check before installation (e.g., `"$HOME/.kube/config"`); advisory warning only—installation proceeds if missing |
-| `env` | object | No | Environment variables passed to the MCP server (keys and values support variable expansion) |
-| `command` | string | Yes | Executable name (e.g., `"npx"`, `"node"`) |
-| `args` | array | No | Command arguments passed to the executable (each element supports variable expansion) |
+| `command` | string | Conditional | Executable name (e.g., `"npx"`, `"node"`). Required if `wrapper` is not present; mutually exclusive with `wrapper` |
+| `args` | array | No | Command arguments passed to the executable (each element supports variable expansion). Only used with `command` |
+| `env` | object | No | Environment variables passed to the MCP server (keys and values support variable expansion). Only used with `command` |
+| `wrapper` | string | Conditional | Relative path to a shell script (e.g., `"wrappers/mcp-grafana.sh"`) that wraps the server command and resolves runtime environment variables. Required if `command` is not present; mutually exclusive with `command` |
+
+**Key constraint:** A server must have exactly one of `command` or `wrapper`, never both.
 
 ##### Variable Expansion
 
@@ -178,10 +199,92 @@ Server definitions are stored in `/mcp-servers.json` (repository root) using a d
 
 This applies to:
 - `prereq` paths: `"$HOME/.kube/config"` → `/Users/alice/.kube/config`
-- `env` values: `"KUBECONFIG=$HOME/.kube/config"` → `"KUBECONFIG=/Users/alice/.kube/config"`
-- `args` elements: `["mcp-server-$USER"]` → `["mcp-server-alice"]`
+- `env` values (command-based servers only): `"KUBECONFIG=$HOME/.kube/config"` → `"KUBECONFIG=/Users/alice/.kube/config"`
+- `args` elements (command-based servers only): `["mcp-server-$USER"]` → `["mcp-server-alice"]`
+
+**Note:** Wrapper scripts resolve their own environment variables at runtime using bash variable syntax (e.g., `${VAR:?}`), not the installer's `expandVars` function.
+
+##### Command-Based Servers vs. Wrapper-Based Servers
+
+**Command-based servers** use the `command` and `args` fields to directly invoke an executable with environment variables passed via `-e` flags:
+
+```json
+{
+  "name": "kubernetes",
+  "scope": "user",
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["--yes", "mcp-server-kubernetes@3.4.0"],
+  "env": { "KUBECONFIG": "$HOME/.kube/config" }
+}
+```
+
+**Wrapper-based servers** use a shell script (`wrapper` field) that resolves runtime environment variables at invocation time. This is necessary when environment variables contain user-specific values (like API keys or service URLs) that cannot be determined at install time:
+
+```json
+{
+  "name": "grafana",
+  "scope": "user",
+  "transport": "stdio",
+  "wrapper": "wrappers/mcp-grafana.sh"
+}
+```
+
+**When to use a wrapper:**
+- The MCP server requires environment variables that depend on user configuration (e.g., `GRAFANA_URL`, API tokens)
+- Variables must be resolved from the shell environment at MCP invocation time, not at installer time
+- The `command` and `wrapper` fields are mutually exclusive—a server must use one or the other, never both
+
+##### Wrapper Script Convention
+
+Wrapper scripts live in the `wrappers/` directory and follow this pattern:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Validate required environment variables with clear error messages
+: "${REQUIRED_VAR:?Error: REQUIRED_VAR is not set}"
+
+# Execute the real MCP server command, preserving stdin/stdout/stderr
+exec uvx mcp-server-name "$@"
+```
+
+**Key requirements:**
+- **Shebang:** `#!/usr/bin/env bash` (required for `claude mcp add` to recognize it as executable)
+- **Strict mode:** `set -euo pipefail` (fail fast on errors or undefined variables)
+- **Variable validation:** Use `${VAR:?Error message}` syntax to validate required variables exist and provide clear failure messages
+- **Exec:** Use `exec` to replace the shell process (required for stdio transport to work correctly)
+- **Arguments:** Preserve `"$@"` to forward any arguments from `claude mcp add` to the wrapped command
+- **Executable bit:** Preserved in git via `git update-index --chmod=+x` or by committing from a Unix system
+
+**Example: Grafana MCP Server**
+
+The `wrappers/mcp-grafana.sh` script validates `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` at runtime:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${GRAFANA_URL:?Error: GRAFANA_URL is not set}"
+: "${GRAFANA_SERVICE_ACCOUNT_TOKEN:?Error: GRAFANA_SERVICE_ACCOUNT_TOKEN is not set}"
+
+exec uvx mcp-grafana "$@"
+```
+
+Users must export these variables in their shell before invoking Claude:
+
+```bash
+export GRAFANA_URL="https://grafana.example.com"
+export GRAFANA_SERVICE_ACCOUNT_TOKEN="glsa_xxxxxxxxxxxx"
+claude
+```
+
+If either variable is missing, the wrapper fails immediately with a clear error message.
 
 ##### Adding a New MCP Server
+
+**For command-based servers:**
 
 1. Edit `/mcp-servers.json` and add a new entry to the `servers` array:
 
@@ -202,6 +305,45 @@ This applies to:
    ```
 
    The new server is added to `~/.claude.json` if the `claude` CLI is available. If the server is already configured, it is skipped (idempotent operation).
+
+**For wrapper-based servers:**
+
+1. Create a wrapper script in `wrappers/{server-name}.sh`:
+
+   ```bash
+   #!/usr/bin/env bash
+   set -euo pipefail
+
+   : "${REQUIRED_VAR:?Error: REQUIRED_VAR is not set}"
+
+   exec uvx {server-package} "$@"
+   ```
+
+2. Make the script executable:
+
+   ```bash
+   chmod +x wrappers/{server-name}.sh
+   git update-index --chmod=+x wrappers/{server-name}.sh  # Preserve executable bit in git
+   ```
+
+3. Add an entry to `/mcp-servers.json`:
+
+   ```json
+   {
+     "name": "{server-name}",
+     "scope": "user",
+     "transport": "stdio",
+     "wrapper": "wrappers/{server-name}.sh"
+   }
+   ```
+
+4. Re-run the installer:
+
+   ```bash
+   ./install.sh
+   ```
+
+   For wrapper-based servers, the installer removes and re-adds the server each time (self-healing), so users with prior broken registrations are automatically fixed.
 
 ##### Graceful Degradation
 

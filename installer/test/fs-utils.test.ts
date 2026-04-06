@@ -17,7 +17,9 @@ describe("backupIfExists", () => {
     fs.writeFileSync(target, "hello");
     backupIfExists(target);
     assert.ok(!fs.existsSync(target), "original path should be gone");
-    const backups = fs.readdirSync(tmpDir).filter(f => f.startsWith("backup-file.txt.backup."));
+    const backups = fs
+      .readdirSync(tmpDir)
+      .filter((f) => f.startsWith("backup-file.txt.backup."));
     assert.strictEqual(backups.length, 1);
   });
 
@@ -26,7 +28,9 @@ describe("backupIfExists", () => {
     fs.mkdirSync(target);
     backupIfExists(target);
     assert.ok(!fs.existsSync(target));
-    const backups = fs.readdirSync(tmpDir).filter(f => f.startsWith("backup-dir.backup."));
+    const backups = fs
+      .readdirSync(tmpDir)
+      .filter((f) => f.startsWith("backup-dir.backup."));
     assert.strictEqual(backups.length, 1);
   });
 
@@ -46,7 +50,10 @@ describe("backupIfExists", () => {
     backupIfExists(linkPath);
     // The dangling symlink should still be present (was not backed up)
     const lstat = fs.lstatSync(linkPath);
-    assert.ok(lstat.isSymbolicLink(), "dangling symlink should remain untouched");
+    assert.ok(
+      lstat.isSymbolicLink(),
+      "dangling symlink should remain untouched",
+    );
   });
 });
 
@@ -67,7 +74,9 @@ describe("installPath (symlink mode)", () => {
     fs.writeFileSync(src, "v2");
     installPath(src, dest, "symlink");
     installPath(src, dest, "symlink");
-    const backups = fs.readdirSync(tmpDir).filter(f => f.startsWith("dest-second-call.txt.backup."));
+    const backups = fs
+      .readdirSync(tmpDir)
+      .filter((f) => f.startsWith("dest-second-call.txt.backup."));
     assert.strictEqual(backups.length, 1);
     assert.ok(fs.lstatSync(dest).isSymbolicLink());
   });
@@ -89,7 +98,9 @@ describe("installPath (copy mode)", () => {
     fs.mkdirSync(srcDir);
     installPath(srcDir, destDir, "copy");
     installPath(srcDir, destDir, "copy");
-    const backups = fs.readdirSync(tmpDir).filter(f => f.startsWith("copy-dest2.backup."));
+    const backups = fs
+      .readdirSync(tmpDir)
+      .filter((f) => f.startsWith("copy-dest2.backup."));
     assert.strictEqual(backups.length, 1);
   });
 });
@@ -97,8 +108,17 @@ describe("installPath (copy mode)", () => {
 describe("installDir", () => {
   it("skips when source directory does not exist", () => {
     const destPath = path.join(tmpDir, ".nonexistent-dest");
-    installDir(tmpDir, "nonexistent-src", ".nonexistent-dest", "symlink", tmpDir);
-    assert.ok(!fs.existsSync(destPath), "dest should not be created when src is missing");
+    installDir(
+      tmpDir,
+      "nonexistent-src",
+      ".nonexistent-dest",
+      "symlink",
+      tmpDir,
+    );
+    assert.ok(
+      !fs.existsSync(destPath),
+      "dest should not be created when src is missing",
+    );
   });
 
   it("installs when source directory exists", () => {

@@ -31,7 +31,9 @@ export function parseArgs(argv: string[]): { mode: "symlink" | "copy" } {
         break;
       default:
         process.stderr.write(`${c.red(`Error: Unknown option ${flag}`)}\n`);
-        process.stderr.write("Run './install.sh --help' for usage information.\n");
+        process.stderr.write(
+          "Run './install.sh --help' for usage information.\n",
+        );
         process.exit(1);
     }
   }

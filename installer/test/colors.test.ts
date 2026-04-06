@@ -26,7 +26,7 @@ function runColorCheck(colorName: string, noColor: boolean): string {
   return childProcess.execFileSync(
     process.execPath,
     ["--input-type=module", "--import", "tsx/esm"],
-    { input: script, env, encoding: "utf8" }
+    { input: script, env, encoding: "utf8" },
   );
 }
 
@@ -39,7 +39,10 @@ describe("colors", () => {
 
   it("returns plain text when NO_COLOR=1", () => {
     const output = runColorCheck("red", true);
-    assert.ok(!output.includes("\x1b["), "should not contain any ANSI escape codes");
+    assert.ok(
+      !output.includes("\x1b["),
+      "should not contain any ANSI escape codes",
+    );
     assert.strictEqual(output, "hello");
   });
 });

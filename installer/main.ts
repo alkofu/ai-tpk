@@ -37,7 +37,9 @@ try {
     console.log(`To update: cd ${scriptDir} && git pull`);
   } else {
     console.log("Your configurations have been copied from this repository.");
-    console.log(`To update: cd ${scriptDir} && git pull && ./install.sh --copy`);
+    console.log(
+      `To update: cd ${scriptDir} && git pull && ./install.sh --copy`,
+    );
   }
 } catch (e: unknown) {
   const msg = e instanceof Error ? e.message : String(e);

@@ -43,8 +43,15 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
   try {
     raw = fs.readFileSync(filePath, "utf8");
   } catch (err: unknown) {
-    if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
-      console.log(c.yellow("Warning: mcp-servers.json not found -- skipping MCP server setup"));
+    if (
+      err instanceof Error &&
+      (err as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      console.log(
+        c.yellow(
+          "Warning: mcp-servers.json not found -- skipping MCP server setup",
+        ),
+      );
       return [];
     }
     throw err;
@@ -57,11 +64,7 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
     throw new Error(`mcp-servers.json: invalid JSON in ${filePath}`);
   }
 
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    !("servers" in parsed)
-  ) {
+  if (typeof parsed !== "object" || parsed === null || !("servers" in parsed)) {
     throw new Error("mcp-servers.json: missing top-level 'servers' field");
   }
 
@@ -74,32 +77,43 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
   const validScopes = ["user", "project"] as const;
   const validTransports = ["stdio", "sse", "streamable-http"] as const;
 
-  for (const entry of (servers as unknown[])) {
+  for (const entry of servers as unknown[]) {
     if (typeof entry !== "object" || entry === null) {
       throw new Error("mcp-servers.json: each server entry must be an object");
     }
     const server = entry as Record<string, unknown>;
 
     if (typeof server["name"] !== "string" || server["name"].trim() === "") {
-      throw new Error("mcp-servers.json: server entry missing required non-empty 'name' field");
+      throw new Error(
+        "mcp-servers.json: server entry missing required non-empty 'name' field",
+      );
     }
     const name = server["name"] as string;
 
-    if (!validScopes.includes(server["scope"] as (typeof validScopes)[number])) {
+    if (
+      !validScopes.includes(server["scope"] as (typeof validScopes)[number])
+    ) {
       throw new Error(
-        `mcp-servers.json: server '${name}' has invalid scope '${String(server["scope"])}' -- must be 'user' or 'project'`
+        `mcp-servers.json: server '${name}' has invalid scope '${String(server["scope"])}' -- must be 'user' or 'project'`,
       );
     }
 
-    if (!validTransports.includes(server["transport"] as (typeof validTransports)[number])) {
+    if (
+      !validTransports.includes(
+        server["transport"] as (typeof validTransports)[number],
+      )
+    ) {
       throw new Error(
-        `mcp-servers.json: server '${name}' has invalid transport '${String(server["transport"])}' -- must be 'stdio', 'sse', or 'streamable-http'`
+        `mcp-servers.json: server '${name}' has invalid transport '${String(server["transport"])}' -- must be 'stdio', 'sse', or 'streamable-http'`,
       );
     }
 
-    if (typeof server["command"] !== "string" || server["command"].trim() === "") {
+    if (
+      typeof server["command"] !== "string" ||
+      server["command"].trim() === ""
+    ) {
       throw new Error(
-        `mcp-servers.json: server '${name}' missing required non-empty 'command' field`
+        `mcp-servers.json: server '${name}' missing required non-empty 'command' field`,
       );
     }
   }
@@ -142,7 +156,9 @@ export function installMcpServers(repoRoot: string): void {
     // Check if already configured
     try {
       execFileSync("claude", ["mcp", "get", server.name], { stdio: "pipe" });
-      console.log(c.green(`MCP server '${server.name}' already configured, skipping`));
+      console.log(
+        c.green(`MCP server '${server.name}' already configured, skipping`),
+      );
       continue;
     } catch {
       // Not yet configured — proceed
@@ -153,12 +169,15 @@ export function installMcpServers(repoRoot: string): void {
       try {
         fs.statSync(expandVars(server.prereq));
       } catch (err: unknown) {
-        if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        if (
+          err instanceof Error &&
+          (err as NodeJS.ErrnoException).code === "ENOENT"
+        ) {
           // prereq check is advisory: warn if missing, but always proceed to add
           console.log(
             c.yellow(
-              `Warning: ${expandVars(server.prereq)} not found -- ${server.name} MCP will fail until this file is created`
-            )
+              `Warning: ${expandVars(server.prereq)} not found -- ${server.name} MCP will fail until this file is created`,
+            ),
           );
         }
       }
@@ -166,7 +185,9 @@ export function installMcpServers(repoRoot: string): void {
 
     // Add the server
     try {
-      execFileSync("claude", ["mcp", "add", ...buildAddArgs(server)], { stdio: "pipe" });
+      execFileSync("claude", ["mcp", "add", ...buildAddArgs(server)], {
+        stdio: "pipe",
+      });
       console.log(c.green(`MCP server '${server.name}' added`));
     } catch {
       console.log(c.red(`Failed to add MCP server '${server.name}'`));

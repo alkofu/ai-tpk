@@ -9,7 +9,10 @@ import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "../constants.js";
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-tpk-test-"));
 
 // Build a fake source tree: tmpDir/claude/ with all whitelisted items
-function buildFakeClaudeSrc(base: string, include: string[] = [...CLAUDE_WHITELIST_FILES, ...CLAUDE_WHITELIST_DIRS]) {
+function buildFakeClaudeSrc(
+  base: string,
+  include: string[] = [...CLAUDE_WHITELIST_FILES, ...CLAUDE_WHITELIST_DIRS],
+) {
   const claudeSrc = path.join(base, "claude");
   fs.mkdirSync(claudeSrc, { recursive: true });
   for (const name of include) {
@@ -35,10 +38,16 @@ describe("installClaudeWhitelist", () => {
     installClaudeWhitelist(src, "symlink", dest);
     const dotClaude = path.join(dest, ".claude");
     for (const name of CLAUDE_WHITELIST_FILES) {
-      assert.ok(fs.existsSync(path.join(dotClaude, name)), `${name} should be installed`);
+      assert.ok(
+        fs.existsSync(path.join(dotClaude, name)),
+        `${name} should be installed`,
+      );
     }
     for (const name of CLAUDE_WHITELIST_DIRS) {
-      assert.ok(fs.existsSync(path.join(dotClaude, name)), `${name}/ should be installed`);
+      assert.ok(
+        fs.existsSync(path.join(dotClaude, name)),
+        `${name}/ should be installed`,
+      );
     }
   });
 
@@ -64,12 +73,20 @@ describe("installClaudeWhitelist", () => {
     fs.mkdirSync(legacyTarget);
     const dotClaude = path.join(dest, ".claude");
     fs.symlinkSync(legacyTarget, dotClaude);
-    assert.ok(fs.lstatSync(dotClaude).isSymbolicLink(), "setup: should be a symlink");
+    assert.ok(
+      fs.lstatSync(dotClaude).isSymbolicLink(),
+      "setup: should be a symlink",
+    );
     installClaudeWhitelist(src, "symlink", dest);
     // The symlink should have been backed up
-    const backups = fs.readdirSync(dest).filter(f => f.startsWith(".claude.backup."));
+    const backups = fs
+      .readdirSync(dest)
+      .filter((f) => f.startsWith(".claude.backup."));
     assert.strictEqual(backups.length, 1, "legacy symlink should be backed up");
     // And replaced with a real directory
-    assert.ok(fs.lstatSync(dotClaude).isDirectory(), "should now be a real directory");
+    assert.ok(
+      fs.lstatSync(dotClaude).isDirectory(),
+      "should now be a real directory",
+    );
   });
 });

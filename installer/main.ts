@@ -26,7 +26,7 @@ try {
   installDir(scriptDir, "cursor", ".cursor", mode, os.homedir());
 
   console.log("");
-  installMcpServers(os.homedir());
+  installMcpServers(scriptDir);
 
   console.log("");
   console.log(c.green("✓ Installation complete!"));

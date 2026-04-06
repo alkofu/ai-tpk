@@ -5,7 +5,11 @@ import { c } from "./colors.js";
 import { backupIfExists, installPath } from "./fs-utils.js";
 import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "./constants.js";
 
-export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "copy", destRoot: string = os.homedir()): void {
+export function installClaudeWhitelist(
+  scriptDir: string,
+  mode: "symlink" | "copy",
+  destRoot: string = os.homedir(),
+): void {
   const claudeSrc = path.join(scriptDir, "claude");
 
   try {
@@ -15,7 +19,10 @@ export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "cop
       return;
     }
   } catch (err: unknown) {
-    if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
+    if (
+      err instanceof Error &&
+      (err as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
       console.log(c.yellow("Skipping claude/ (not found in repository)"));
       return;
     }
@@ -31,7 +38,11 @@ export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "cop
       backupIfExists(dotClaudePath);
     }
   } catch (err: unknown) {
-    if (!(err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT")) {
+    if (
+      !(
+        err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT"
+      )
+    ) {
       throw err;
     }
     // Does not exist — nothing to do before mkdir
@@ -48,11 +59,18 @@ export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "cop
       if (stat.isFile()) {
         installPath(fileSrc, fileDest, mode);
       } else {
-        console.log(c.yellow(`Skipping claude/${fileName} (not a regular file)`));
+        console.log(
+          c.yellow(`Skipping claude/${fileName} (not a regular file)`),
+        );
       }
     } catch (err: unknown) {
-      if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
-        console.log(c.yellow(`Skipping claude/${fileName} (not found in repository)`));
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException).code === "ENOENT"
+      ) {
+        console.log(
+          c.yellow(`Skipping claude/${fileName} (not found in repository)`),
+        );
       } else {
         throw err;
       }
@@ -67,11 +85,18 @@ export function installClaudeWhitelist(scriptDir: string, mode: "symlink" | "cop
       if (subStat.isDirectory()) {
         installPath(subSrc, path.join(dotClaudePath, name), mode);
       } else {
-        console.log(c.yellow(`Skipping claude/${name}/ (not found in repository)`));
+        console.log(
+          c.yellow(`Skipping claude/${name}/ (not found in repository)`),
+        );
       }
     } catch (err: unknown) {
-      if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
-        console.log(c.yellow(`Skipping claude/${name}/ (not found in repository)`));
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException).code === "ENOENT"
+      ) {
+        console.log(
+          c.yellow(`Skipping claude/${name}/ (not found in repository)`),
+        );
       } else {
         throw err;
       }

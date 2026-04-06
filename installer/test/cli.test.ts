@@ -29,7 +29,7 @@ describe("parseArgs", () => {
     });
     assert.throws(
       () => parseArgs(["--bogus"]),
-      (err: unknown) => err instanceof ExitSentinel && err.code === 1
+      (err: unknown) => err instanceof ExitSentinel && err.code === 1,
     );
   });
 
@@ -41,7 +41,7 @@ describe("parseArgs", () => {
     mock.method(console, "log", () => {});
     assert.throws(
       () => parseArgs(["--help"]),
-      (err: unknown) => err instanceof ExitSentinel && err.code === 0
+      (err: unknown) => err instanceof ExitSentinel && err.code === 0,
     );
   });
 
@@ -52,7 +52,7 @@ describe("parseArgs", () => {
     mock.method(console, "log", () => {});
     assert.throws(
       () => parseArgs(["-h"]),
-      (err: unknown) => err instanceof ExitSentinel && err.code === 0
+      (err: unknown) => err instanceof ExitSentinel && err.code === 0,
     );
   });
 });

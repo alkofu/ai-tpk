@@ -3,9 +3,10 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { c } from "./colors.js";
 
+const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+
 function timestamp(): string {
   const now = new Date();
-  const pad = (n: number, len = 2) => String(n).padStart(len, "0");
   const YYYY = now.getFullYear();
   const MM = pad(now.getMonth() + 1);
   const DD = pad(now.getDate());
@@ -19,7 +20,10 @@ export function backupIfExists(targetPath: string): void {
   try {
     fs.statSync(targetPath);
   } catch (err: unknown) {
-    if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
+    if (
+      err instanceof Error &&
+      (err as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
       return;
     }
     throw err;
@@ -29,7 +33,11 @@ export function backupIfExists(targetPath: string): void {
   fs.renameSync(targetPath, backupPath);
 }
 
-export function installPath(src: string, dest: string, mode: "symlink" | "copy"): void {
+export function installPath(
+  src: string,
+  dest: string,
+  mode: "symlink" | "copy",
+): void {
   backupIfExists(dest);
 
   if (mode === "symlink") {
@@ -47,7 +55,7 @@ export function installDir(
   srcName: string,
   destName: string,
   mode: "symlink" | "copy",
-  destRoot: string = os.homedir()
+  destRoot: string = os.homedir(),
 ): void {
   const srcPath = path.join(scriptDir, srcName);
   const destPath = path.join(destRoot, destName);
@@ -59,7 +67,10 @@ export function installDir(
       return;
     }
   } catch (err: unknown) {
-    if (err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT") {
+    if (
+      err instanceof Error &&
+      (err as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
       console.log(c.yellow(`Skipping ${srcName} (not found in repository)`));
       return;
     }

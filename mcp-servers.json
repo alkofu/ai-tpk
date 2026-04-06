@@ -7,7 +7,19 @@
       "prereq": "$HOME/.kube/config",
       "env": { "KUBECONFIG": "$HOME/.kube/config" },
       "command": "npx",
-      "args": ["mcp-server-kubernetes@3.4.0"]
+      "args": ["--yes", "mcp-server-kubernetes@3.4.0"]
+    },
+    {
+      "name": "cloudwatch",
+      "scope": "user",
+      "transport": "stdio",
+      "prereq": "$HOME/.aws/credentials",
+      "env": {
+        "AWS_SHARED_CREDENTIALS_FILE": "$HOME/.aws/credentials",
+        "AWS_CONFIG_FILE": "$HOME/.aws/config"
+      },
+      "command": "uvx",
+      "args": ["awslabs.cloudwatch-mcp-server@0.0.19"]
     }
   ]
 }

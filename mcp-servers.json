@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "name": "kubernetes",
+      "scope": "user",
+      "transport": "stdio",
+      "prereq": "$HOME/.kube/config",
+      "env": { "KUBECONFIG": "$HOME/.kube/config" },
+      "command": "npx",
+      "args": ["mcp-server-kubernetes@3.4.0"]
+    }
+  ]
+}

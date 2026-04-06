@@ -62,6 +62,24 @@ npm test
 
 This runs all test files in `installer/test/` with isolated temporary directories. Tests cover filesystem utilities, CLI argument parsing, color output, and the Claude whitelist installer. For more details, see the test files under `installer/test/`.
 
+#### Code Quality: Linting and Formatting
+
+The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) to maintain consistent code quality.
+
+**npm scripts:**
+
+- `npm run lint` — Run oxlint to check for TypeScript errors and code quality issues
+- `npm run format` — Apply oxfmt formatting to all TypeScript files in `installer/`
+- `npm run format:check` — Check formatting without modifying files (used in CI)
+
+**Developer workflow:**
+
+Before committing code, run `npm run format` to auto-format your changes. This keeps the codebase consistent and prevents formatting failures in CI.
+
+Configuration files:
+- `.oxlintrc.json` — Linting rules (correctness and suspicious errors denied, perf warnings)
+- `.oxfmtrc.json` — Formatting options (2 spaces, double quotes, semicolons)
+
 ## Installation
 
 **Prerequisites:** Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented in TypeScript and executed via `tsx` at runtime.
@@ -185,6 +203,17 @@ If the file exists but contains malformed JSON or schema violations:
 - A clear error message is logged, including the invalid field and server name
 - Installation stops with a non-zero exit code
 - Examples: `"scope" must be 'user' or 'project'`, `"transport" must be 'stdio', 'sse', or 'streamable-http'`
+
+## Continuous Integration
+
+Pull requests targeting `main` are automatically validated by a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on Node.js 22. The workflow performs four checks in sequence:
+
+1. **Type check** — `npx tsc --noEmit` ensures TypeScript types are correct
+2. **Lint** — `npm run lint` checks for code quality issues
+3. **Format check** — `npm run format:check` verifies code is properly formatted
+4. **Test** — `npm test` runs the test suite
+
+All checks must pass before a PR can be merged. If CI fails, review the error messages, fix the issues locally, and push your changes. For formatting issues, run `npm run format` and commit the changes.
 
 ## Updating
 

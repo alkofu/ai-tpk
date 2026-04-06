@@ -60,9 +60,12 @@
     "mcp__kubernetes__kubectl_get",
     "mcp__kubernetes__kubectl_describe",
     "mcp__kubernetes__kubectl_logs",
+    "mcp__kubernetes__kubectl_context",
     "mcp__kubernetes__explain_resource",
     "mcp__kubernetes__list_api_resources",
-    "mcp__kubernetes__ping"
+    "mcp__kubernetes__ping",
+    "mcp__kubernetes__port_forward",
+    "mcp__kubernetes__stop_port_forward"
   ],
   "hooks": {
     "SubagentStop": [

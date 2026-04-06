@@ -97,11 +97,93 @@ Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/
 
 ### Automatic MCP Server Setup
 
-The installer automatically configures user-scoped MCP (Model Context Protocol) servers in `~/.claude.json` when the `claude` CLI is available. Currently, it sets up:
+The installer automatically configures user-scoped MCP (Model Context Protocol) servers in `~/.claude.json` when the `claude` CLI is available. Server definitions are read from a declarative `mcp-servers.json` file at the repository root, allowing you to add or modify servers without editing TypeScript code.
+
+Currently configured servers:
 
 - **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) - Provides read-only access to Kubernetes cluster information via your `~/.kube/config`. Gracefully skips setup if `~/.kube/config` doesn't exist yet (useful for fresh machine setup). The server is only added if not already configured, making the installation idempotent.
 
 MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
+
+#### MCP Server Configuration Format
+
+Server definitions are stored in `/mcp-servers.json` (repository root) using a declarative JSON schema. This allows configuration changes without modifying the installer code.
+
+##### JSON Schema
+
+```json
+{
+  "servers": [
+    {
+      "name": "kubernetes",
+      "scope": "user",
+      "transport": "stdio",
+      "prereq": "$HOME/.kube/config",
+      "env": { "KUBECONFIG": "$HOME/.kube/config" },
+      "command": "npx",
+      "args": ["mcp-server-kubernetes@3.4.0"]
+    }
+  ]
+}
+```
+
+**Field Reference:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Unique server identifier (e.g., `"kubernetes"`) |
+| `scope` | string | Yes | Installation scope; must be `"user"` or `"project"` |
+| `transport` | string | Yes | Communication protocol; must be one of: `"stdio"`, `"sse"`, `"streamable-http"` |
+| `prereq` | string | No | Path to check before installation (e.g., `"$HOME/.kube/config"`); advisory warning only—installation proceeds if missing |
+| `env` | object | No | Environment variables passed to the MCP server (keys and values support variable expansion) |
+| `command` | string | Yes | Executable name (e.g., `"npx"`, `"node"`) |
+| `args` | array | No | Command arguments passed to the executable (each element supports variable expansion) |
+
+##### Variable Expansion
+
+`$HOME`, `${HOME}`, `$USER`, and `${USER}` are automatically expanded using safe string replacement (no shell evaluation):
+
+- `$HOME` and `${HOME}` expand to the user's home directory
+- `$USER` and `${USER}` expand to the current system username
+
+This applies to:
+- `prereq` paths: `"$HOME/.kube/config"` → `/Users/alice/.kube/config`
+- `env` values: `"KUBECONFIG=$HOME/.kube/config"` → `"KUBECONFIG=/Users/alice/.kube/config"`
+- `args` elements: `["mcp-server-$USER"]` → `["mcp-server-alice"]`
+
+##### Adding a New MCP Server
+
+1. Edit `/mcp-servers.json` and add a new entry to the `servers` array:
+
+   ```json
+   {
+     "name": "my-server",
+     "scope": "user",
+     "transport": "stdio",
+     "command": "my-server",
+     "args": ["--flag"]
+   }
+   ```
+
+2. Re-run the installer:
+
+   ```bash
+   ./install.sh
+   ```
+
+   The new server is added to `~/.claude.json` if the `claude` CLI is available. If the server is already configured, it is skipped (idempotent operation).
+
+##### Graceful Degradation
+
+If `/mcp-servers.json` is missing from the repository:
+- The installer logs a yellow warning: `"Warning: mcp-servers.json not found -- skipping MCP server setup"`
+- No error is raised
+- Installation continues normally
+
+If the file exists but contains malformed JSON or schema violations:
+- A clear error message is logged, including the invalid field and server name
+- Installation stops with a non-zero exit code
+- Examples: `"scope" must be 'user' or 'project'`, `"transport" must be 'stdio', 'sse', or 'streamable-http'`
 
 ## Updating
 

@@ -35,7 +35,7 @@ Your job is to coordinate work exclusively. You must NEVER perform implementatio
 ### What the Dungeon Master may do directly
 
 - Read files, grep, glob — to understand context before delegating
-- Run read-only Bash commands: `git status`, `git log`, `ls`, `git diff`, `git worktree list`, `git fetch`
+- Run read-only operations: Bash commands (`git status`, `git log`, `ls`, `git diff`, `git worktree list`, `git fetch`) and MCP tool calls that do not modify state (e.g., querying dashboards, fetching metrics, listing resources).
 
 Note: `git worktree add` and `git worktree remove` are write operations and must be delegated to Bitsmith.
 - Write status summaries back to the user

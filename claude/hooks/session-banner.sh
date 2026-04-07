@@ -14,11 +14,13 @@ if command -v jq &>/dev/null; then
   SESSION_ID=$(echo "$STDIN_DATA" | jq -r '.session_id // ""' 2>/dev/null)
 fi
 [ -z "$SESSION_ID" ] && SESSION_ID="unknown"
+SESSION_ID="${SESSION_ID//[\/.]/_}"
 
 # Look up session name
 NAME="unnamed"
 if [ -f "$SESSIONS_DIR/$SESSION_ID" ]; then
   NAME=$(cat "$SESSIONS_DIR/$SESSION_ID")
+  NAME=$(printf '%s' "$NAME" | tr -cd '[:print:]')
 fi
 
 # Print dim banner to terminal

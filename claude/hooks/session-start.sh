@@ -16,9 +16,11 @@ if command -v jq &>/dev/null; then
   SESSION_ID=$(echo "$STDIN_DATA" | jq -r '.session_id // ""' 2>/dev/null)
 fi
 [ -z "$SESSION_ID" ] && SESSION_ID="unknown"
+SESSION_ID="${SESSION_ID//[\/.]/_}"
 
 # Persist session name (from env var set at launch: SESSION_NAME=dm-1 claude ...)
 NAME="${SESSION_NAME:-unnamed}"
+NAME=$(printf '%s' "$NAME" | tr -cd '[:print:]')
 echo "$NAME" > "$SESSIONS_DIR/$SESSION_ID"
 
 # Print dim banner to terminal

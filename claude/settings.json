@@ -65,12 +65,34 @@
     "mcp__kubernetes__ping"
   ],
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash claude/hooks/session-start.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/talekeeper-capture.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash claude/hooks/session-banner.sh",
             "timeout": 5
           }
         ]
@@ -84,6 +106,15 @@
             "type": "command",
             "command": "bash ~/.claude/hooks/talekeeper-enrich.sh",
             "timeout": 60
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash claude/hooks/session-banner.sh",
+            "timeout": 5
           }
         ]
       }

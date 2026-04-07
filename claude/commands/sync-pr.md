@@ -51,9 +51,11 @@ Run: `git status --porcelain`
 If the output is non-empty, abort immediately and tell the user: "Working tree is dirty. Commit
 or stash your changes before syncing."
 
-## Step 7 — Rebase onto origin/main [write operation — delegate to Bitsmith]
+## Step 7 — Rebase onto refs/remotes/origin/main [write operation — delegate to Bitsmith]
 
-Delegate to Bitsmith to run: `git rebase origin/main`
+Delegate to Bitsmith to run: `git rebase refs/remotes/origin/main`
+
+(`refs/remotes/origin/main` is used instead of the `origin/main` shorthand to avoid resolution ambiguity when a local branch named `main` exists.)
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
@@ -61,7 +63,7 @@ If the rebase exits with a non-zero status (indicating conflicts or another fail
 Bitsmith to run the following as a separate standalone call: `git rebase --abort`
 
 Then abort the entire command and tell the user: "Rebase conflicts detected. The rebase has been
-aborted. Resolve conflicts manually by running `git rebase origin/main`, fixing each conflict, and
+aborted. Resolve conflicts manually by running `git rebase refs/remotes/origin/main`, fixing each conflict, and
 running `git rebase --continue`."
 
 ## Step 8 — Force-push and report success [write operation — delegate to Bitsmith]

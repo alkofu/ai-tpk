@@ -142,9 +142,13 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
 export function buildAddArgs(
   server: McpServerConfig,
   repoRoot: string,
+  homedir: string = os.homedir(),
 ): string[] {
   if (server.wrapper !== undefined) {
-    const absoluteWrapperPath = path.join(repoRoot, server.wrapper);
+    const absoluteWrapperPath =
+      server.scope === "user"
+        ? path.join(homedir, ".claude", server.wrapper)
+        : path.join(repoRoot, server.wrapper);
     try {
       fs.statSync(absoluteWrapperPath);
     } catch (err: unknown) {

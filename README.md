@@ -460,7 +460,7 @@ Claude Code slash commands provide quick workflow shortcuts. Commands are instal
 | `/open-pr` | Creates a pull request following the `open-pull-request` skill workflow: conventional branch naming, conventional title, draft mode, assigned to @me, and full pre-flight checklist. |
 | `/sync-pr` | Rebases the current PR branch onto `refs/remotes/origin/main` and force-pushes with `--force-with-lease`, keeping open PRs in sync with main's latest changes without manual git gymnastics. |
 | `/clean-the-desk` | Cleans up stale local branches (whose upstream PRs have been merged) and removes their associated git worktrees. Prompts for confirmation before any destructive action. |
-| `/merged` | Cleans up after a merged PR: auto-identifies the merged branch when invoked from an active worktree session, removes the worktree, deletes the local branch, checks out main, and pulls the latest. Confirms all destructive actions with the user. |
+| `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, and pulls the latest. Confirms all destructive actions with the user. |
 
 ## Agent Orchestration Workflow
 

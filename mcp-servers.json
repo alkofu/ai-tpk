@@ -14,12 +14,7 @@
       "scope": "user",
       "transport": "stdio",
       "prereq": "$HOME/.aws/credentials",
-      "env": {
-        "AWS_SHARED_CREDENTIALS_FILE": "$HOME/.aws/credentials",
-        "AWS_CONFIG_FILE": "$HOME/.aws/config"
-      },
-      "command": "uvx",
-      "args": ["awslabs.cloudwatch-mcp-server@0.0.19"]
+      "wrapper": "wrappers/mcp-cloudwatch.sh"
     },
     {
       "name": "grafana",

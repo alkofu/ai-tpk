@@ -23,6 +23,7 @@ try {
 
   installClaudeWhitelist(scriptDir, os.homedir());
   installDir(scriptDir, "cursor", ".cursor", os.homedir());
+  installDir(scriptDir, "wrappers", ".claude/wrappers", os.homedir());
 
   console.log("");
   installMcpServers(scriptDir);

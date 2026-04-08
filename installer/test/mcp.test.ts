@@ -178,8 +178,9 @@ describe("buildAddArgs — wrapper-based server", () => {
   it("returns correct args with absolute wrapper path and no -e flags when wrapper file exists", () => {
     // Create a real wrapper file so statSync succeeds
     const repoRoot = fs.mkdtempSync(path.join(tmpDir, "repo-wrapper-"));
-    const wrappersDir = path.join(repoRoot, "wrappers");
-    fs.mkdirSync(wrappersDir);
+    const fakeHomedir = fs.mkdtempSync(path.join(tmpDir, "home-wrapper-"));
+    const wrappersDir = path.join(fakeHomedir, ".claude", "wrappers");
+    fs.mkdirSync(wrappersDir, { recursive: true });
     const wrapperFile = path.join(wrappersDir, "mcp-grafana.sh");
     fs.writeFileSync(
       wrapperFile,
@@ -193,9 +194,13 @@ describe("buildAddArgs — wrapper-based server", () => {
       wrapper: "wrappers/mcp-grafana.sh",
     };
 
-    const args = buildAddArgs(server, repoRoot);
+    const args = buildAddArgs(server, repoRoot, fakeHomedir);
 
-    const expectedWrapperPath = path.join(repoRoot, "wrappers/mcp-grafana.sh");
+    const expectedWrapperPath = path.join(
+      fakeHomedir,
+      ".claude",
+      "wrappers/mcp-grafana.sh",
+    );
     assert.deepStrictEqual(args, [
       "-s",
       "user",
@@ -215,6 +220,7 @@ describe("buildAddArgs — wrapper-based server", () => {
 
   it("throws with descriptive error when wrapper file does not exist", () => {
     const repoRoot = fs.mkdtempSync(path.join(tmpDir, "repo-missing-"));
+    const fakeHomedir = fs.mkdtempSync(path.join(tmpDir, "home-missing-"));
 
     const server = {
       name: "grafana",
@@ -223,8 +229,14 @@ describe("buildAddArgs — wrapper-based server", () => {
       wrapper: "wrappers/mcp-grafana.sh",
     };
 
+    const expectedWrapperPath = path.join(
+      fakeHomedir,
+      ".claude",
+      "wrappers/mcp-grafana.sh",
+    );
+
     assert.throws(
-      () => buildAddArgs(server, repoRoot),
+      () => buildAddArgs(server, repoRoot, fakeHomedir),
       (err: unknown) => {
         assert.ok(err instanceof Error);
         assert.ok(
@@ -232,11 +244,70 @@ describe("buildAddArgs — wrapper-based server", () => {
           `expected "Wrapper script not found" in: ${err.message}`,
         );
         assert.ok(
+          err.message.includes(expectedWrapperPath),
+          `expected path "${expectedWrapperPath}" in: ${err.message}`,
+        );
+        assert.ok(
           err.message.includes("grafana"),
           `expected server name "grafana" in: ${err.message}`,
         );
         return true;
       },
+    );
+  });
+
+  it("resolves user-scope wrapper against homedir/.claude/ instead of repoRoot", () => {
+    const repoRoot = fs.mkdtempSync(path.join(tmpDir, "repo-user-scope-"));
+    const fakeHomedir = fs.mkdtempSync(path.join(tmpDir, "home-user-scope-"));
+    const wrappersDir = path.join(fakeHomedir, ".claude", "wrappers");
+    fs.mkdirSync(wrappersDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(wrappersDir, "mcp-test.sh"),
+      "#!/usr/bin/env bash\nexec echo test\n",
+    );
+
+    const server = {
+      name: "test-server",
+      scope: "user" as const,
+      transport: "stdio" as const,
+      wrapper: "wrappers/mcp-test.sh",
+    };
+
+    const args = buildAddArgs(server, repoRoot, fakeHomedir);
+
+    const expectedWrapperPath = path.join(
+      fakeHomedir,
+      ".claude",
+      "wrappers/mcp-test.sh",
+    );
+    assert.ok(
+      args.includes(expectedWrapperPath),
+      `expected args to contain "${expectedWrapperPath}", got: ${JSON.stringify(args)}`,
+    );
+  });
+
+  it("resolves project-scope wrapper against repoRoot", () => {
+    const fakeRepoRoot = fs.mkdtempSync(path.join(tmpDir, "repo-proj-scope-"));
+    const wrappersDir = path.join(fakeRepoRoot, "wrappers");
+    fs.mkdirSync(wrappersDir);
+    fs.writeFileSync(
+      path.join(wrappersDir, "some.sh"),
+      "#!/usr/bin/env bash\nexec echo some\n",
+    );
+
+    const server = {
+      name: "some-server",
+      scope: "project" as const,
+      transport: "stdio" as const,
+      wrapper: "wrappers/some.sh",
+    };
+
+    const args = buildAddArgs(server, fakeRepoRoot);
+
+    const expectedWrapperPath = path.join(fakeRepoRoot, "wrappers/some.sh");
+    assert.ok(
+      args.includes(expectedWrapperPath),
+      `expected args to contain "${expectedWrapperPath}", got: ${JSON.stringify(args)}`,
     );
   });
 });
@@ -306,7 +377,7 @@ describe("buildAddArgs — command-based server", () => {
       scope: "user" as const,
       transport: "stdio" as const,
       command: "uvx",
-      args: ["awslabs.amazon-cloudwatch-mcp-server@latest"],
+      args: ["awslabs.cloudwatch-mcp-server@0.0.19"],
     };
 
     const args = buildAddArgs(server, repoRoot);
@@ -318,7 +389,7 @@ describe("buildAddArgs — command-based server", () => {
     assert.deepStrictEqual(afterSep, [
       "cloudwatch",
       "uvx",
-      "awslabs.amazon-cloudwatch-mcp-server@latest",
+      "awslabs.cloudwatch-mcp-server@0.0.19",
     ]);
   });
 

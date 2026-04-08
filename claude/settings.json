@@ -70,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash claude/hooks/session-start.sh",
+            "command": "bash ~/.claude/hooks/session-start.sh",
             "timeout": 5
           }
         ]
@@ -92,7 +92,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash claude/hooks/session-banner.sh",
+            "command": "bash ~/.claude/hooks/session-banner.sh",
             "timeout": 5
           }
         ]
@@ -113,7 +113,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash claude/hooks/session-banner.sh",
+            "command": "bash ~/.claude/hooks/session-banner.sh",
             "timeout": 5
           }
         ]

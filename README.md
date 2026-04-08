@@ -141,7 +141,7 @@ The installer automatically configures user-scoped MCP (Model Context Protocol) 
 Currently configured servers:
 
 - **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) - Provides read-only access to Kubernetes cluster information via your `~/.kube/config`. Gracefully skips setup if `~/.kube/config` doesn't exist yet (useful for fresh machine setup). The server is only added if not already configured, making the installation idempotent.
-- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) - Official AWS Labs MCP server providing access to CloudWatch Metrics, Alarms, and Logs (query log groups, run Insights queries, retrieve metrics and alarm history) via your `~/.aws` credentials. Requires `uvx` (`pip install uv` or `brew install uv`). Gracefully skips setup if `~/.aws/credentials` doesn't exist yet. The server is only added if not already configured, making the installation idempotent.
+- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) - Official AWS Labs MCP server providing access to CloudWatch Metrics, Alarms, and Logs (query log groups, run Insights queries, retrieve metrics and alarm history) via your `~/.aws` credentials. Uses a wrapper script (`wrappers/mcp-cloudwatch.sh`) to support dynamic AWS profile selection. Select your active AWS profile by running `/set-aws-profile` in Claude Code—the profile is stored in `~/.claude/.current-aws-profile` and read at MCP startup. Requires `uvx` (`pip install uv` or `brew install uv`). Gracefully skips setup if `~/.aws/credentials` doesn't exist yet. The server is only added if not already configured, making the installation idempotent.
 - **Grafana MCP Server** (`mcp-grafana`) - Access to Grafana dashboards, datasources, metrics, logs, incidents, and more. Uses a wrapper script (`wrappers/mcp-grafana.sh`) that requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` to be exported in your shell environment. Self-healing re-registration: the installer removes and re-adds this server each invocation to fix any prior broken configurations.
 
 MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
@@ -291,6 +291,53 @@ claude
 ```
 
 If either variable is missing, the wrapper fails immediately with a clear error message.
+
+**Example: AWS CloudWatch MCP Server**
+
+The `wrappers/mcp-cloudwatch.sh` script resolves an AWS profile from a dotfile (`~/.claude/.current-aws-profile`) with a fallback to the `$AWS_PROFILE` environment variable:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Resolve AWS profile: dotfile takes priority over env var
+DOTFILE="$HOME/.claude/.current-aws-profile"
+if [[ -f "$DOTFILE" ]] && [[ -s "$DOTFILE" ]]; then
+  IFS= read -r AWS_PROFILE < "$DOTFILE"
+  # Trim whitespace...
+fi
+
+# Validate profile name and fail helpfully if missing
+if [[ -n "${AWS_PROFILE:-}" ]]; then
+  if [[ ! "$AWS_PROFILE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    printf 'Error: invalid AWS profile name "%s" -- must match [a-zA-Z0-9_-]+\n' "$AWS_PROFILE" >&2
+    exit 1
+  fi
+  export AWS_PROFILE
+  echo "CloudWatch MCP: using AWS profile '$AWS_PROFILE'" >&2
+  exec uvx awslabs.cloudwatch-mcp-server@0.0.19 "$@"
+fi
+
+# No profile found — print available profiles from ~/.aws/config
+printf 'Error: no AWS profile set.\n' >&2
+# ... (list available profiles from ~/.aws/config)
+exit 1
+```
+
+Users select their active AWS profile using the `/set-aws-profile` slash command, which stores the profile name in `~/.claude/.current-aws-profile` (mode 0600):
+
+```bash
+/set-aws-profile
+# Choose a profile from the list
+# Profile set to `my-profile`. Restart Claude Code or reload MCP servers for this to take effect.
+```
+
+Alternatively, users can manually set the profile:
+
+```bash
+echo "my-profile" > ~/.claude/.current-aws-profile
+chmod 600 ~/.claude/.current-aws-profile
+```
 
 ##### Adding a New MCP Server
 
@@ -461,6 +508,7 @@ Claude Code slash commands provide quick workflow shortcuts. Commands are instal
 | `/sync-pr` | Rebases the current PR branch onto `refs/remotes/origin/main` and force-pushes with `--force-with-lease`, keeping open PRs in sync with main's latest changes without manual git gymnastics. |
 | `/clean-the-desk` | Cleans up stale local branches (whose upstream PRs have been merged) and removes their associated git worktrees. Prompts for confirmation before any destructive action. |
 | `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, and pulls the latest. Confirms all destructive actions with the user. |
+| `/set-aws-profile` | Selects an AWS profile for the CloudWatch MCP server by listing available profiles from `~/.aws/config`, validating the user's selection, and storing it in `~/.claude/.current-aws-profile` (mode 0600). The profile is read at MCP startup. Requires Claude Code restart or MCP server reload to take effect. |
 
 ## Agent Orchestration Workflow
 

@@ -33,28 +33,17 @@ export function backupIfExists(targetPath: string): void {
   fs.renameSync(targetPath, backupPath);
 }
 
-export function installPath(
-  src: string,
-  dest: string,
-  mode: "symlink" | "copy",
-): void {
+export function installPath(src: string, dest: string): void {
   backupIfExists(dest);
 
-  if (mode === "symlink") {
-    const absSrc = path.resolve(src);
-    console.log(c.green(`Creating symlink: ${dest} -> ${src}`));
-    fs.symlinkSync(absSrc, dest);
-  } else {
-    console.log(c.green(`Copying: ${src} -> ${dest}`));
-    fs.cpSync(src, dest, { recursive: true });
-  }
+  console.log(c.green(`Copying: ${src} -> ${dest}`));
+  fs.cpSync(src, dest, { recursive: true });
 }
 
 export function installDir(
   scriptDir: string,
   srcName: string,
   destName: string,
-  mode: "symlink" | "copy",
   destRoot: string = os.homedir(),
 ): void {
   const srcPath = path.join(scriptDir, srcName);
@@ -77,5 +66,5 @@ export function installDir(
     throw err;
   }
 
-  installPath(srcPath, destPath, mode);
+  installPath(srcPath, destPath);
 }

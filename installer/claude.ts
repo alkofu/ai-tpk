@@ -2,12 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import { c } from "./colors.js";
-import { backupIfExists, installPath } from "./fs-utils.js";
+import { installPath } from "./fs-utils.js";
 import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "./constants.js";
 
 export function installClaudeWhitelist(
   scriptDir: string,
-  mode: "symlink" | "copy",
   destRoot: string = os.homedir(),
 ): void {
   const claudeSrc = path.join(scriptDir, "claude");
@@ -31,23 +30,6 @@ export function installClaudeWhitelist(
 
   const dotClaudePath = path.join(destRoot, ".claude");
 
-  // Replace legacy full-tree ~/.claude symlink with a real directory
-  try {
-    const stat = fs.lstatSync(dotClaudePath);
-    if (stat.isSymbolicLink()) {
-      backupIfExists(dotClaudePath);
-    }
-  } catch (err: unknown) {
-    if (
-      !(
-        err instanceof Error && (err as NodeJS.ErrnoException).code === "ENOENT"
-      )
-    ) {
-      throw err;
-    }
-    // Does not exist — nothing to do before mkdir
-  }
-
   fs.mkdirSync(dotClaudePath, { recursive: true });
 
   // Standalone files
@@ -57,7 +39,7 @@ export function installClaudeWhitelist(
     try {
       const stat = fs.statSync(fileSrc);
       if (stat.isFile()) {
-        installPath(fileSrc, fileDest, mode);
+        installPath(fileSrc, fileDest);
       } else {
         console.log(
           c.yellow(`Skipping claude/${fileName} (not a regular file)`),
@@ -83,7 +65,7 @@ export function installClaudeWhitelist(
     try {
       const subStat = fs.statSync(subSrc);
       if (subStat.isDirectory()) {
-        installPath(subSrc, path.join(dotClaudePath, name), mode);
+        installPath(subSrc, path.join(dotClaudePath, name));
       } else {
         console.log(
           c.yellow(`Skipping claude/${name}/ (not found in repository)`),

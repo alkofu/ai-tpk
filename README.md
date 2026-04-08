@@ -16,7 +16,7 @@ This repository maintains user-scope configuration for:
 
 ## Purpose
 
-Keep AI tool configurations version-controlled and portable across machines. These configs are meant to be copied or symlinked to your user home directory (`~/.claude/`, `~/.cursor/`, etc.).
+Keep AI tool configurations version-controlled and portable across machines. These configs are copied to your user home directory (`~/.claude/`, `~/.cursor/`, etc.).
 
 ## Structure
 
@@ -44,9 +44,9 @@ The installation logic is implemented in TypeScript under the `installer/` direc
 
 - `installer/constants.ts` — Single source of truth for whitelisted Claude paths, MCP server definitions, and Node.js version requirements
 - `installer/main.ts` — Main entrypoint; orchestrates the install workflow
-- `installer/cli.ts` — CLI argument parser (handles `--copy`, `--help`/`-h`)
+- `installer/cli.ts` — CLI argument parser (handles `--help`/`-h`)
 - `installer/colors.ts` — ANSI color output helper
-- `installer/fs-utils.ts` — Filesystem utilities (backup, symlink, copy operations)
+- `installer/fs-utils.ts` — Filesystem utilities (backup and copy operations)
 - `installer/claude.ts` — Claude config whitelist installer
 - `installer/mcp.ts` — MCP server setup
 
@@ -103,26 +103,18 @@ cd ai-tpk
 
 Run the installation script:
 
-### Option 1: Symlinks (Recommended)
 ```bash
 ./install.sh
 ```
 
-Creates symbolic links for the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) and for `~/.cursor/` when `cursor/` exists. Changes sync automatically with the repository.
+Copies the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) into `~/.claude/` and `~/.cursor/` when present.
 
 Alternatively, if you have Node.js installed:
 ```bash
 npm run setup
 ```
 
-### Option 2: Copy Files
-```bash
-./install.sh --copy
-```
-
-Copies the same whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) into `~/.claude/` and `~/.cursor/` when present. Manual sync required (see Updating below).
-
-**Note:** The installer automatically backs up any existing configurations with a timestamp.
+**Note:** The installer automatically backs up any existing configurations with a timestamp before overwriting them.
 
 ### Automatic MCP Server Setup
 
@@ -373,10 +365,30 @@ All checks must pass before a PR can be merged. If CI fails, review the error me
 ```bash
 cd ai-tpk
 git pull
+./install.sh
 ```
 
-**With symlinks:** Changes take effect immediately.
-**With copy:** Re-run `./install.sh --copy` after pulling updates.
+Re-running the installer after `git pull` copies the latest configurations into place. Any files already present are backed up with a timestamp before being replaced.
+
+## Recovering Backups
+
+The installer automatically creates timestamped backups (e.g., `settings.json.backup.20260407_143022`) before overwriting any existing files. To browse and restore a backup interactively:
+
+```bash
+./recover.sh
+```
+
+The script scans `~/.claude` and `~/.cursor` for machine-generated backups, lists them newest-first with their original paths and human-readable timestamps, and prompts you to select one by number. If the original path currently exists, it is itself backed up before the selected backup is moved into place.
+
+## Cleaning Up Old Backups
+
+Over time the installer may accumulate multiple timestamped backups for the same file. `clean-backups.sh` removes all but the most recent backup for each original path, keeping your `~/.claude` and `~/.cursor` directories tidy.
+
+```bash
+./clean-backups.sh
+```
+
+The script scans the same directories as `recover.sh` (`~/.claude` and `~/.cursor`), groups backups by their original file path, and shows a summary of everything it would delete before asking for confirmation. Original paths that have only one backup are left untouched. Nothing is deleted unless you explicitly confirm with `y`.
 
 ## Features
 

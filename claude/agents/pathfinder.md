@@ -191,7 +191,7 @@ Objectives:
 
 ## Consensus Mode (RALPLAN-DR)
 
-When user includes `--consensus` in their message (e.g., "Create a plan for X --consensus"), provide enhanced decision-making structure.
+When `--consensus` is present — either passed by DM delegation or included directly in the user's message (e.g., "Create a plan for X --consensus") — provide enhanced decision-making structure.
 
 ### Standard Consensus Output
 

@@ -41,7 +41,7 @@ This step runs once at the start of every Everwise invocation, before loading ch
 3. From that path, extract `transcript_base_path` by stripping the trailing `/{session_id}/subagents/agent-{id}.jsonl` portion. The encoded project directory is the segment immediately after `projects/` and before the first `/{session_id}/` segment.
    - Example: from `/Users/alice/.claude/projects/-Users-alice-work-my-project/abc123/subagents/agent-xyz.jsonl`, extract `/Users/alice/.claude/projects/-Users-alice-work-my-project`
 4. Verify the extracted path exists by running a `Glob` with pattern `{transcript_base_path}/*/subagents/`. If it returns results, `transcript_base_path` is confirmed.
-   - **Cursor fallback:** If no chronicle entry contains a `~/.claude/projects/` path but entries contain a `~/.cursor/projects/` path, use the Cursor path instead. The extraction and verification logic is identical -- only the base directory differs. If both paths exist, check both.
+   - **Cursor fallback:** If no chronicle entry contains a `~/.claude/projects/` path but entries contain a `~/.cursor/projects/` path, use the Cursor path instead. The extraction and verification logic is identical -- only the base directory differs. If both `~/.claude/projects/` and `~/.cursor/projects/` paths exist, prefer `~/.claude/projects/` as the primary `transcript_base_path`, but also check `~/.cursor/projects/` for any transcripts not found at the primary path.
 5. If no chronicle entry contains an `agent_transcript_path` field, or if the extracted path does not exist, set `transcript_base_path = null` and note: "Transcript base path discovery failed; continuing with chronicle-only analysis."
 6. Store the discovered path as `transcript_base_path` for use in Steps 2b and 2c.
 

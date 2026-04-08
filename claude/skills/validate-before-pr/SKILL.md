@@ -24,7 +24,7 @@ This skill is **mandatory** for:
 Before running the checks below, detect which toolchain the repository uses. Check in this order and use the **first match**:
 
 1. **`package.json` exists** (Node/npm): Use `npm run lint` and `npm run format:check` (Steps 1-2 below as written).
-2. **`Makefile` exists with `lint` and `fmt` targets**: Use `make lint` and `make fmt` (substitute these in Steps 1-2).
+2. **`Makefile` exists with `lint` target**: Use `make lint` for lint. For format check: look for a `make fmt-check`, `make format-check`, or `make check-format` target (exits non-zero on violations without modifying files). If the Makefile only has a `fmt` target that modifies files, skip the format check for this project and warn the user: "Makefile `fmt` target detected but it modifies files — skipping format check. Add a `fmt-check` target to enable it." (substitute lint command in Step 1).
 3. **`pyproject.toml` exists**: Use `ruff check .` for lint and `ruff format --check .` for format (substitute in Steps 1-2).
 4. **`setup.py` or `setup.cfg` exists** (legacy Python): Use `flake8 .` for lint and `black --check .` for format (substitute in Steps 1-2).
 5. **`go.mod` exists** (Go): Use `golangci-lint run` for lint and `gofmt -l .` for format check (substitute in Steps 1-2; format check passes if `gofmt -l .` produces no output).

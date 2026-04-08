@@ -316,7 +316,7 @@ Trigger options exploration when: the `--explore-options` flag is present, OR th
 Suppress options exploration when: the user has already named a specific approach or technology, OR an approved plan already exists in `plans/`. The explicit `--explore-options` flag overrides suppression.
 
 When triggered:
-- Invoke Pathfinder with a delegation prompt instructing it to use Consensus Mode output format (as if `--consensus` were passed -- note: Pathfinder Consensus Mode is triggered by DM internally; it is not a user-facing flag), produce 2–4 viable options (not an execution plan), and return the options for user selection.
+- Invoke Pathfinder with a delegation prompt instructing it to use Consensus Mode output format (as if `--consensus` were passed -- note: Pathfinder Consensus Mode is triggered by DM internally here; users may also trigger it directly with `--consensus` in their message), produce 2–4 viable options (not an execution plan), and return the options for user selection.
 - Present the options inline in the conversation — each option's name, summary, and Pathfinder's recommendation — then ask the user to select one or request changes. Do not proceed until the user responds.
 - **If user selects an option:** Re-invoke Pathfinder for an execution plan, passing both the selected option name and the full Consensus Mode output as context so Pathfinder does not re-research from scratch.
 - **If user rejects all options and requests different approaches:** Re-invoke Pathfinder in Consensus Mode with the user's feedback as additional constraints, then re-present options.

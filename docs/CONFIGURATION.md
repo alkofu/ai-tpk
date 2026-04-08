@@ -70,14 +70,29 @@ The `agent_transcript_path` field enables downstream tools (like Everwise Scout)
 - Timeout: 60 seconds
 - Requires `jq`; exits silently if unavailable or raw log is empty
 
-## User-Global Instructions (claude/CLAUDE.md)
+## Instructions: User-Global vs. Project-Level
 
-`CLAUDE.md` is loaded by Claude Code at session start for every project. It mandates two skills that apply globally across all work:
+Claude Code loads instructions at two levels:
+
+### User-Global Instructions (claude/CLAUDE.md)
+
+`claude/CLAUDE.md` is installed to `~/.claude/CLAUDE.md` by the installer and loaded by Claude Code at session start for every project. It mandates three skills that apply globally across all work:
 
 - **`commit-message-guide`** — required for all git commits; conventional commit format is enforced, no exceptions
 - **`open-pull-request`** — required for all pull requests and merge requests; no other PR creation method is allowed
+- **`validate-before-pr`** — runs lint and format checks as a mandatory gate before PR creation; must pass before open-pull-request can be invoked
 
-These mandates are active for every project. Project-level `.claude/CLAUDE.md` files can provide additional instructions; however, skill mandate enforcement depends on Claude Code's instruction precedence behavior.
+### Project-Level Instructions (.claude/CLAUDE.md)
+
+`.claude/CLAUDE.md` is loaded by Claude Code only in this repository. It provides project-scoped instructions that override or supplement user-global directives.
+
+**This repository's project-level guard:** Before creating or modifying agents, skills, commands, hooks, references, CLAUDE.md, or settings, you must clarify which scope is intended:
+- **User scope** (`claude/`) — applied globally across all repositories
+- **Project scope** (`.claude/`) — applied only to this repository
+
+See `.claude/CLAUDE.md` for the full scope clarification rules and trigger cases.
+
+**Note:** Skill mandate enforcement depends on Claude Code's instruction precedence behavior. Project-level mandates are intended to supplement, not override, user-level mandates.
 
 ## Agents (`claude/agents/`)
 

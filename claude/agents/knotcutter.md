@@ -156,7 +156,6 @@ Flag patterns that don't meet their fitness criteria as speculative complexity.
    - Dependencies pulled in for marginal gains
 
 3. **Propose Aggressive Reduction**
-   - Propose aggressive reduction
    - Eliminate abstractions that don't earn their keep
    - Replace frameworks with direct solutions
    - Inline rarely-changed "reusable" code
@@ -208,7 +207,7 @@ See `claude/references/verdict-taxonomy.md`. Apply through the lens of complexit
 
 ## Success Criteria
 
-- Achieved 50%+ reduction in components, abstractions, or features
+- Meaningful, measurable reduction in components, abstractions, or features (target 50%+ where baseline complexity justifies it; smaller reductions are valid when the starting point is already lean)
 - Eliminated unnecessary dependencies
 - Replaced general frameworks with specific solutions
 - Maintained or improved core functionality

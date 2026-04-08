@@ -21,8 +21,6 @@ See `claude/references/worktree-protocol.md` for the shared activation rule.
 - All documentation reads and writes are relative to `{WORKING_DIRECTORY}`
 - File generation targets `{WORKING_DIRECTORY}/README.md`, `{WORKING_DIRECTORY}/docs/`, etc.
 
-Talekeeper is unaffected by worktree isolation. It writes to gitignored session logs (not to the working tree) and is user-invoked only.
-
 ## Operational Workflow
 
 **1. Gap Analysis**

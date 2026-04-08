@@ -42,4 +42,4 @@ Compound commands:
 
 ## Applies To
 
-All agents with Bash tool access: Ruinor, Riskmancer, Windwarden, Knotcutter, Truthhammer, Quill, Pathfinder, Bitsmith, Dungeonmaster.
+All agents with Bash tool access: Bitsmith, Dungeonmaster, Knotcutter, Pathfinder, Quill, Riskmancer, Ruinor, Tracebloom, Truthhammer, Windwarden.

@@ -12,6 +12,7 @@ fi
 
 # Validate profile name if set
 if [[ -n "${AWS_PROFILE:-}" ]]; then
+  # Valid AWS profile names: letters, digits, hyphens, underscores only (per AWS SDKref)
   if [[ ! "$AWS_PROFILE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     printf 'Error: invalid AWS profile name "%s" -- must match [a-zA-Z0-9_-]+\n' "$AWS_PROFILE" >&2
     exit 1

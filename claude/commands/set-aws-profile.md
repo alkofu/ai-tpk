@@ -1,3 +1,7 @@
+---
+description: Select an AWS profile for the CloudWatch MCP server
+---
+
 List available AWS profiles from `~/.aws/config` and let the user choose one to activate for the CloudWatch MCP server.
 
 ## Steps

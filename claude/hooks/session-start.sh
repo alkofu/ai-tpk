@@ -24,6 +24,6 @@ NAME=$(printf '%s' "$NAME" | tr -cd '[:print:]')
 echo "$NAME" > "$SESSIONS_DIR/$SESSION_ID"
 
 # Print dim banner to terminal
-printf '\033[2m── session: %s ──\033[0m\n' "$NAME" >> /dev/tty 2>/dev/null || true
+printf '\n\033[2m── session: %s ──\033[0m\n' "$NAME" >> /dev/tty 2>/dev/null || true
 
 exit 0

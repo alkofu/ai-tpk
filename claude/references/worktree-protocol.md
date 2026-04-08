@@ -40,3 +40,7 @@ Git commands (commit, branch, status, diff, log) automatically operate on the wo
 ## Role-Specific Additions
 
 Each agent that receives the `WORKING_DIRECTORY:` block may define additional rules governing how the protocol applies to its specific responsibilities (e.g., where plan files are written, where documentation targets are set, how worktree creation is handled). Those additions are defined inline in each agent's definition and complement — but do not override — the shared rules above.
+
+## Agents Not Affected by Worktree Isolation
+
+Talekeeper is unaffected by worktree isolation. It writes to gitignored session logs (not to the working tree) and is user-invoked only.

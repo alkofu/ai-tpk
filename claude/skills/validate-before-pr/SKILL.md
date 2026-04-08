@@ -19,11 +19,25 @@ This skill is **mandatory** for:
 
 **Do not** open a PR through any means without running this skill first.
 
+## Stack Detection
+
+Before running the checks below, detect which toolchain the repository uses. Check in this order and use the **first match**:
+
+1. **`package.json` exists** (Node/npm): Use `npm run lint` and `npm run format:check` (Steps 1-2 below as written).
+2. **`Makefile` exists with `lint` and `fmt` targets**: Use `make lint` and `make fmt` (substitute these in Steps 1-2).
+3. **`pyproject.toml` exists**: Use `ruff check .` for lint and `ruff format --check .` for format (substitute in Steps 1-2).
+4. **`setup.py` or `setup.cfg` exists** (legacy Python): Use `flake8 .` for lint and `black --check .` for format (substitute in Steps 1-2).
+5. **`go.mod` exists** (Go): Use `golangci-lint run` for lint and `gofmt -l .` for format check (substitute in Steps 1-2; format check passes if `gofmt -l .` produces no output).
+6. **`Cargo.toml` exists** (Rust): Use `cargo clippy` for lint and `cargo fmt --check` for format check (substitute in Steps 1-2).
+7. **No match**: Warn the user that no recognized lint/format toolchain was found. Skip validation and proceed to `open-pull-request` with a note that pre-PR checks were not run.
+
+The npm commands in Steps 1-2 below are the default. When stack detection selects a different toolchain, substitute the corresponding commands but follow the same pass/fail logic.
+
 ## Steps
 
 Each check must be run as a **separate, standalone Bash call**. Do not chain commands with `&&` or `;` — this is required by the bash-style rule.
 
-### Step 1 — Run lint
+### Step 1 — Run lint (npm default: `npm run lint`)
 
 Run the following as a standalone Bash call:
 
@@ -34,7 +48,7 @@ npm run lint
 - If lint **passes** (exit code 0): proceed to Step 2.
 - If lint **fails** (non-zero exit): stop immediately. Do not proceed to format check or PR creation. Report the full lint output to the user and request that the errors be fixed before retrying.
 
-### Step 2 — Run format check
+### Step 2 — Run format check (npm default: `npm run format:check`)
 
 Run the following as a standalone Bash call:
 

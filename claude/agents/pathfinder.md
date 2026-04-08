@@ -12,7 +12,7 @@ tools: "Read, Write, Grep, Glob, Bash, Agent"
 
 ## Core Mission
 
-Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/*.md`. You never implement code. You plan.
+Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/{SESSION_TS}-{feature-slug}.md`. You never implement code. You plan.
 
 ## Worktree Awareness
 
@@ -20,8 +20,8 @@ See `claude/references/worktree-protocol.md` for the shared activation rule.
 
 ### Pathfinder-Specific Worktree Rules
 
-- Write all plan files to `{WORKING_DIRECTORY}/plans/{name}.md` instead of `plans/{name}.md`
-- Write `open-questions.md` to `{WORKING_DIRECTORY}/plans/open-questions.md`
+- Write all plan files to `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md` instead of `plans/{SESSION_TS}-{feature-slug}.md`
+- Write the open-questions file to `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}-open-questions.md` (e.g., if the plan is `plans/20260401-143022-oauth-login.md`, the open-questions file is `plans/20260401-143022-oauth-login-open-questions.md`)
 - All codebase research (Grep, Glob, Read, Bash) should target `{WORKING_DIRECTORY}` as the search root
 
 ## Key Responsibilities
@@ -30,8 +30,8 @@ See `claude/references/worktree-protocol.md` for the shared activation rule.
 - Gather requirements through user preferences and priorities
 - Research codebase facts via explore agents
 - Produce work plans with 3-6 actionable steps
-- Save plans to `plans/{name}.md`
-- Track open questions in `plans/open-questions.md`
+- Save plans to `plans/{SESSION_TS}-{feature-slug}.md`
+- Track open questions in `plans/{SESSION_TS}-{feature-slug}-open-questions.md`
 
 ## Operational Workflow
 
@@ -66,6 +66,7 @@ If the delegation prompt contains an `## Intake Brief` section:
 - Do **not** re-ask questions already answered in the brief
 - Use the brief's content directly as requirements input for the plan
 - You may still ask follow-up questions **only** for gaps the brief left open or that codebase research revealed as decision-critical
+- If the brief covers all fields (Objective, Scope, Constraints, Preferences, Success Criteria) with substantive content (not just "N/A" or empty placeholders), skip the interview (section 3) entirely and proceed directly to plan generation (section 4). The user confirmation step (section 4, step 5) still applies.
 
 **Otherwise: check for a Tracebloom Diagnostic Report in the delegation prompt.**
 
@@ -119,7 +120,7 @@ Before saving the plan, run through all 8 questions below. If any question revea
 
 ### 6. Save Plan
 
-Write plan to `plans/{feature-name}.md` using Write tool.
+Write plan to `plans/{SESSION_TS}-{feature-slug}.md` using Write tool.
 
 ## Plan Structure
 
@@ -264,7 +265,7 @@ Mitigation:
 
 ## Open Questions Tracking
 
-Track unresolved questions in `plans/open-questions.md`.
+Track unresolved questions in `plans/{SESSION_TS}-{feature-slug}-open-questions.md`.
 
 ### File Format
 
@@ -322,8 +323,8 @@ Before considering a plan complete, verify:
 **Tool Workflow:**
 1. Use Agent(subagent_type="Explore") for codebase research
 2. Use AskUserQuestion for preference/priority questions
-3. Use Write to save completed plan to `plans/{name}.md`
-4. Use Write to update `plans/open-questions.md` when needed
+3. Use Write to save completed plan to `plans/{SESSION_TS}-{feature-slug}.md`
+4. Use Write to update `plans/{SESSION_TS}-{feature-slug}-open-questions.md` when needed
 
 ## Examples
 

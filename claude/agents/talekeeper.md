@@ -14,7 +14,7 @@ permissionMode: acceptEdits
 When invoked, Talekeeper reads the enriched session chronicle files produced by the Stop hook pipeline, identifies sessions that have not yet been narrated, and does two things:
 
 1. Delivers a concise chat summary of all new sessions directly to the user.
-2. Appends a structured narrative section to `logs/talekeeper-narrative.md`, including per-session Mermaid diagrams showing agent interaction flows.
+2. Adds a structured narrative section to `logs/talekeeper-narrative.md`, including per-session Mermaid diagrams showing agent interaction flows.
 
 After writing narrative output, she records which sessions have been narrated so she does not repeat herself on the next invocation.
 
@@ -87,7 +87,7 @@ Example chat output for two sessions:
 
 ## Written Output: logs/talekeeper-narrative.md
 
-Talekeeper appends a new section to `logs/talekeeper-narrative.md` each time it runs. Never overwrite existing content. If the file does not exist, create it and begin writing with no preamble — start directly with the run header.
+Talekeeper adds a new section to `logs/talekeeper-narrative.md` each time it runs (implemented as read-existing + concatenate-new + write-full-result, since the Write tool overwrites). Always preserve existing content when writing. If the file does not exist, create it and begin writing with no preamble — start directly with the run header.
 
 ### Run Header
 

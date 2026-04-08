@@ -316,7 +316,7 @@ Trigger options exploration when: the `--explore-options` flag is present, OR th
 Suppress options exploration when: the user has already named a specific approach or technology, OR an approved plan already exists in `plans/`. The explicit `--explore-options` flag overrides suppression.
 
 When triggered:
-- Invoke Pathfinder with a delegation prompt instructing it to use Consensus Mode output format (as if `--consensus` were passed), produce 2–4 viable options (not an execution plan), and return the options for user selection.
+- Invoke Pathfinder with a delegation prompt instructing it to use Consensus Mode output format (as if `--consensus` were passed -- note: Pathfinder Consensus Mode is triggered by DM internally; it is not a user-facing flag), produce 2–4 viable options (not an execution plan), and return the options for user selection.
 - Present the options inline in the conversation — each option's name, summary, and Pathfinder's recommendation — then ask the user to select one or request changes. Do not proceed until the user responds.
 - **If user selects an option:** Re-invoke Pathfinder for an execution plan, passing both the selected option name and the full Consensus Mode output as context so Pathfinder does not re-research from scratch.
 - **If user rejects all options and requests different approaches:** Re-invoke Pathfinder in Consensus Mode with the user's feedback as additional constraints, then re-present options.
@@ -332,13 +332,13 @@ When not triggered: proceed directly to step 3.
    - validation criteria
    - risks / rollback considerations
 
-   Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block (defined above) if a session worktree is active. Pathfinder must write plans to `{WORKING_DIRECTORY}/plans/` using the filename `{SESSION_TS}-{feature-slug}.md` (e.g., `plans/20260401-143022-oauth-login.md`).
-4. Pathfinder will save the plan to `plans/{SESSION_TS}-{feature-slug}.md`.
+   Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block (defined above) if a session worktree is active. Pathfinder must write plans to `{WORKING_DIRECTORY}/plans/` using the filename `{SESSION_TS}-{feature-slug}.md` (e.g., `{WORKING_DIRECTORY}/plans/20260401-143022-oauth-login.md`).
+4. Pathfinder will save the plan to `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md`.
 
 ### Phase 2: Plan Review (Quality Gate)
 
 1. **Mandatory Baseline Review**: Always invoke Ruinor first
-   - Pass the specific plan file path (e.g., `plans/oauth-login.md`) to Ruinor
+   - Pass the specific plan file path (e.g., `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{SESSION_SLUG}.md`) to Ruinor
    - Ruinor provides comprehensive baseline review and flags specialist concerns
    - Collect Ruinor's verdict, findings, and specialist recommendations
 
@@ -463,7 +463,7 @@ When not triggered: proceed directly to step 3.
 
     **5b — Documentation update:**
     If Pathfinder was invoked during this session, invoke Quill with the following three context items:
-    - (a) plan file path (e.g., `plans/oauth-login.md`)
+    - (a) plan file path (e.g., `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{SESSION_SLUG}.md`)
     - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
     - (c) one-sentence feature summary
 
@@ -544,7 +544,7 @@ Example 1:
 User asks: "Add OAuth login, update the API, and add tests."
 Action:
 - Delegate to Pathfinder for decomposition and sequencing
-- Pathfinder saves plan to `plans/oauth-login.md`
+- Pathfinder saves plan to `plans/20260401-143022-oauth-login.md`
 - **Plan Review Gate:**
   - Invoke Ruinor (mandatory baseline review)
   - Ruinor flags security concerns (auth/JWT) → recommends Riskmancer
@@ -577,7 +577,7 @@ Example 3:
 User asks: "Refactor the authentication module --review-security --review-complexity"
 Action:
 - Delegate to Pathfinder for refactoring plan
-- Pathfinder saves plan to `plans/auth-refactor.md`
+- Pathfinder saves plan to `plans/20260401-143022-auth-refactor.md`
 - **Plan Review Gate:**
   - Invoke Ruinor (mandatory)
   - User flags present: --review-security, --review-complexity
@@ -590,7 +590,7 @@ Example 4:
 User asks: "Migrate from Redis 6 to Redis 7 and update the caching config --verify-facts"
 Action:
 - Delegate to Pathfinder for migration plan
-- Pathfinder saves plan to `plans/redis-migration.md`
+- Pathfinder saves plan to `plans/20260401-143022-redis-migration.md`
 - **Plan Review Gate:**
   - Invoke Ruinor (mandatory baseline review)
   - User flag present: --verify-facts → invoke Truthhammer
@@ -618,7 +618,7 @@ Action:
 - DM presents options to user with names, summaries, and Pathfinder's recommendation; waits for explicit selection
 - User selects Option B (Redis + BullMQ)
 - DM re-invokes Pathfinder for execution plan, passing "Option B: Redis + BullMQ" and the full Consensus Mode output as context
-- Pathfinder saves plan to `plans/background-jobs.md`
+- Pathfinder saves plan to `plans/20260401-143022-background-jobs.md`
 - Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
 
 Example 6:
@@ -646,7 +646,7 @@ Action:
 - DM invokes Askmaw (round 3) with full context
 - Askmaw returns structured brief (objective clear: fix 3 specific pen test findings; scope bounded)
 - DM exits intake loop, passes brief to Pathfinder
-- Pathfinder saves plan to `plans/auth-security-hardening.md`
+- Pathfinder saves plan to `plans/20260401-143022-auth-security-hardening.md`
 - Continue with Phase 2 (Plan Review Gate) as normal
 
 Example 8:

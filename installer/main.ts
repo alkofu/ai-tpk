@@ -13,17 +13,16 @@ const installerDir = path.dirname(__filename);
 const scriptDir = path.dirname(installerDir);
 
 try {
-  const { mode } = parseArgs(process.argv.slice(2));
+  parseArgs(process.argv.slice(2));
 
   console.log(c.blue("AI TPK Installer"));
   console.log(c.blue("====================="));
   console.log("");
-  console.log(`Installation method: ${c.green(mode)}`);
   console.log(`Source directory: ${scriptDir}`);
   console.log("");
 
-  installClaudeWhitelist(scriptDir, mode, os.homedir());
-  installDir(scriptDir, "cursor", ".cursor", mode, os.homedir());
+  installClaudeWhitelist(scriptDir, os.homedir());
+  installDir(scriptDir, "cursor", ".cursor", os.homedir());
 
   console.log("");
   installMcpServers(scriptDir);
@@ -32,15 +31,8 @@ try {
   console.log(c.green("✓ Installation complete!"));
   console.log("");
 
-  if (mode === "symlink") {
-    console.log("Your configurations are now symlinked to this repository.");
-    console.log(`To update: cd ${scriptDir} && git pull`);
-  } else {
-    console.log("Your configurations have been copied from this repository.");
-    console.log(
-      `To update: cd ${scriptDir} && git pull && ./install.sh --copy`,
-    );
-  }
+  console.log("Your configurations have been copied from this repository.");
+  console.log(`To update: cd ${scriptDir} && git pull && ./install.sh`);
 } catch (e: unknown) {
   const msg = e instanceof Error ? e.message : String(e);
   process.stderr.write(`\x1b[0;31mError: ${msg}\x1b[0m\n`);

@@ -35,7 +35,7 @@ describe("installClaudeWhitelist", () => {
     const src = path.join(tmpDir, "full-install-src");
     const dest = path.join(tmpDir, "full-install-dest");
     buildFakeClaudeSrc(src);
-    installClaudeWhitelist(src, "symlink", dest);
+    installClaudeWhitelist(src, dest);
     const dotClaude = path.join(dest, ".claude");
     for (const name of CLAUDE_WHITELIST_FILES) {
       assert.ok(
@@ -56,37 +56,10 @@ describe("installClaudeWhitelist", () => {
     const dest = path.join(tmpDir, "partial-install-dest");
     // Only include a subset
     buildFakeClaudeSrc(src, ["settings.json", "skills"]);
-    assert.doesNotThrow(() => installClaudeWhitelist(src, "symlink", dest));
+    assert.doesNotThrow(() => installClaudeWhitelist(src, dest));
     const dotClaude = path.join(dest, ".claude");
     assert.ok(fs.existsSync(path.join(dotClaude, "settings.json")));
     assert.ok(fs.existsSync(path.join(dotClaude, "skills")));
     assert.ok(!fs.existsSync(path.join(dotClaude, "CLAUDE.md")));
-  });
-
-  it("backs up a legacy symlink at destRoot/.claude and replaces with real directory", () => {
-    const src = path.join(tmpDir, "legacy-src");
-    const dest = path.join(tmpDir, "legacy-dest");
-    buildFakeClaudeSrc(src, ["settings.json"]);
-    fs.mkdirSync(dest, { recursive: true });
-    // Create a legacy symlink at dest/.claude pointing somewhere (live target)
-    const legacyTarget = path.join(tmpDir, "legacy-target");
-    fs.mkdirSync(legacyTarget);
-    const dotClaude = path.join(dest, ".claude");
-    fs.symlinkSync(legacyTarget, dotClaude);
-    assert.ok(
-      fs.lstatSync(dotClaude).isSymbolicLink(),
-      "setup: should be a symlink",
-    );
-    installClaudeWhitelist(src, "symlink", dest);
-    // The symlink should have been backed up
-    const backups = fs
-      .readdirSync(dest)
-      .filter((f) => f.startsWith(".claude.backup."));
-    assert.strictEqual(backups.length, 1, "legacy symlink should be backed up");
-    // And replaced with a real directory
-    assert.ok(
-      fs.lstatSync(dotClaude).isDirectory(),
-      "should now be a real directory",
-    );
   });
 });

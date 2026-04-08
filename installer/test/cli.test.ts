@@ -13,14 +13,8 @@ afterEach(() => {
 });
 
 describe("parseArgs", () => {
-  it("returns symlink mode with no args", () => {
-    const result = parseArgs([]);
-    assert.deepStrictEqual(result, { mode: "symlink" });
-  });
-
-  it("returns copy mode with --copy", () => {
-    const result = parseArgs(["--copy"]);
-    assert.deepStrictEqual(result, { mode: "copy" });
+  it("returns without error when no args given", () => {
+    assert.doesNotThrow(() => parseArgs([]));
   });
 
   it("exits 1 on unknown flag", () => {

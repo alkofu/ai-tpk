@@ -1,6 +1,6 @@
 import { c } from "./colors.js";
 
-const USAGE = `Usage: ./install.sh [--copy]
+const USAGE = `Usage: ./install.sh
 
 Install AI TPK to your home directory.
 
@@ -9,21 +9,11 @@ Claude Code:
   - MCP servers: kubernetes, cloudwatch (user scope, via claude mcp add)
 
 Options:
-  --copy    Copy files instead of creating symlinks (default: symlink)
-  --help    Show this help message
+  --help    Show this help message`;
 
-Installation methods:
-  symlink (default): Creates symbolic links. Changes sync automatically.
-  copy:              Copies files. Manual sync required with git pull.`;
-
-export function parseArgs(argv: string[]): { mode: "symlink" | "copy" } {
-  let mode: "symlink" | "copy" = "symlink";
-
+export function parseArgs(argv: string[]): void {
   for (const flag of argv) {
     switch (flag) {
-      case "--copy":
-        mode = "copy";
-        break;
       case "--help":
       case "-h":
         console.log(USAGE);
@@ -37,6 +27,4 @@ export function parseArgs(argv: string[]): { mode: "symlink" | "copy" } {
         process.exit(1);
     }
   }
-
-  return { mode };
 }

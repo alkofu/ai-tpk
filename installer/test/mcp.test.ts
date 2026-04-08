@@ -196,7 +196,11 @@ describe("buildAddArgs — wrapper-based server", () => {
 
     const args = buildAddArgs(server, repoRoot, fakeHomedir);
 
-    const expectedWrapperPath = path.join(fakeHomedir, ".claude", "wrappers/mcp-grafana.sh");
+    const expectedWrapperPath = path.join(
+      fakeHomedir,
+      ".claude",
+      "wrappers/mcp-grafana.sh",
+    );
     assert.deepStrictEqual(args, [
       "-s",
       "user",
@@ -225,7 +229,11 @@ describe("buildAddArgs — wrapper-based server", () => {
       wrapper: "wrappers/mcp-grafana.sh",
     };
 
-    const expectedWrapperPath = path.join(fakeHomedir, ".claude", "wrappers/mcp-grafana.sh");
+    const expectedWrapperPath = path.join(
+      fakeHomedir,
+      ".claude",
+      "wrappers/mcp-grafana.sh",
+    );
 
     assert.throws(
       () => buildAddArgs(server, repoRoot, fakeHomedir),
@@ -267,7 +275,11 @@ describe("buildAddArgs — wrapper-based server", () => {
 
     const args = buildAddArgs(server, repoRoot, fakeHomedir);
 
-    const expectedWrapperPath = path.join(fakeHomedir, ".claude", "wrappers/mcp-test.sh");
+    const expectedWrapperPath = path.join(
+      fakeHomedir,
+      ".claude",
+      "wrappers/mcp-test.sh",
+    );
     assert.ok(
       args.includes(expectedWrapperPath),
       `expected args to contain "${expectedWrapperPath}", got: ${JSON.stringify(args)}`,

@@ -22,13 +22,16 @@ Keep AI tool configurations version-controlled and portable across machines. The
 
 ```
 .
-├── claude/          # Claude Code configs (whitelist: settings.json, CLAUDE.md, skills/, agents/, commands/, references/)
+├── claude/          # User-scope Claude Code configs (synced globally)
 │   ├── CLAUDE.md         # User-global instructions (skill mandates)
 │   ├── settings.json     # Plugin config, hooks, marketplace settings
 │   ├── agents/          # Specialized AI assistants (e.g., Quill for docs)
 │   ├── references/       # Shared reference files loaded by agents at runtime
 │   ├── skills/          # Reusable capabilities
 │   └── commands/        # Slash commands for Claude Code
+├── .claude/         # Project-scope Claude Code config (this repo only)
+│   ├── CLAUDE.md         # Project-level instructions (scope clarification guard)
+│   └── skills/          # Project-scoped skills
 ├── cursor/          # Cursor configurations (coming soon)
 ├── docs/            # Documentation
 │   ├── images/          # Project images and diagrams
@@ -36,7 +39,22 @@ Keep AI tool configurations version-controlled and portable across machines. The
 └── install.sh       # Installation script
 ```
 
+### Scope: User vs. Project
+
+This repository has two scopes for Claude Code artifacts:
+
+| Directory | Scope | Effect |
+|-----------|-------|--------|
+| `claude/` | User | Synced by `install.sh` to `~/.claude/` — applies globally across all repositories |
+| `.claude/` | Project | Applies only to this repository — not synced by installer |
+
+When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settings, consult `.claude/CLAUDE.md` for scope clarification rules. Before creating or modifying any scoped artifact, ask: "Repo scope (`.claude/`) or user scope (`claude/`)?"
+
+### Installation
+
 The installer only installs these paths from `claude/` into `~/.claude/`: `CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, and `references/`. Anything else in the repo or on disk under `~/.claude/` is left untouched except where those destinations are replaced (after a timestamped backup).
+
+The `.claude/` directory is never synced by the installer — it remains project-local.
 
 ### Developer Notes
 

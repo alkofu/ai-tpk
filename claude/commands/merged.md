@@ -3,7 +3,8 @@ description: Clean up the worktree and local branch for a PR that has been merge
 ---
 
 You are cleaning up after a merged pull request. This command discovers which worktree and
-branch to remove, confirms with the user, then performs the cleanup. Follow every step below
+branch to remove, then performs the cleanup (prompting only when multiple candidates are
+found). Follow every step below
 in order. Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
 
 **Note for DM:** Steps that perform write operations (destructive git commands) must be
@@ -85,8 +86,8 @@ if its branch name equals the local branch name shown in a gone line. Candidates
 `(detached HEAD)` as their branch cannot match and are ignored in this cross-reference.
 
 **If exactly one candidate has a `[gone]` upstream:**
-Auto-select it. Print: `"Identified merged branch via remote deletion: <branch> at <path>. Proceeding with cleanup."` Store the candidate's path as `<worktree-path>` and branch as
-`<branch>`, then proceed to Step 6.
+Auto-select it. Print: `"Identified merged branch via remote deletion: <branch> at <path>. Proceeding with cleanup."`
+Store the candidate's path as `<worktree-path>` and branch as `<branch>`, then proceed to Step 6.
 
 **If zero or multiple candidates have `[gone]` upstream:**
 Fall through to Step 5 (the manual picker).

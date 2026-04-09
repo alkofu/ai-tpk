@@ -48,9 +48,67 @@ Every PR must:
 
 5. **Pre-push (required)**: Do **not** push to upstream until **every change Git already tracks** (and every new file that should be in the PR) is committed. Run `git status`; if you see unstaged changes, staged changes waiting for a commit, or deletions not yet committed, resolve via amend, fixup, or a new commit (per **Commit history**) until there is nothing left to commit for work that should ship. Untracked files stay out until you intentionally `git add` and commit them.
 
-6. **Push**: `git push -u origin <branch>` (or your remote/branch convention) to upstream. If you **amended or rebased** commits that were **already pushed**, use `git push --force-with-lease` instead of a plain push. The PR compares the default branch to this branch, so **all commits you pushed** are what the PR contains.
+6. **Sync with main**: Fetch remote refs, guard against a dirty working tree, and rebase the branch onto the latest `refs/remotes/origin/main` before pushing. Run each command as a standalone Bash call — do not chain with `&&` or `;`. Pipes are permitted only for data transformation.
 
-7. **Open PR (always draft, assign to the user)**:
+   **6a. Fetch remote refs**
+
+   Run: `git fetch origin`
+
+   This updates remote-tracking refs without modifying the working tree.
+
+   **6b. Guard against a dirty working tree**
+
+   Run: `git status --porcelain`
+
+   If the output is non-empty, stop and tell the user: "Working tree is dirty. Commit or stash your changes before syncing." (At this point in the workflow, changes should already be committed per step 5 — this is a safety net.)
+
+   **6c. Rebase onto `refs/remotes/origin/main`**
+
+   `refs/remotes/origin/main` is used instead of the `origin/main` shorthand to avoid resolution ambiguity when a local branch named `main` exists.
+
+   **6c.1** — Run: `git rebase refs/remotes/origin/main`
+
+   - If the rebase exits with **zero** → proceed to step 7 (Push).
+   - If the rebase exits **non-zero** → continue to 6c.2.
+
+   **6c.2** — Run: `git diff --name-only --diff-filter=U`
+
+   - If the output is **empty** (no conflicted files — this is a different rebase error): run `git rebase --abort` as a standalone call, stop, and tell the user: "Rebase failed for a reason other than merge conflicts. The rebase has been aborted. Check `git status` for details."
+   - If the output lists **more than 10 conflicted files**: run `git rebase --abort` as a standalone call, stop, and tell the user: "Too many conflicted files ({N}) for automated resolution. The rebase has been aborted. Resolve conflicts manually."
+   - If the output lists between **1 and 10 conflicted files** (inclusive) → continue to 6c.3.
+
+   **6c.3 — Resolve conflicts**
+
+   A "round" is defined as one attempt to resolve conflicts for the **current commit** being rebased. The 3-round limit is **per-commit**: each time `git rebase --continue` succeeds and moves on to the next commit (which then stops again with new conflicts), the round counter resets to 0. A round only increments when the same commit fails to be resolved and `git rebase --continue` exits non-zero again.
+
+   For each conflicted file listed:
+
+   1. Read the file contents and understand the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
+   2. Write a resolved version that **preserves the PR's original changes as the primary intent**. In a rebase, the PR's commits are being replayed onto main — so the PR's logic, behaviour, and scope must be kept intact. The resolution should do the minimum necessary to make the PR's changes apply cleanly against what has changed in main. Do not expand the PR's scope, introduce new behaviour, or favour main's version of a line unless the PR's version is genuinely incompatible. If in doubt, keep the PR's change and adjust only what is structurally required by the conflict.
+   3. After writing the resolved file, scan it for remaining conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`). If any remain, re-read and re-resolve.
+      - If markers still persist in the same file after a second attempt, run `git rebase --abort` as a standalone call and stop: "Unable to resolve all conflict markers in `{file}`. The rebase has been aborted. Resolve conflicts manually."
+   4. Stage each resolved file (confirmed marker-free) with a separate standalone call: `git add {file}`
+
+   **6c.4** — After all conflicted files are staged, run: `GIT_EDITOR=true git rebase --continue`
+
+   (The `GIT_EDITOR=true` env var skips the editor prompt for the commit message.)
+
+   - If `git rebase --continue` reports that the resulting commit is **empty**: run `git rebase --skip` as a standalone call (to skip the now-empty commit) and treat this as a successful continue — proceed to step 7 (Push).
+   - If `git rebase --continue` exits with **zero** → print "Conflicts resolved. Rebase completed successfully." and proceed to step 7 (Push).
+   - If `git rebase --continue` exits **non-zero** → run `git diff --name-only --diff-filter=U` as a standalone call.
+     - If the output is **empty** (no conflicted files): run `git rebase --abort` as a standalone call and stop: "Rebase failed during `--continue` for a reason other than merge conflicts. The rebase has been aborted."
+     - If there are still conflicted files and **fewer than 3 rounds** have been attempted for this commit → return to 6c.3 (incrementing the per-commit round counter).
+     - If **3 rounds** have been attempted for this commit without success → run `git rebase --abort` as a standalone call and stop: "Unable to fully resolve rebase conflicts after 3 attempts. The rebase has been aborted. Resolve manually by running `git rebase refs/remotes/origin/main`, fixing each conflict, and running `git rebase --continue`."
+
+   **6d. Re-validate if conflicts were resolved**
+
+   If any conflicts were resolved during sub-steps 6c.3–6c.4 (i.e., the rebase did not complete cleanly in 6c.1), re-run the `validate-before-pr` skill before proceeding to step 7 (Push). Conflict resolution can modify file contents in ways that introduce lint or formatting violations that the earlier validation already cleared.
+
+   If `validate-before-pr` fails on re-run, stop — do not push or open a PR. Report the failures and request fixes.
+
+7. **Push**: `git push -u origin <branch>` (or your remote/branch convention) to upstream. If you **amended or rebased** commits that were **already pushed**, use `git push --force-with-lease` instead of a plain push. The PR compares the default branch to this branch, so **all commits you pushed** are what the PR contains.
+
+8. **Open PR (always draft, assign to the user)**:
    - **GitHub**: `gh pr create --draft --assignee @me --title "..." --body "..."`
      Use `@me` so the PR is **assigned to the person opening it** (the user’s GitHub account). Adjust only if the repo uses a different assignee rule.
    - **GitLab**: `glab mr create --draft --assignee @me` (or your login) with the same title/body rules; use the web UI only if you mirror draft + assignee there.
@@ -161,6 +219,7 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 - [ ] **GitHub account and commit author**: Verified per the account probe in `claude/references/github-auth-probe.md` (extract `{owner}/{repo}`, probe with `gh api`, switch accounts if needed, verify commit author email)
 - [ ] **Branch has no existing PR**: Verified that the current branch has no open or merged PR—if one exists, switched to main, fetched latest, and created a new branch
 - [ ] **Before push**: all tracked changes (and intended new files) are **committed**—`git status` shows nothing that still needs committing for work going into the PR
+- [ ] **Synced with main**: Fetched origin, rebased onto `refs/remotes/origin/main`; if conflicts were resolved, `validate-before-pr` was re-run and passed
 - [ ] History is **compact**: prefer `--amend` / `--fixup` + autosquash; new commits only when scope or topic differs
 - [ ] Branch matches `<prefix>/<description>` and Conventional Branch character rules
 - [ ] PR title is a conventional commit subject line (and matches the main commit when single-commit)
@@ -171,4 +230,5 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 ## Relationship to other skills
 
 - **Commits**: Follow **commit-message-guide** for message bodies and footers. It also documents **WIP** and **fixup!** subject lines—pair fixup commits with `git rebase -i --autosquash` to merge them into the target commit.
+- **Sync with main**: Step 6 fetches remote refs and rebases the branch onto `refs/remotes/origin/main` with automated conflict resolution before pushing. The rebase logic is inlined from `sync-pr` semantics — no separate `sync-branch-to-main` skill exists. The `/sync-pr` command performs the same rebase logic independently for post-PR-creation syncing. If conflicts were resolved during the rebase, `validate-before-pr` is re-run before proceeding to push.
 - **MCP / automation**: Skills named like “open-pull-request” on catalogs (e.g. [MCP Market](https://mcpmarket.com/tools/skills/open-pull-request)) usually wrap the same steps; this document defines **naming** and **titles** so any tool or CLI you use stays consistent.

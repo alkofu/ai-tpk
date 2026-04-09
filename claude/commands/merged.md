@@ -17,13 +17,9 @@ worktree session).
 
 **If both are set:**
 Print: `"Using session context: <WORKTREE_PATH> (<WORKTREE_BRANCH>)"`
-Ask the user to confirm before proceeding.
-
-If the user confirms: set `<worktree-path>` to `WORKTREE_PATH` and `<branch>` to
-`WORKTREE_BRANCH`. Proceed through Steps 1 and 2 (to identify `<main-path>` and verify the
-worktree exists), then skip directly to Step 6.
-
-If the user does not confirm: abort without making any changes.
+Set `<worktree-path>` to `WORKTREE_PATH` and `<branch>` to `WORKTREE_BRANCH`. Proceed through
+Steps 1 and 2 (to identify `<main-path>` and verify the worktree exists), then skip directly
+to Step 6.
 
 **If not both set:**
 Proceed to Step 1 (full discovery flow).
@@ -89,12 +85,8 @@ if its branch name equals the local branch name shown in a gone line. Candidates
 `(detached HEAD)` as their branch cannot match and are ignored in this cross-reference.
 
 **If exactly one candidate has a `[gone]` upstream:**
-Auto-select it. Print: `"Identified merged branch via remote deletion: <branch> at <path>. Remove it? (yes/no)"`
-
-If the user answers `yes`: store the candidate's path as `<worktree-path>` and branch as
+Auto-select it. Print: `"Identified merged branch via remote deletion: <branch> at <path>. Proceeding with cleanup."` Store the candidate's path as `<worktree-path>` and branch as
 `<branch>`, then proceed to Step 6.
-
-If the user answers anything other than `yes`: fall through to Step 5 (the manual picker).
 
 **If zero or multiple candidates have `[gone]` upstream:**
 Fall through to Step 5 (the manual picker).
@@ -105,10 +97,8 @@ Fall through to Step 5 (the manual picker).
 Tell the user: "No worktrees found to clean up." Stop here — do not continue to later steps.
 
 **If exactly one candidate:**
-Print the candidate's path and branch name. Ask the user:
-"This worktree looks like it belongs to your merged PR. Remove it? (yes/no)"
-
-If the user answers anything other than `yes`, abort without making any changes.
+Print the candidate's path and branch name.
+Store the candidate's path as `<worktree-path>` and branch as `<branch>`.
 
 **If multiple candidates:**
 Print a numbered list of all candidates (path and branch for each). Ask the user:

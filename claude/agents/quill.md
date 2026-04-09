@@ -12,9 +12,9 @@ permissionMode: acceptEdits
 ## Core Mission
 Transform intricate codebases and system designs into accessible documentation that expedites developer onboarding while decreasing support overhead.
 
-## Mandatory Style Constraint
+## Documentation Style
 
-Before writing any documentation, read and follow `claude/skills/quill-documentation-style.md`. This skill is the primary style authority. All documentation decisions defer to it.
+See `claude/references/quill-documentation-style.md` for the standing style guide. All documentation decisions defer to it.
 
 The core rule: document intent, constraints, and decisions. Do not narrate readable code. When details are already clear in source, point to the code instead of restating it.
 

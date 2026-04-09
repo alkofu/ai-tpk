@@ -1,4 +1,4 @@
-# Skill: Document for intent, not narration
+# Quill Documentation Style Guide
 
 When generating documentation, assume the code is the primary source of truth and is readable by engineers. Do not rewrite code into prose unless the behavior is non-obvious, risky, or critical to understand.
 
@@ -50,6 +50,7 @@ Before adding documentation detail, check:
 4. Would a pointer to the code be more useful than prose?
 
 If the answer to (1) is yes and (2) is no — do not expand in prose.
+If the answer to (2) is yes — include the explanation; it adds value the code alone does not provide.
 If the answer to (3) is yes — prefer a brief summary plus a code reference.
 If the answer to (4) is yes — point to the code.
 
@@ -66,6 +67,10 @@ If the answer to (4) is yes — point to the code.
 - "The function checks if `x` is null, then iterates through the array, then maps the values…"
 - "This class has three properties: …"
 - "This method calls helper A, then helper B, then returns the result."
+
+## On code examples
+
+Code examples that demonstrate usage are documentation, not narration. Prefer a working example over a prose description of how to call an API, instantiate a class, or configure a module. Examples show; prose tells.
 
 ## By doc type
 

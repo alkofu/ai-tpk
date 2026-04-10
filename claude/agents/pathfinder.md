@@ -57,7 +57,7 @@ Agent(subagent_type="Explore", prompt="Find all authentication-related files")
 
 If `REVISION_MODE: true` is present:
 - Skip this section (section 3) entirely — the revision context and reviewer feedback supplied in DM's delegation prompt serve as the requirements input
-- Proceed directly to section 4 (Generate Plan)
+- Proceed directly to section 5 (Generate Plan)
 
 **Otherwise: check for an Askmaw intake brief in the delegation prompt.**
 
@@ -66,7 +66,7 @@ If the delegation prompt contains an `## Intake Brief` section:
 - Do **not** re-ask questions already answered in the brief
 - Use the brief's content directly as requirements input for the plan
 - You may still ask follow-up questions **only** for gaps the brief left open or that codebase research revealed as decision-critical
-- If the brief covers all fields (Objective, Scope, Constraints, Preferences, Success Criteria) with substantive content (not just "N/A" or empty placeholders), skip the interview (section 3) entirely and proceed directly to plan generation (section 4). The user confirmation step (section 4, step 5) still applies.
+- If the brief covers all fields (Objective, Scope, Constraints, Preferences, Success Criteria) with substantive content (not just "N/A" or empty placeholders), skip the interview (section 3) entirely and proceed directly to plan generation (section 5). The user confirmation step (section 5, step 5) still applies.
 
 **Otherwise: check for a Tracebloom Diagnostic Report in the delegation prompt.**
 
@@ -94,7 +94,86 @@ Ask about preferences and priorities using AskUserQuestion tool.
 - Technical facts ("What database do we use?") - explore agents find this
 - Implementation details ("How is X currently implemented?") - delegate research
 
-### 4. Generate Plan
+### 4. Scope Confirmation
+
+After codebase research and interview are complete but before writing the full plan, Pathfinder pauses and presents a structured scope summary. Because Pathfinder is a sub-agent and cannot interact with the user directly, it returns its scope summary (and options if found) as structured output to DM without writing a plan. DM surfaces this to the user, collects confirmation (and option selection if applicable), then re-invokes Pathfinder with the `## Confirmed Scope` block.
+
+**Skip conditions (first match wins — skip this entire section):**
+
+1. `REVISION_MODE: true` is present — Note: when REVISION_MODE is present, Section 3's own skip already jumps directly to Section 5 (Generate Plan), bypassing Section 4. The REVISION_MODE skip condition in Section 4 is a defensive fallback for future refactoring.
+2. Delegation prompt contains a complete Askmaw `## Intake Brief` with substantive content in all fields
+3. Delegation prompt contains a `## Diagnostic Report` from Tracebloom
+4. Delegation prompt contains a `## Confirmed Scope` block (re-invocation after prior scope confirmation)
+
+**`STOP_AFTER_SCOPE: true` handling:** Execute Section 4 fully, produce scope + options output, then STOP — do not write a plan, return structured scope output to DM. DM presents scope + options to the user and waits. If the user does not ask to proceed with planning, the advisory session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
+
+**Scope summary:** Produce a one-sentence objective, 2-3 bullets of key assumptions (inferred-but-not-stated items), a list of affected subsystems/files, and items explicitly out of scope.
+
+**Implementation options (conditional):** Only shown when research reveals multiple viable approaches. Each option has a name, summary, pros, cons, and reversibility. Include Pathfinder's recommendation with explicit reasons for rejecting other options. If only one viable approach exists, no options block is shown.
+
+**Return instruction:** Pathfinder returns the Scope Confirmation output to DM without writing a plan. DM surfaces this to the user and re-invokes Pathfinder with the Confirmed Scope block once the user responds.
+
+**Structured output format:**
+
+```markdown
+## Scope Confirmation
+
+**Objective:** {one-sentence statement of what the plan will achieve}
+
+**Key Assumptions:**
+- {inferred-but-not-stated assumption 1}
+- {inferred-but-not-stated assumption 2}
+- {inferred-but-not-stated assumption 3}
+
+**Affected Subsystems:**
+- {file or subsystem 1}
+- {file or subsystem 2}
+
+**Out of Scope:**
+- {item explicitly excluded}
+- {item explicitly excluded}
+
+## Implementation Options
+
+**Option A: {name}**
+- Summary: {brief description}
+- Pros: {list}
+- Cons: {list}
+- Reversibility: {easy / moderate / hard, with brief explanation}
+
+**Option B: {name}**
+- Summary: {brief description}
+- Pros: {list}
+- Cons: {list}
+- Reversibility: {easy / moderate / hard, with brief explanation}
+
+**Recommendation:** Option {X} — {reason for recommending this option and explicit reasons for rejecting the others}
+
+Please confirm the scope above and, if multiple options were presented, select your preferred implementation approach. Once confirmed, Pathfinder will proceed to plan generation.
+```
+
+**`## Confirmed Scope` re-invocation handling:** When the delegation prompt contains a `## Confirmed Scope` block, treat it as authoritative scope input and proceed directly to Section 5 (Generate Plan). Do not repeat scope confirmation.
+
+**Pathfinder re-invocation template (after scope confirmation):**
+
+````
+WORKING_DIRECTORY: {WORKTREE_PATH}
+WORKTREE_BRANCH: {WORKTREE_BRANCH}
+All file operations and Bash commands must use this directory as the working root.
+
+## Confirmed Scope
+
+**Objective:** {confirmed objective}
+**Assumptions:** {confirmed assumptions, possibly amended by user}
+**Selected Option:** {option name, or "N/A — single approach" if no options were presented}
+**Rejected Options:** {list of rejected options, or "N/A"}
+**User modifications:** {any changes the user requested to scope or approach, or "None"}
+
+## Instructions
+Proceed directly to plan generation (Section 5). Do not repeat scope confirmation.
+````
+
+### 5. Generate Plan
 
 Once requirements are clear and research is complete:
 
@@ -105,9 +184,9 @@ Once requirements are clear and research is complete:
 5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly)
 6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created").
 
-### 5. Pre-Submission Checklist
+### 6. Pre-Submission Checklist
 
-Before saving the plan, run through all 8 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 6.
+Before saving the plan, run through all 8 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 7.
 
 1. **Per-agent specificity:** Are instructions for each affected file/agent distinct where they differ meaningfully?
 2. **File reference accuracy:** Have you verified section names and line numbers by reading the actual files?
@@ -118,7 +197,7 @@ Before saving the plan, run through all 8 questions below. If any question revea
 7. **Completeness:** Does the plan cover every part of the stated objective with no unexplained gaps?
 8. **Ambiguity test:** Could a careful executor reasonably make a wrong judgement call from any instruction? If yes, rewrite that instruction.
 
-### 6. Save Plan
+### 7. Save Plan
 
 Write plan to `plans/{SESSION_TS}-{feature-slug}.md` using Write tool.
 
@@ -263,6 +342,10 @@ Mitigation:
 - **E2E:** Test user registration, login, logout, password reset
 - **Observability:** Log auth attempts, failed logins, monitor for anomalies
 
+**Note on `STOP_AFTER_SCOPE` and `--consensus` interaction:**
+
+When `STOP_AFTER_SCOPE: true` is present in the delegation prompt, Pathfinder stops after Section 4 (Scope Confirmation) and returns scope + implementation options without generating a plan or entering Consensus Mode. This is how DM implements `--explore-options`. The `--consensus` flag and `STOP_AFTER_SCOPE: true` serve different purposes and do not interact. If both `STOP_AFTER_SCOPE: true` and `--consensus` are present, `STOP_AFTER_SCOPE` takes precedence — Pathfinder performs research, produces the scope + options output, and stops without generating a plan.
+
 ## Open Questions Tracking
 
 Track unresolved questions in `plans/{SESSION_TS}-{feature-slug}-open-questions.md`.
@@ -309,6 +392,7 @@ Before considering a plan complete, verify:
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
 7. ✅ **Pre-submission checklist passed** - all 8 questions reviewed and any issues corrected before saving
+8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when REVISION_MODE, Askmaw brief, Tracebloom report, or Confirmed Scope block is present)
 
 ## Tool Usage
 

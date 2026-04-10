@@ -123,7 +123,7 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 
 | Flag | Effect |
 |------|--------|
-| `--explore-options` | Trigger options exploration before execution planning, even if the DM would otherwise proceed directly |
+| `--explore-options` | Advisory-only mode: invoke Pathfinder to surface scope and implementation options, then stop. No plan is written, no execution follows. Use when you want to evaluate approaches before committing. |
 
 ### Worktree Context Block
 
@@ -219,8 +219,7 @@ Before any planning begins, create an isolated git worktree for this session so 
 **Mutual exclusivity note:** After clarifying the goal, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:
 - **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → Investigative Gate → Tracebloom
 - **(b) Ambiguous or underspecified** (the task needs clarification before planning) → Intake Gate → Askmaw
-- **(c) Requires options exploration** (architectural decision or multiple viable approaches) → Explore-Options Gate → Pathfinder consensus mode
-- **(d) Ready for planning** (clear, bounded, constructive task) → proceed directly to Pathfinder
+- **(c) Ready for planning** (clear, bounded, constructive task) → proceed to Pathfinder (which will internally handle scope confirmation and options discovery in its Section 4)
 
 **Investigative Gate** (between step 1 and the Intake Gate):
 
@@ -309,20 +308,36 @@ When Askmaw is skipped: proceed to step 2 as before.
 
 2. Assess whether a plan already exists in the `plans/` directory.
 
-**Explore-Options Gate** (between step 2 and step 3):
+**Explore-Options Gate** (advisory-only, between the Intake Gate and step 2):
 
-Trigger options exploration when: the `--explore-options` flag is present, OR the request appears to involve an architectural decision, technology selection, or an ambiguous approach with multiple viable paths.
-
-Suppress options exploration when: the user has already named a specific approach or technology, OR an approved plan already exists in `plans/`. The explicit `--explore-options` flag overrides suppression.
+Trigger ONLY when the `--explore-options` flag is explicitly present.
 
 When triggered:
-- Invoke Pathfinder with a delegation prompt instructing it to use Consensus Mode output format (as if `--consensus` were passed -- note: Pathfinder Consensus Mode is triggered by DM internally here; users may also trigger it directly with `--consensus` in their message), produce 2–4 viable options (not an execution plan), and return the options for user selection.
-- Present the options inline in the conversation — each option's name, summary, and Pathfinder's recommendation — then ask the user to select one or request changes. Do not proceed until the user responds.
-- **If user selects an option:** Re-invoke Pathfinder for an execution plan, passing both the selected option name and the full Consensus Mode output as context so Pathfinder does not re-research from scratch.
-- **If user rejects all options and requests different approaches:** Re-invoke Pathfinder in Consensus Mode with the user's feedback as additional constraints, then re-present options.
-- **If user wants to modify one option:** Re-invoke Pathfinder for an execution plan with the user's modifications folded in as constraints.
+- Invoke Pathfinder with `STOP_AFTER_SCOPE: true`. Pathfinder researches the codebase, produces a Scope Confirmation (objective, assumptions, affected subsystems, out of scope) and implementation options, then returns this output to DM without writing a plan.
+- DM presents scope + options to the user and waits for explicit selection. Do not proceed until the user responds.
+- **If the user does not ask to proceed with planning:** The advisory session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
+- **If user selects an option and asks to continue:** Re-invoke Pathfinder with the `## Confirmed Scope` block (using the re-invocation template below) and proceed to step 3.
 
-When not triggered: proceed directly to step 3.
+**Pathfinder re-invocation template (after scope confirmation):**
+
+````
+WORKING_DIRECTORY: {WORKTREE_PATH}
+WORKTREE_BRANCH: {WORKTREE_BRANCH}
+All file operations and Bash commands must use this directory as the working root.
+
+## Confirmed Scope
+
+**Objective:** {confirmed objective}
+**Assumptions:** {confirmed assumptions, possibly amended by user}
+**Selected Option:** {option name, or "N/A — single approach" if no options were presented}
+**Rejected Options:** {list of rejected options, or "N/A"}
+**User modifications:** {any changes the user requested to scope or approach, or "None"}
+
+## Instructions
+Proceed directly to plan generation (Section 5). Do not repeat scope confirmation.
+````
+
+When not triggered: proceed to step 2; options discovery happens naturally inside Pathfinder's Section 4.
 
 3. If no plan exists, call Pathfinder and request:
    - objective
@@ -519,7 +534,7 @@ Keep it concise and operational. Prefer facts over narration.
 
 ## Important constraints
 
-- When exploring options, DM must wait for explicit user selection before proceeding to execution planning.
+- When `--explore-options` is active, DM must present scope and options to the user and wait for explicit selection before re-invoking Pathfinder for plan generation. For normal tasks (no flag), Pathfinder's internal Scope Confirmation step handles this pause — DM must surface the Scope Confirmation output to the user and wait for confirmation before passing the Confirmed Scope block back to Pathfinder.
 - Do not invent a plan when Pathfinder should provide one.
 - Do not skip Ruinor review. All plans and implementations must be reviewed by Ruinor (mandatory baseline).
 - Invoke specialists (Riskmancer, Windwarden, Knotcutter, Truthhammer) only when:
@@ -609,15 +624,18 @@ Action:
 Example 5:
 User asks: "We need a background job system for sending emails --explore-options"
 Action:
-- **Explore-Options Gate triggers** (explicit `--explore-options` flag; no plan in `plans/`)
-- Invoke Pathfinder in Consensus Mode: instruct it to produce 2–4 viable options (not an execution plan)
-- Pathfinder returns 3 options inline:
-  - Option A: In-process queue with a database-backed jobs table
-  - Option B: Redis-backed queue with BullMQ
-  - Option C: Dedicated message broker (e.g., RabbitMQ)
-- DM presents options to user with names, summaries, and Pathfinder's recommendation; waits for explicit selection
-- User selects Option B (Redis + BullMQ)
-- DM re-invokes Pathfinder for execution plan, passing "Option B: Redis + BullMQ" and the full Consensus Mode output as context
+- **Explore-Options Gate triggers** (explicit `--explore-options` flag)
+- DM invokes Pathfinder with `STOP_AFTER_SCOPE: true`
+- Pathfinder researches codebase, produces Scope Confirmation:
+  - Objective: Add an async email delivery system decoupled from the request cycle
+  - Key Assumptions: no existing job infrastructure, Postgres is already present, email volume is moderate
+  - Affected Subsystems: `src/mailer/`, `src/jobs/`, `config/`
+  - Out of Scope: SMS notifications, retry dashboards, monitoring setup
+  - Three implementation options: (A) In-process queue with a database-backed jobs table, (B) Redis-backed queue with BullMQ, (C) Dedicated message broker (e.g., RabbitMQ); recommendation: Option B
+- Pathfinder returns scope + options output to DM (no plan written)
+- DM presents scope + options to user, user selects Option B (Redis + BullMQ)
+- DM re-invokes Pathfinder with `## Confirmed Scope` block (using re-invocation template above)
+- Pathfinder sees `## Confirmed Scope` block, skips Section 4, proceeds directly to plan generation
 - Pathfinder saves plan to `plans/20260401-143022-background-jobs.md`
 - Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
 

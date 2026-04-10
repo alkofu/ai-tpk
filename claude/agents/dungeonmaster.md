@@ -308,7 +308,7 @@ When Askmaw is skipped: proceed to step 2 as before.
 
 2. Assess whether a plan already exists in the `plans/` directory.
 
-**Explore-Options Gate** (advisory-only, between the Intake Gate and step 2):
+**Explore-Options Gate** (advisory-only, between step 2 and step 3):
 
 Trigger ONLY when the `--explore-options` flag is explicitly present.
 
@@ -317,6 +317,7 @@ When triggered:
 - DM presents scope + options to the user and waits for explicit selection. Do not proceed until the user responds.
 - **If the user does not ask to proceed with planning:** The advisory session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
 - **If user selects an option and asks to continue:** Re-invoke Pathfinder with the `## Confirmed Scope` block (using the re-invocation template below) and proceed to step 3.
+- **If user rejects presented options or requests a different approach:** Re-invoke Pathfinder with `STOP_AFTER_SCOPE: true` and the user's feedback as additional constraints appended to the delegation prompt. Repeat the scope + options presentation.
 
 **Pathfinder re-invocation template (after scope confirmation):**
 
@@ -337,18 +338,21 @@ All file operations and Bash commands must use this directory as the working roo
 Proceed directly to plan generation (Section 5). Do not repeat scope confirmation.
 ````
 
-When not triggered: proceed to step 2; options discovery happens naturally inside Pathfinder's Section 4.
+When not triggered: proceed to step 3; options discovery happens naturally inside Pathfinder's Section 4.
 
-3. If no plan exists, call Pathfinder and request:
-   - objective
-   - assumptions
-   - constraints
-   - step-by-step execution plan
-   - validation criteria
-   - risks / rollback considerations
+3. Invoke Pathfinder (first invocation). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active.
 
-   Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block (defined above) if a session worktree is active. Pathfinder must write plans to `{WORKING_DIRECTORY}/plans/` using the filename `{SESSION_TS}-{feature-slug}.md` (e.g., `{WORKING_DIRECTORY}/plans/20260401-143022-oauth-login.md`).
-4. Pathfinder will save the plan to `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md`.
+   **What Pathfinder returns depends on skip conditions:**
+   - If `REVISION_MODE: true` is present, a complete Askmaw brief covers all fields, a Tracebloom Diagnostic Report is present, or a `## Confirmed Scope` block is present in the delegation prompt → Pathfinder skips Section 4 (Scope Confirmation) and returns a completed plan directly. Proceed to step 4.
+   - Otherwise → Pathfinder researches the codebase, runs Section 4 (Scope Confirmation), and returns a structured Scope Confirmation output to DM **without writing a plan**. Proceed to step 3a.
+
+3a. When Pathfinder returns Scope Confirmation output (not a plan):
+   - Surface the scope summary and any implementation options to the user exactly as Pathfinder returned them.
+   - Wait for the user to confirm scope and (if options were presented) select an implementation approach. Do not proceed until the user responds.
+
+3b. Re-invoke Pathfinder with the confirmed scope. Use the re-invocation template defined in the Explore-Options Gate above, substituting the user's confirmed objective, assumptions, selected option, and any user modifications. Pathfinder will skip Section 4 and proceed directly to plan generation.
+
+4. Pathfinder saves the completed plan to `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md`.
 
 ### Phase 2: Plan Review (Quality Gate)
 
@@ -682,3 +686,22 @@ Action:
 - Skip Pathfinder (trivial fix). Delegate to Bitsmith with Diagnostic Report as context.
 - **Implementation Review:** Run Ruinor (mandatory baseline). Skip specialist reviewers.
 - **Phase 5:** Offer PR/merge/keep options.
+
+Example 9:
+User asks: "Add webhook support for payment events"
+Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree
+- **Phase 1:** Task is clear and well-specified — no Tracebloom, no Askmaw
+- DM invokes Pathfinder (first invocation)
+- Pathfinder researches codebase, reaches Section 4 (Scope Confirmation), returns scope output to DM:
+  - Objective: Add inbound webhook handling for payment provider events (payment.completed, payment.failed)
+  - Key Assumptions: Payment provider is Stripe; no existing webhook infrastructure
+  - Affected Subsystems: src/webhooks/ (new), src/payments/, config/
+  - Out of Scope: Outbound webhooks, non-payment event types
+  - Option A: Synchronous webhook handler (simple, no queue)
+  - Option B: Queue-backed webhook handler (reliable, retryable)
+  - Recommendation: Option B — payment events should be idempotent and retryable
+- DM surfaces scope + options to user; user confirms scope and selects Option B
+- DM re-invokes Pathfinder with `## Confirmed Scope` block (Option B selected, Option A rejected because payment events require retry guarantees)
+- Pathfinder skips Section 4, generates full plan, saves to `plans/20260401-143022-webhook-support.md`
+- Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal

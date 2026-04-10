@@ -111,7 +111,7 @@ After codebase research and interview are complete but before writing the full p
 
 **Implementation options (conditional):** Only shown when research reveals multiple viable approaches. Each option has a name, summary, pros, cons, and reversibility. Include Pathfinder's recommendation with explicit reasons for rejecting other options. If only one viable approach exists, no options block is shown.
 
-**Return instruction:** Pathfinder returns the Scope Confirmation output to DM without writing a plan. DM surfaces this to the user and re-invokes Pathfinder with the Confirmed Scope block once the user responds.
+**Return instruction:** Pathfinder returns the Scope Confirmation output to DM without writing a plan and **stops**. Do not proceed to Section 5 until re-invoked with a `## Confirmed Scope` block. DM surfaces this output to the user and re-invokes Pathfinder once the user responds.
 
 **Structured output format:**
 
@@ -181,7 +181,7 @@ Once requirements are clear and research is complete:
 2. Create 3-6 actionable steps with verifiable acceptance criteria
 3. Avoid over-specification (not 30 micro-steps)
 4. Avoid vagueness (not "step 1: implement")
-5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly)
+5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly). Note: this confirmation covers the execution steps (the *how*); the Section 4 Scope Confirmation covered the objective and approach (the *what*). Both serve distinct purposes and both are intentional.
 6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created").
 
 ### 6. Pre-Submission Checklist

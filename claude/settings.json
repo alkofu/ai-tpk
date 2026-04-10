@@ -78,11 +78,12 @@
     ],
     "SessionStart": [
       {
+        "async": true,
         "hooks": [
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/session-start.sh",
-            "timeout": 5
+            "timeout": 30
           }
         ]
       }

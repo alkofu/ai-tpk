@@ -48,6 +48,46 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
 - Allowed silently: `grep "a && b" file.txt` (compound operator is inside a quoted string)
 
+#### SessionStart Hook - Terminal Tab Rename
+
+Runs at the start of every Claude Code session to set the terminal tab or window title to an AI-generated name reflecting the current project context.
+
+**Behavior:**
+1. Reads the session start event from stdin and parses the `cwd` field via `jq` (falls back to `$PWD` if `jq` is unavailable or `cwd` is absent)
+2. Gathers context: directory name, git repo name, and branch name
+3. Checks for a `--name` override — inspects the payload and walks up to 3 levels of process ancestry; if `--name` (long form only; `-n` is intentionally not checked to avoid false positives with unrelated processes) is detected, exits without setting a title
+4. Detects the active terminal emulator (see supported terminals below)
+5. Calls `claude -p --bare --model haiku` with a constrained system prompt to generate a 2-5 word session title
+6. Sanitizes the result (strips whitespace, truncates to 40 characters) and sets the terminal tab/window title
+
+**Supported terminals and detection:**
+
+| Terminal | Detection | Title mechanism |
+|----------|-----------|-----------------|
+| tmux | `$TMUX` non-empty | `tmux rename-window` |
+| cmux | `$CMUX_WORKSPACE_ID` set (primary) or `$TERM_PROGRAM=ghostty` (fallback) | `cmux rename-tab` CLI; OSC 0 escape if `cmux` not in PATH |
+| iTerm2 | `$TERM_PROGRAM=iTerm.app` | OSC 0 escape sequence (`\033]0;...\007`) |
+
+**Detection rationale:** tmux is checked before `$TERM_PROGRAM` because the tmux window name is the visible label regardless of the host terminal emulator (e.g., iTerm2 running in tmux integration mode shows the tmux window name, not the iTerm2 tab title).
+
+**`--name` interaction:** If the user launches Claude with `--name` (to set a session name explicitly), the hook detects this via payload inspection and process ancestry inspection and exits without overwriting the title.
+
+**Async and timeout:** The hook runs asynchronously with a 30-second timeout so that AI title generation does not block session startup.
+
+**Dependencies:**
+- `bash` — required
+- `git` — optional; used for repo name and branch detection; absent git context is handled gracefully
+- `jq` — optional; used for payload parsing; falls back to `$PWD` if unavailable
+- `claude` CLI — required; used for AI title generation; hook exits silently if invocation fails
+- `cmux` CLI — optional; used for cmux tab renaming; falls back to OSC 0 escape if not in PATH
+
+**`--bare` usage:** The `--bare` flag is passed to `claude -p` to prevent the session-start hook from triggering another SessionStart hook, avoiding recursive invocation.
+
+**Configuration:**
+- Script: `claude/hooks/session-start.sh`
+- Type: Async SessionStart hook
+- Timeout: 30 seconds
+
 #### SubagentStop Hook - Session Capture
 
 Runs after every sub-agent completion to capture raw session event data.

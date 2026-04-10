@@ -17,6 +17,37 @@ Pre-configured marketplaces for plugin discovery:
 
 Hooks allow you to run automated checks or tasks at specific points in your Claude workflow.
 
+#### PermissionRequest Hook - Compound Command Enforcement and Request Logging
+
+Runs when a Bash command falls outside the `allowedTools` list and requires permission.
+
+**Behavior:**
+1. Reads the permission request event from stdin
+2. Extracts the Bash command and strips quoted strings to avoid false positives
+3. Detects compound operators: `&&`, `;` (semicolon), or embedded newlines
+4. Denies permission if compound operators are found, returning a message directing the agent to split the command into separate Bash calls
+5. For single commands, appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
+6. Fails open (no output, exit 0) if `jq` is unavailable
+
+**Purpose:** Enforces the no-compound-commands rule defined in `claude/references/bash-style.md` at the permission stage. Keeps the human permission checkpoint intact for any single command not already covered by `allowedTools`, while providing a log for manual review of what commands are being requested.
+
+**Configuration:**
+- Script: `claude/hooks/permission-learn.sh`
+- Type: PermissionRequest hook
+- Timeout: 5 seconds
+- Requires `jq`; fails gracefully if unavailable
+
+**Log format** (`~/.claude/permission-requests.log`):
+```
+2026-04-09T14:27:44Z | agent_type=Bitsmith | agent_id=abc123 | command=npm install express
+```
+
+**Example:**
+- Denied: `git status && git diff` (contains `&&` — agent is told to split into separate calls)
+- Denied: `cd repo ; npm install` (contains `;`)
+- Logged + normal dialog: `docker ps` (single command not in allowedTools)
+- Allowed silently: `grep "a && b" file.txt` (compound operator is inside a quoted string)
+
 #### SubagentStop Hook - Session Capture
 
 Runs after every sub-agent completion to capture raw session event data.

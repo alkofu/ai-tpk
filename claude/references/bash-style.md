@@ -6,6 +6,8 @@ This file defines the required Bash command style for all agents. It is the auth
 
 Never chain commands using `&&` or `;` as sequential execution operators. Always issue each command as a separate, standalone Bash call.
 
+**Enforcement:** This rule is enforced automatically by the `PermissionRequest` hook (`permission-learn.sh`) in `claude/settings.json`. Any compound Bash command will be denied at the permission stage with a clear error message directing you to split the command into separate calls.
+
 Pipes (`|`) are permitted **only for data transformation** (feeding the output of one command into a filter). Do not use pipes as a substitute for sequential control flow.
 
 **Wrong — sequential chaining:**

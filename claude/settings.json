@@ -65,6 +65,28 @@
     "mcp__kubernetes__ping"
   ],
   "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/permission-learn.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/session-start.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [

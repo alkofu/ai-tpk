@@ -110,13 +110,13 @@ User request received
     │  │
     │  └─ NO → Continue
     │
-    ├─ Does request involve architecture/technology decision?
+    ├─ Does request require explicit scope/options review before planning?
     │  │
-    │  ├─ YES → Pathfinder consensus mode → Options → User selects
+    │  ├─ YES → DM invokes with --explore-options flag → Scope Confirmation → Options → User selects
     │  │
     │  └─ NO → Continue
     │
-    └─ Pathfinder (direct planning)
+    └─ Pathfinder (direct planning, includes automatic Scope Confirmation)
          │
          └─ Ruinor review + specialist reviews
               │

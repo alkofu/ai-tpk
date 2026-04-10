@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["installer/**/*.ts"]
+  "include": ["installer/**/*.ts", "launcher/**/*.ts"]
 }

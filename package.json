@@ -2,20 +2,25 @@
   "name": "ai-tpk",
   "private": true,
   "type": "module",
+  "dependencies": {
+    "@clack/prompts": "^0.9.0",
+    "yaml": "^2.7.0"
+  },
   "devDependencies": {
     "@types/node": "^25.5.2",
     "lefthook": "^2.1.4",
     "oxfmt": "^0.43.0",
     "oxlint": "^1.58.0",
-    "tsx": "latest",
+    "tsx": "^4.21.0",
     "typescript": "latest"
   },
   "scripts": {
     "prepare": "lefthook install",
     "setup": "tsx installer/main.ts",
-    "test": "node --import tsx/esm --test 'installer/test/**/*.test.ts'",
-    "lint": "oxlint installer/",
-    "format": "oxfmt --write installer/",
-    "format:check": "oxfmt --check installer/"
+    "launch": "tsx launcher/main.ts",
+    "test": "node --import tsx/esm --test 'installer/test/**/*.test.ts' 'launcher/test/**/*.test.ts'",
+    "lint": "oxlint installer/ launcher/",
+    "format": "oxfmt --write installer/ launcher/",
+    "format:check": "oxfmt --check installer/ launcher/"
   }
 }

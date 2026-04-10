@@ -9,4 +9,4 @@ if [[ "${GRAFANA_DISABLE_WRITE:-}" == "true" ]]; then
   EXTRA_ARGS+=("--disable-write")
 fi
 
-exec uvx mcp-grafana "${EXTRA_ARGS[@]}" "$@"
+exec uvx mcp-grafana ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} "$@"

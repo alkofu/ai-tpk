@@ -2,6 +2,7 @@ import { parseArgs } from "./cli.js";
 import { installDir } from "./fs-utils.js";
 import { installClaudeWhitelist } from "./claude.js";
 import { installMcpServers } from "./mcp.js";
+import { installLauncherScript } from "./launcher-install.js";
 import { c } from "./colors.js";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
@@ -27,6 +28,9 @@ try {
 
   console.log("");
   installMcpServers(scriptDir);
+
+  console.log("");
+  installLauncherScript(scriptDir);
 
   console.log("");
   console.log(c.green("✓ Installation complete!"));

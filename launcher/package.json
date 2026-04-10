@@ -1,0 +1,11 @@
+{
+  "name": "myclaude-launcher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@clack/prompts": "^0.9.0",
+    "tsx": "^4.21.0",
+    "yaml": "^2.7.0"
+  }
+}

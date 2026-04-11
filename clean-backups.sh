@@ -90,7 +90,7 @@ case "$input" in
 esac
 
 for f in "${to_delete[@]}"; do
-  rm "$f"
+  rm -r "$f"
   printf "${GREEN}Deleted:${NC} %s\n" "$f"
 done
 

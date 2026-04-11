@@ -17,6 +17,7 @@
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
 | **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | (default) | N/A |
 | **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-opus-4-6 | N/A |
+| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | (default) | N/A |
 
 ## When to Use Which Agent
 
@@ -34,6 +35,7 @@ Performance review → Windwarden
 Code implementation / execution  → Bitsmith
 Session narrative / audit trail  → Talekeeper (manual invocation; narrates enriched chronicles on demand)
 Meta-analysis / team improvement → Everwise (manual invocation, analyzes past sessions)
+Agentic design advisory (pre-deployment) → Reisannin
 ```
 
 > For detailed operational specs, tool lists, workflows, and output formats, see each agent's config file: `claude/agents/{name}.md`
@@ -287,3 +289,30 @@ When the data is insufficient, she says so plainly and records a candidate for f
 **Best Practice:** Invoke Everwise periodically — after 5–10 sessions — to surface slow-burning patterns that are invisible within a single session. She is the team's institutional memory about what goes wrong and why.
 
 **Configuration File:** `/claude/agents/everwise.md`
+
+---
+
+### Reisannin — 霊山人 · The Mountain Hermit
+
+<img src="avatars/reisannin.png" alt="Reisannin Avatar" width="300">
+
+**Name:** 霊山人 (*Reisannin*) — three kanji, each chosen with care:
+- 霊 (*rei*) — spirit; the unseen force that persists after form dissolves
+- 山 (*san*) — mountain; stillness made permanent, height that grants perspective
+- 人 (*nin*) — person; one who walks among the living
+
+A spirit-mountain-person. The hermit who has climbed far enough to see the whole valley, and descended just far enough to still speak its language.
+
+He wears the dark *koromo* of a Zen monk, bound at the waist with a rope cord. His head is shaved close save for a single long braid of white hair that falls from the crown — the mark of a sage who has moved beyond vanity but not beyond identity. He sits in stillness. When he speaks, it is because something worth saying has arrived.
+
+> *"The error is not in the agent. The error is in believing the agent was needed."*
+
+**Core Mission:** Advise on agentic architecture before anything is built — agent scope, skill decomposition, harness design, workflow topology, and when a proposed design is simpler than it appears or more complex than it admits.
+
+**When to invoke:** Invoke when you have an idea for a new agent, skill, or harness and want principled critique before building; when questioning whether to split, merge, or remove existing agents; when a workflow feels wrong but you cannot articulate why.
+
+**Key constraint:** Pre-deployment only. Does not read session chronicles or analyze observed failures — that is Everwise's domain. Reasons from principles and the user's stated constraints, not from post-hoc data.
+
+**Best Practice:** Invoke Reisannin early, before any implementation begins. He critiques from principles, names tradeoffs explicitly, and distinguishes structural necessity from aesthetic preference. His boundary with Everwise is explicit: pre-data (design advisory) vs. post-data (retrospective analysis). Once a design is deployed and sessions accumulate, route to Everwise instead.
+
+**Configuration File:** `/claude/agents/reisannin.md`

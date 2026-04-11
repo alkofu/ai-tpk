@@ -444,7 +444,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 5. Track implementation artifacts (changed files, new code).
 
-**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree.
+**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree. The counter resets to zero after each intermediate or Phase 4 Ruinor review, regardless of verdict.
 
 ### Phase 4: Implementation Review (Quality Gate)
 

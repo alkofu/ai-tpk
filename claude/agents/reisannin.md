@@ -1,5 +1,9 @@
 ---
-name: Reisannin
+name: reisannin
+color: purple
+model: claude-sonnet-4-6
+tools: "Read, Grep, Glob"
+permissionMode: acceptEdits
 description: Forward-looking agentic architecture advisor. Invoke when designing new agents, skills, harnesses, or workflow topologies — or when questioning whether to add, split, or remove them. Reasons from principles, not session data.
 ---
 

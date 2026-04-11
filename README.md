@@ -68,14 +68,14 @@ The installation logic is implemented in TypeScript under the `installer/` direc
 - `installer/claude.ts` — Claude config whitelist installer
 - `installer/mcp.ts` — MCP server setup
 
-The `install.sh` shim in the repo root bootstraps the TypeScript entrypoint and verifies Node.js >= 18.18.0 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
+The `install.sh` shim in the repo root runs the pre-built esbuild bundle (`dist/installer.js`) and verifies Node.js >= 18.18.0 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
 
 #### Running Tests
 
 The installer includes a comprehensive test suite using `node:test`:
 
 ```bash
-npm test
+pnpm test
 ```
 
 This runs all test files in `installer/test/` with isolated temporary directories. Tests cover filesystem utilities, CLI argument parsing, color output, and the Claude whitelist installer. For more details, see the test files under `installer/test/`.
@@ -84,15 +84,15 @@ This runs all test files in `installer/test/` with isolated temporary directorie
 
 The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) to maintain consistent code quality.
 
-**npm scripts:**
+**pnpm scripts:**
 
-- `npm run lint` — Run oxlint to check for TypeScript errors and code quality issues
-- `npm run format` — Apply oxfmt formatting to all TypeScript files in `installer/`
-- `npm run format:check` — Check formatting without modifying files (used in CI)
+- `pnpm run lint` — Run oxlint to check for TypeScript errors and code quality issues
+- `pnpm run format` — Apply oxfmt formatting to all TypeScript files in `installer/`
+- `pnpm run format:check` — Check formatting without modifying files (used in CI)
 
 **Developer workflow:**
 
-Before committing code, run `npm run format` to auto-format your changes. This keeps the codebase consistent and prevents formatting failures in CI.
+Before committing code, run `pnpm run format` to auto-format your changes. This keeps the codebase consistent and prevents formatting failures in CI.
 
 Configuration files:
 - `.oxlintrc.json` — Linting rules (correctness and suspicious errors denied, perf warnings)
@@ -100,18 +100,18 @@ Configuration files:
 
 **Pre-Push Hook:**
 
-The project uses **Lefthook** to automatically validate code quality before pushing. When you run `npm install`, the `prepare` script installs git hooks that run on every push (if JS/TS files have changed):
+The project uses **Lefthook** to automatically validate code quality before pushing. When you run `pnpm install`, the `prepare` script installs git hooks that run on every push (if JS/TS files have changed):
 
-- `npm run lint` — Checks for code quality issues
-- `npm run format:check` — Verifies code formatting
+- `pnpm run lint` — Checks for code quality issues
+- `pnpm run format:check` — Verifies code formatting
 
-If either check fails, the push is blocked. Run `npm run format` to auto-fix formatting issues, then try pushing again. These same checks are enforced in CI on all pull requests.
+If either check fails, the push is blocked. Run `pnpm run format` to auto-fix formatting issues, then try pushing again. These same checks are enforced in CI on all pull requests.
 
 Lefthook config: `lefthook.yml` (glob patterns scope checks to JS/TS files only)
 
 ## Installation
 
-**Prerequisites:** Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented in TypeScript and executed via `tsx` at runtime.
+**Prerequisites:** Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented in TypeScript and pre-built to a standalone bundle (`dist/installer.js`) via esbuild.
 
 Clone the repository:
 ```bash
@@ -127,10 +127,26 @@ Run the installation script:
 
 Copies the whitelisted Claude paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `references/`) into `~/.claude/` and `~/.cursor/` when present.
 
-Alternatively, if you have Node.js installed:
+### Development Setup
+
+To contribute to this repository, you'll need to set up the development environment:
+
 ```bash
-npm run setup
+# Clone the repository
+git clone git@github.com:alkofu/ai-tpk.git
+cd ai-tpk
+
+# Install dependencies (requires pnpm)
+pnpm install
+
+# Build the installer bundle and test it
+pnpm run build
+pnpm run setup
 ```
+
+**Note:** The `pnpm run build` command bundles the installer via esbuild into `dist/installer.js`. The `pnpm run setup` command executes the pre-built bundle, ensuring your development environment uses the same code path as end-users. This keeps installer behavior consistent during development.
+
+After setup, you can test changes locally. The pre-push hook (Lefthook) will automatically run linting and format checks before you push commits.
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp before overwriting them.
 
@@ -494,14 +510,15 @@ If the file exists but contains malformed JSON or schema violations:
 
 ## Continuous Integration
 
-Pull requests targeting `main` are automatically validated by a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on Node.js 22. The workflow performs four checks in sequence:
+Pull requests targeting `main` are automatically validated by a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on Node.js 24. The workflow performs five checks in sequence:
 
-1. **Type check** — `npx tsc --noEmit` ensures TypeScript types are correct
-2. **Lint** — `npm run lint` checks for code quality issues
-3. **Format check** — `npm run format:check` verifies code is properly formatted
-4. **Test** — `npm test` runs the test suite
+1. **Type check** — `pnpm exec tsc --noEmit` ensures TypeScript types are correct
+2. **Lint** — `pnpm run lint` checks for code quality issues
+3. **Format check** — `pnpm run format:check` verifies code is properly formatted
+4. **Bundle freshness check** — `pnpm run build` followed by `git diff --exit-code dist/installer.js` verifies the committed bundle matches source
+5. **Test** — `pnpm test` runs the test suite
 
-All checks must pass before a PR can be merged. If CI fails, review the error messages, fix the issues locally, and push your changes. For formatting issues, run `npm run format` and commit the changes.
+All checks must pass before a PR can be merged. If CI fails, review the error messages, fix the issues locally, and push your changes. For formatting issues, run `pnpm run format` and commit the changes.
 
 ## Updating
 
@@ -766,7 +783,20 @@ For a comprehensive guide to the review workflow, see
 
 ## Contributing
 
-When updating configurations:
+### Development Workflow
+
+When making changes to this repository:
+
+1. **Setup** — Follow the Development Setup section above to install dependencies and build the bundle
+2. **Make changes** — Edit TypeScript files in `installer/` or `launcher/`, or configuration files in `claude/`
+3. **Build** — Run `pnpm run build` to rebuild the installer bundle
+4. **Test** — Run `pnpm test` to execute the test suite
+5. **Lint and format** — Run `pnpm run format` to auto-fix formatting, then `pnpm run lint` to verify code quality
+6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing
+
+### Configuration Updates
+
+When updating Claude configurations (agents, skills, commands, hooks, references, or settings):
 
 1. Make changes in this repository
 2. Test the configurations

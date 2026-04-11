@@ -4,17 +4,21 @@ The launcher is a TypeScript module that implements the `myclaude` interactive w
 
 ## Quick Start
 
+### For Developers (requires pnpm)
+
 From the repository root:
 
 ```bash
-npm run launch
+pnpm run launch
 ```
 
 Or directly:
 
 ```bash
-npx tsx launcher/main.ts
+pnpm exec tsx launcher/main.ts
 ```
+
+### For End-Users (after `./install.sh`)
 
 After installation via `./install.sh`, the launcher is available as:
 
@@ -27,7 +31,7 @@ myclaude
 Tests live in `launcher/test/`. Run all tests (installer + launcher) with:
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## Grafana Configuration Format

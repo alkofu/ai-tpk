@@ -11,22 +11,29 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Format check
-        run: npm run format:check
+        run: pnpm run format:check
+
+      - name: Bundle freshness check
+        run: |
+          pnpm run build
+          git diff --exit-code dist/installer.js || { echo "::error::dist/installer.js is out of date. Run 'pnpm run build' and commit the result."; exit 1; }
 
       - name: Test
-        run: npm test
+        run: pnpm test

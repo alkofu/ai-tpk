@@ -2,21 +2,27 @@
   "name": "ai-tpk",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.30.3",
   "dependencies": {
     "@clack/prompts": "^0.9.0",
     "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
+    "esbuild": "^0.27.0",
     "lefthook": "^2.1.4",
     "oxfmt": "^0.43.0",
     "oxlint": "^1.58.0",
     "tsx": "^4.21.0",
     "typescript": "latest"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "lefthook"]
+  },
   "scripts": {
     "prepare": "lefthook install",
-    "setup": "tsx installer/main.ts",
+    "build": "esbuild installer/main.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/installer.js --banner:js='#!/usr/bin/env node'",
+    "setup": "node dist/installer.js",
     "launch": "tsx launcher/main.ts",
     "test": "node --import tsx/esm --test 'installer/test/**/*.test.ts' 'launcher/test/**/*.test.ts'",
     "lint": "oxlint installer/ launcher/",

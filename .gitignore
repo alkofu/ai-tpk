@@ -27,7 +27,6 @@ plans/
 
 # Node.js
 node_modules/
-dist/
 
 # Lefthook local overrides (machine-specific, not for version control)
 lefthook-local.yml

@@ -48,17 +48,15 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
 - Allowed silently: `grep "a && b" file.txt` (compound operator is inside a quoted string)
 
-#### SessionStart Hook - Terminal Tab Rename
+#### SessionStart Hook - Terminal Tab Title Restore
 
-Runs at the start of every Claude Code session to set the terminal tab or window title to an AI-generated name reflecting the current project context.
+Runs at the start of every Claude Code session to restore a previously stored terminal tab title for resumed sessions. Title generation is handled by the Stop hook (`tab-rename-stop.sh`).
 
 **Behavior:**
-1. Reads the session start event from stdin and parses the `cwd` field via `jq` (falls back to `$PWD` if `jq` is unavailable or `cwd` is absent)
-2. Gathers context: directory name, git repo name, and branch name
-3. Checks for a `--name` override — inspects the payload and walks up to 3 levels of process ancestry; if `--name` (long form only; `-n` is intentionally not checked to avoid false positives with unrelated processes) is detected, exits without setting a title
-4. Detects the active terminal emulator (see supported terminals below)
-5. Calls `claude -p --bare --model haiku` with a constrained system prompt to generate a 2-5 word session title
-6. Sanitizes the result (strips whitespace, truncates to 40 characters) and sets the terminal tab/window title
+1. Reads the session start event from stdin and parses `session_id` via `jq`; exits silently if `session_id` is absent
+2. Checks for a `--name` override — walks up to 3 levels of process ancestry; if `--name` (long form only; `-n` is intentionally not checked to avoid false positives with unrelated processes) is detected, exits without setting a title
+3. Looks up `~/.claude/session-titles/{session_id}`; if no file exists (new session), exits silently — title generation will be handled by the Stop hook after the first exchange
+4. If a stored title is found, detects the active terminal emulator and restores the title to the terminal tab
 
 **Supported terminals and detection:**
 
@@ -70,18 +68,14 @@ Runs at the start of every Claude Code session to set the terminal tab or window
 
 **Detection rationale:** tmux is checked before `$TERM_PROGRAM` because the tmux window name is the visible label regardless of the host terminal emulator (e.g., iTerm2 running in tmux integration mode shows the tmux window name, not the iTerm2 tab title).
 
-**`--name` interaction:** If the user launches Claude with `--name` (to set a session name explicitly), the hook detects this via payload inspection and process ancestry inspection and exits without overwriting the title.
+**`--name` interaction:** If the user launches Claude with `--name` (to set a session name explicitly), the hook detects this via process ancestry inspection and exits without overwriting the title.
 
-**Async and timeout:** The hook runs asynchronously with a 30-second timeout so that AI title generation does not block session startup.
+**Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title restore does not block session startup.
 
 **Dependencies:**
 - `bash` — required
-- `git` — optional; used for repo name and branch detection; absent git context is handled gracefully
-- `jq` — optional; used for payload parsing; falls back to `$PWD` if unavailable
-- `claude` CLI — required; used for AI title generation; hook exits silently if invocation fails
+- `jq` — required; used for payload parsing; hook exits silently if unavailable
 - `cmux` CLI — optional; used for cmux tab renaming; falls back to OSC 0 escape if not in PATH
-
-**`--bare` usage:** The `--bare` flag is passed to `claude -p` to prevent the session-start hook from triggering another SessionStart hook, avoiding recursive invocation.
 
 **Configuration:**
 - Script: `claude/hooks/session-start.sh`
@@ -106,7 +100,9 @@ Runs after every sub-agent completion to capture raw session event data.
 
 #### Stop Hook - Session Enrichment
 
-One hook runs when you end a Claude session.
+Two Stop hooks run asynchronously when you end a Claude session. This section covers session enrichment. See "Stop Hook - Terminal Tab Title Generation" below for the tab rename hook.
+
+Note: A second Stop hook (`tab-rename-stop.sh`) also fires asynchronously for terminal tab renaming — see below.
 
 **Session enrichment (async):**
 
@@ -140,6 +136,40 @@ The `agent_transcript_path` field enables downstream tools (like Everwise Scout)
 - Type: Async command hook
 - Timeout: 60 seconds
 - Requires `jq`; exits silently if unavailable or raw log is empty
+
+#### Stop Hook - Terminal Tab Title Generation
+
+Runs after every Claude turn (Stop hook) to generate and store an AI-derived terminal tab title. Title generation fires once per session — subsequent Stop hook invocations are no-ops once a title file exists for the session.
+
+**Behavior:**
+1. Reads the Stop event from stdin; parses `session_id`, `transcript_path`, `cwd`, and `last_assistant_message`
+2. Single-fire guard: if `~/.claude/session-titles/{session_id}` already exists, exits immediately
+3. Checks for a `--name` override via process ancestry (walk up to 3 levels); if `--name` is detected, creates an empty sentinel file at `~/.claude/session-titles/{session_id}` and exits — this prevents future Stop hook invocations from generating a title, and also causes `session-start.sh` to exit silently on resume (preserving whatever title the terminal shows)
+4. Counts non-meta user messages in the transcript JSONL; exits without generating a title if fewer than 1 user message is found (e.g., the session ended before the first exchange completed)
+5. Extracts the first user prompt from the transcript JSONL file and the last assistant response from the Stop event payload
+6. Gathers lightweight project context: directory name and git repo name (if available)
+7. Calls `claude -p --bare --model haiku` with a constrained system prompt to generate a 2–5 word session title; `--bare` strips the default system prompt; pipe mode (`-p`) does not fire session hooks, avoiding recursive invocation
+8. Sanitizes the title (removes embedded newlines, strips surrounding whitespace, truncates to 40 characters)
+9. Stores the title at `~/.claude/session-titles/{session_id}`
+10. Detects the active terminal emulator and sets the tab title
+
+**Supported terminals and detection:** Same table as the SessionStart hook above.
+
+**`--name` interaction:** If a session was started with `--name`, the hook writes an empty sentinel file. This means the session title is locked to whatever the terminal already shows — no AI title is generated now or on future resumes.
+
+**Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title generation does not block the user between turns.
+
+**Dependencies:**
+- `bash` — required
+- `jq` — required; used for transcript parsing and payload extraction; hook exits silently if unavailable
+- `claude` CLI — required; used for AI title generation; hook exits silently if invocation fails
+- `git` — optional; used for repo name context; absent git context is handled gracefully
+- `cmux` CLI — optional; used for cmux tab renaming; falls back to OSC 0 escape if not in PATH
+
+**Configuration:**
+- Script: `claude/hooks/tab-rename-stop.sh`
+- Type: Async Stop hook
+- Timeout: 30 seconds
 
 ## Instructions: User-Global vs. Project-Level
 

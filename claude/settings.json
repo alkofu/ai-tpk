@@ -107,6 +107,11 @@
             "type": "command",
             "command": "bash ~/.claude/hooks/talekeeper-enrich.sh",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/tab-rename-stop.sh",
+            "timeout": 30
           }
         ]
       }

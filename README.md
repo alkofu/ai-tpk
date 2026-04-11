@@ -557,6 +557,15 @@ Orchestration sessions are automatically chronicled by a two-stage shell pipelin
 
 When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually. It reads the enriched chronicle files, delivers a concise chat digest, and appends structured narrative sections with Mermaid diagrams to `logs/talekeeper-narrative.md`.
 
+### Terminal Tab Rename
+Terminal tab titles are automatically managed via a two-hook system:
+- **SessionStart Hook** — Restores previously stored session titles for resumed sessions (instant, no AI call)
+- **Stop Hook** — Generates a contextual 2–5 word title from the first user prompt and assistant response after the first turn completes; stores it for future resume
+
+This provides immediate context recognition when resuming sessions and automatic title generation based on what you actually worked on, without manual naming. Titles are stored in `~/.claude/session-titles/` and persist across terminal restarts. Sessions started with `--name` flag preserve their explicit title without AI override.
+
+See [docs/CONFIGURATION.md](/docs/CONFIGURATION.md) — sections "SessionStart Hook - Terminal Tab Title Restore" and "Stop Hook - Terminal Tab Title Generation" — for detailed behavior, supported terminals (tmux, cmux, iTerm2, ghostty), and dependencies.
+
 ### Specialized Agents
 Specialized AI assistants are available for orchestration (Dungeon Master), intake clarification (Askmaw), investigative diagnosis (Tracebloom), documentation (Quill), security reviews (Riskmancer), planning (Pathfinder), complexity reduction (Knotcutter), factual validation (Truthhammer), session narration (Talekeeper), performance analysis (Windwarden), code implementation (Bitsmith), and team meta-analysis (Everwise). The orchestration workflow uses an intelligent review system that reduces overhead by 60-70% while maintaining quality.
 

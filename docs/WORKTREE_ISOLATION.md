@@ -21,7 +21,7 @@ The session automatically:
 1. Creates an isolated git worktree at `.worktrees/dm-add-oauth-login/`
 2. Creates a dedicated branch `dm/add-oauth-login`
 3. Executes all planning, implementation, and reviews within that worktree
-4. Provides cleanup options (PR, merge, or keep) at completion
+4. Logs the branch as ready at completion; run `/open-pr` to create a pull request or handle cleanup manually
 
 In another terminal, start a second DungeonMaster session:
 
@@ -119,30 +119,7 @@ Output example:
 
 ### Cleaning Up Worktrees
 
-#### Automatic Cleanup (Recommended)
-
-At Phase 5 (session completion), DungeonMaster presents cleanup options:
-
-```
-Session branch dm/add-oauth-login is ready. Would you like to:
-(a) create a PR
-(b) merge to main locally
-(c) keep the branch for later
-```
-
-**Option (a) - Create PR:**
-- Pushes the branch and creates a PR
-- Asks whether to keep or remove the worktree
-- If you choose "remove", the worktree is deleted automatically
-
-**Option (b) - Merge to main:**
-- Merges the branch to main locally: `git checkout main && git merge --no-ff dm/add-oauth-login`
-- Removes the worktree and branch automatically
-- If merge fails (conflicts), aborts cleanup and preserves the worktree for manual resolution
-
-**Option (c) - Keep the branch:**
-- Preserves the worktree and branch for later
-- You decide when to clean up manually
+At Phase 5 (session completion), DungeonMaster logs the branch as ready and advises you to run `/open-pr` to create a pull request, or to handle cleanup manually. The worktree and branch are always preserved — nothing is removed automatically.
 
 #### Manual Cleanup
 
@@ -230,65 +207,21 @@ You don't need to do anything — the context is automatically propagated by Dun
 
 Bitsmith includes a safeguard that prevents silent writes to the main working tree when a session worktree is active. This **Path Mismatch Guard** fires as a per-operation invariant before every Write, Edit, or file-modifying Bash command. If you (or Bitsmith) accidentally reference a file path outside the active worktree, Bitsmith halts and surfaces the conflict to the Dungeon Master for confirmation rather than proceeding silently. This ensures changes land on the correct branch in the correct worktree, preventing accidental main-tree modifications during isolated sessions.
 
-## Phase 5 Cleanup Flow
+## Phase 5 Completion Log
 
-At session completion (Phase 5), DungeonMaster summarizes your work and offers cleanup options:
+At session completion (Phase 5), DungeonMaster logs a status line and leaves the worktree and branch intact:
 
 ```
-Session worktree created: .worktrees/dm-add-oauth-login on branch dm/add-oauth-login
-...
-[Implementation completed and reviewed successfully]
-
-Session branch dm/add-oauth-login is ready. Would you like to:
-(a) create a PR
-(b) merge to main locally
-(c) keep the branch for later
+Branch `dm/add-oauth-login` is ready at `.worktrees/dm-add-oauth-login`.
+Run `/open-pr` to create a pull request, or handle cleanup manually.
 ```
 
-### Option A: Create PR
+No interactive prompt is shown. The worktree is never removed automatically. When you are ready to create a PR, run `/open-pr` in the same session or a new session. When you are done with the worktree, clean up manually:
 
 ```bash
-# DungeonMaster delegates to Bitsmith:
-git push -u origin dm/add-oauth-login
-gh pr create --title "Add OAuth login" --body "..."
-
-# Then asks:
-# "PR created. Would you like to keep the worktree (for iterating on review feedback) or remove it?"
-```
-
-If you choose **keep:**
-- Worktree remains at `.worktrees/dm-add-oauth-login`
-- Branch remains at `dm/add-oauth-login`
-- You can iterate on review feedback without losing context
-- Clean up manually when done: `git worktree remove .worktrees/dm-add-oauth-login`
-
-If you choose **remove:**
-- Worktree is deleted: `git worktree remove .worktrees/dm-add-oauth-login`
-- Branch is not deleted (you can keep iterating on it if needed)
-
-### Option B: Merge to Main
-
-```bash
-# DungeonMaster delegates to Bitsmith:
-git checkout main
-git merge --no-ff dm/add-oauth-login
-
-# If successful, also runs:
 git worktree remove .worktrees/dm-add-oauth-login
 git branch -d dm/add-oauth-login
 ```
-
-If the merge **fails** (conflicts):
-- Cleanup is aborted
-- Worktree and branch are preserved
-- You can resolve conflicts manually and clean up later
-
-### Option C: Keep the Branch
-
-- Worktree remains at `.worktrees/dm-add-oauth-login`
-- Branch remains at `dm/add-oauth-login`
-- No automatic cleanup
-- Clean up manually when ready: `git worktree remove .worktrees/dm-add-oauth-login`
 
 ## Example: Two Parallel Sessions
 
@@ -306,11 +239,7 @@ $ claude --agent dungeonmaster
 [Ruinor and Riskmancer review in the worktree context]
 [Quill updates documentation in the worktree]
 ...
-Session branch dm/add-oauth-login is ready. Would you like to:
-(a) create a PR
-(b) merge to main locally
-(c) keep the branch for later
-> a
+Branch `dm/add-oauth-login` is ready at `.worktrees/dm-add-oauth-login`. Run `/open-pr` to create a pull request, or handle cleanup manually.
 ```
 
 ### Session 2: Database Performance
@@ -326,18 +255,13 @@ $ claude --agent dungeonmaster
 [Bitsmith implements query fixes in the worktree]
 [Ruinor and Windwarden review in the worktree context]
 ...
-Session branch dm/fix-db-perf-issue-42 is ready. Would you like to:
-(a) create a PR
-(b) merge to main locally
-(c) keep the branch for later
-> b
-[Merges to main and cleans up]
+Branch `dm/fix-db-perf-issue-42` is ready at `.worktrees/dm-fix-db-perf-issue-42`. Run `/open-pr` to create a pull request, or handle cleanup manually.
 ```
 
 **Result:**
-- Session 1: PR ready for review at `dm/add-oauth-login`, worktree kept for iteration
-- Session 2: Merged to main, cleanup complete
-- Main branch not touched until merge
+- Session 1: Branch `dm/add-oauth-login` preserved at `.worktrees/dm-add-oauth-login`; run `/open-pr` when ready
+- Session 2: Branch `dm/fix-db-perf-issue-42` preserved at `.worktrees/dm-fix-db-perf-issue-42`; run `/open-pr` when ready
+- Main branch untouched until you merge or create a PR
 - Zero git conflicts between sessions
 
 ## Workflow Flags Summary
@@ -409,12 +333,12 @@ git worktree remove .worktrees/dm-corrupted-task
 git worktree prune
 ```
 
-### "Merge failed - conflicts" at Phase 5
+### Merge Conflicts When Merging Manually
 
-If you choose merge (option b) and conflicts occur:
+If you merge your worktree branch to main and encounter conflicts:
 
 1. Worktree is preserved at `.worktrees/dm-{task}/`
-2. Manual merge is required:
+2. Resolve conflicts manually:
 
    ```bash
    cd .worktrees/dm-{task}
@@ -464,18 +388,17 @@ This enables truly parallel development workflows where multiple issues can be w
    git branch --list 'dm/*'  # List all DM branches
    ```
 
-3. **Clean up after completion** even if you chose "keep" initially
+3. **Clean up worktrees after completion**
    - Stale worktrees consume disk space
    - `git worktree remove` is quick and safe
 
-4. **Use option (b) - merge** for straightforward PRs
-   - If you're confident the work is ready
-   - Automatic cleanup saves manual steps
-   - Use option (a) - PR for review before merging
+4. **Run `/open-pr`** to create a pull request when your branch is ready
+   - The worktree stays active for feedback iteration after the PR is created
+   - Delete the worktree when the PR is merged
 
-5. **Use option (a) - PR** for features requiring review
-   - Keeps worktree active for feedback iteration
-   - Delete when PR is merged
+5. **Merge manually** when you are confident the work needs no review
+   - `git checkout main && git merge --no-ff dm/{slug}`
+   - Then remove the worktree and branch manually
 
 6. **Use `--no-worktree`** only for trivial changes
    - Most tasks benefit from worktree isolation

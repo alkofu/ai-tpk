@@ -564,8 +564,8 @@ The Dungeon Master now supports true parallel development workflows using Git wo
 - Each session operates on its own branch in its own worktree
 - Plans are isolated within each worktree's `plans/` directory
 - Zero git conflicts between parallel sessions
-- At completion, choose to create PR, merge to main, or keep the branch for later
-- Manual cleanup with `git worktree remove` or automatic cleanup at Phase 5
+- At completion, the branch is preserved and a log line points you to `/open-pr` for next steps
+- Manual cleanup with `git worktree remove` when you are done
 
 Use `--no-worktree` flag to suppress worktree creation and operate in the main working tree (backwards compatible). See [docs/WORKTREE_ISOLATION.md](/docs/WORKTREE_ISOLATION.md) for comprehensive guide with examples and troubleshooting.
 

@@ -4,7 +4,7 @@ This file defines the shared two-gate framework for all reviewer agents. Each re
 
 ## Plan Review Gate
 
-Before implementation begins, reviewers examine the specific plan file provided by Dungeon Master (typically `plans/{SESSION_TS}-{feature-slug}.md`).
+Before implementation begins, reviewers examine the specific plan file provided by Dungeon Master (typically `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`).
 
 **Note:** Only review the plan file specified in the request, not all plans in the directory.
 

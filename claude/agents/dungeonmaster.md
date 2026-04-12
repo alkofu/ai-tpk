@@ -324,14 +324,14 @@ When Askmaw is skipped: proceed to step 2 as before.
 
 2. Assess whether a plan already exists in the `plans/` directory.
 
-**Explore-Options Gate** (advisory-only, between step 2 and step 3):
+**Explore-Options Gate** (scope-exploration-only, between step 2 and step 3):
 
 Trigger ONLY when the `--explore-options` flag is explicitly present.
 
 When triggered:
 - Invoke Pathfinder with `STOP_AFTER_SCOPE: true`. Pathfinder researches the codebase, produces a Scope Confirmation (objective, assumptions, affected subsystems, out of scope) and implementation options, then returns this output to DM without writing a plan.
 - DM presents scope + options to the user and waits for explicit selection. Do not proceed until the user responds.
-- **If the user does not ask to proceed with planning:** The advisory session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
+- **If the user does not ask to proceed with planning:** The scope-exploration session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
 - **If user selects an option and asks to continue:** Re-invoke Pathfinder with the `## Confirmed Scope` block (using the re-invocation template below) and proceed to step 3.
 - **If user rejects presented options or requests a different approach:** Re-invoke Pathfinder with `STOP_AFTER_SCOPE: true` and the user's feedback as additional constraints appended to the delegation prompt. Repeat the scope + options presentation.
 

@@ -74,7 +74,7 @@ Shared utilities (cancellation, prompts) are in `utils.ts` and `prompts.ts`. The
 
 ## Integration with install.sh
 
-Installation is handled by `src/installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.js` and installs the `~/bin/myclaude` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
+Installation is handled by `src/installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.cjs` and installs the `~/bin/myclaude` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed, and any stale `~/.ai-tpk/launcher.js` from a previous install is removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
 
 ## Migration: Existing grafana-mcp Script
 

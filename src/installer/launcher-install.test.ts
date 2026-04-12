@@ -13,7 +13,7 @@ function makeFakeRepo(
   fs.mkdirSync(launcherDir, { recursive: true });
 
   const shContent =
-    ["#!/usr/bin/env bash", 'exec node "$HOME/.ai-tpk/launcher.js" "$@"'].join(
+    ["#!/usr/bin/env bash", 'exec node "$HOME/.ai-tpk/launcher.cjs" "$@"'].join(
       "\n",
     ) + "\n";
   fs.writeFileSync(path.join(launcherDir, "myclaude.sh"), shContent);
@@ -23,7 +23,7 @@ function makeFakeRepo(
     const distDir = path.join(root, "dist");
     fs.mkdirSync(distDir, { recursive: true });
     fs.writeFileSync(
-      path.join(distDir, "launcher.js"),
+      path.join(distDir, "launcher.cjs"),
       "// fake launcher bundle\n",
     );
   }
@@ -45,8 +45,8 @@ describe("installLauncherScript", () => {
     fs.rmSync(fakeHome, { recursive: true, force: true });
   });
 
-  it("copies dist/launcher.js to ~/.ai-tpk/launcher.js", () => {
-    const destBundle = path.join(fakeHome, ".ai-tpk", "launcher.js");
+  it("copies dist/launcher.cjs to ~/.ai-tpk/launcher.cjs", () => {
+    const destBundle = path.join(fakeHome, ".ai-tpk", "launcher.cjs");
     assert.ok(fs.existsSync(destBundle));
     const content = fs.readFileSync(destBundle, "utf8");
     assert.ok(content.includes("fake launcher bundle"));
@@ -58,7 +58,7 @@ describe("installLauncherScript", () => {
     assert.ok(fs.statSync(aiTpkDir).isDirectory());
   });
 
-  it("throws if dist/launcher.js is missing", () => {
+  it("throws if dist/launcher.cjs is missing", () => {
     const freshRepo = fs.mkdtempSync(
       path.join(os.tmpdir(), "launcher-test-fresh-repo-"),
     );
@@ -69,7 +69,7 @@ describe("installLauncherScript", () => {
       makeFakeRepo(freshRepo, { withBundle: false });
       assert.throws(
         () => installLauncherScript(freshRepo, { homeDir: freshHome }),
-        /dist\/launcher\.js not found/,
+        /dist\/launcher\.cjs not found/,
       );
       assert.ok(!fs.existsSync(path.join(freshHome, ".ai-tpk")));
     } finally {
@@ -83,7 +83,7 @@ describe("installLauncherScript", () => {
     assert.ok(fs.existsSync(binScript));
     const content = fs.readFileSync(binScript, "utf8");
     assert.ok(content.startsWith("#!/usr/bin/env bash"));
-    assert.ok(content.includes(".ai-tpk/launcher.js"));
+    assert.ok(content.includes(".ai-tpk/launcher.cjs"));
     const mode = fs.statSync(binScript).mode & 0o777;
     assert.equal(mode, 0o755);
   });
@@ -96,7 +96,7 @@ describe("installLauncherScript", () => {
     installLauncherScript(fakeRepo, { homeDir: fakeHome });
 
     assert.ok(!fs.existsSync(oldLauncherDir));
-    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.js")));
+    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.cjs")));
   });
 
   it("preserves unrelated ~/.ai-tpk/ files on re-install", () => {
@@ -108,6 +108,16 @@ describe("installLauncherScript", () => {
     installLauncherScript(fakeRepo, { homeDir: fakeHome });
 
     assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "other-tool.json")));
-    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.js")));
+    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.cjs")));
+  });
+
+  it("removes stale ~/.ai-tpk/launcher.js on re-install", () => {
+    const staleJs = path.join(fakeHome, ".ai-tpk", "launcher.js");
+    fs.writeFileSync(staleJs, "// stale bundle\n");
+
+    installLauncherScript(fakeRepo, { homeDir: fakeHome });
+
+    assert.ok(!fs.existsSync(staleJs));
+    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.cjs")));
   });
 });

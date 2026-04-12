@@ -18,7 +18,7 @@ await Promise.all([
     platform: 'node',
     format: 'cjs',
     target: 'node24',
-    outfile: 'dist/launcher.js',
+    outfile: 'dist/launcher.cjs',
     banner: {
       js: '#!/usr/bin/env node',
     },

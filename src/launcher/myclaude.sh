@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LAUNCHER_BUNDLE="$HOME/.ai-tpk/launcher.js"
+LAUNCHER_BUNDLE="$HOME/.ai-tpk/launcher.cjs"
 
 if [[ ! -f "$LAUNCHER_BUNDLE" ]]; then
   printf 'Error: myclaude launcher not found at %s\n' "$LAUNCHER_BUNDLE" >&2

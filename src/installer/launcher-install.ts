@@ -9,9 +9,9 @@ export function installLauncherScript(
   { homeDir = os.homedir() }: { homeDir?: string } = {},
 ): void {
   // 8a. Define paths
-  const srcBundle = path.join(repoRoot, "dist", "launcher.js");
+  const srcBundle = path.join(repoRoot, "dist", "launcher.cjs");
   const aiTpkDir = path.join(homeDir, ".ai-tpk");
-  const destBundle = path.join(aiTpkDir, "launcher.js");
+  const destBundle = path.join(aiTpkDir, "launcher.cjs");
   const binDir = path.join(homeDir, "bin");
   const targetBinPath = path.join(binDir, "myclaude");
   const srcBashScript = path.join(repoRoot, "src", "launcher", "myclaude.sh");
@@ -19,7 +19,7 @@ export function installLauncherScript(
 
   // 8b. Guard: verify required source files exist before any side effects
   if (!fs.existsSync(srcBundle)) {
-    throw new Error(`dist/launcher.js not found. Run 'pnpm run build' first.`);
+    throw new Error(`dist/launcher.cjs not found. Run 'pnpm run build' first.`);
   }
   if (!fs.existsSync(srcBashScript)) {
     throw new Error(
@@ -35,6 +35,17 @@ export function installLauncherScript(
   if (fs.existsSync(oldLauncherDir)) {
     fs.rmSync(oldLauncherDir, { recursive: true, force: true });
     console.log(c.yellow(`Removed old launcher directory: ${oldLauncherDir}`));
+  }
+
+  // 8d2. Migrate: remove stale ~/.ai-tpk/launcher.js left by pre-rename installs
+  const staleLauncherJs = path.join(aiTpkDir, "launcher.js");
+  if (fs.existsSync(staleLauncherJs)) {
+    fs.rmSync(staleLauncherJs);
+    console.log(
+      c.yellow(
+        "Removed stale ~/.ai-tpk/launcher.js (replaced by launcher.cjs)",
+      ),
+    );
   }
 
   // 8e. Install ~/bin/myclaude — refuse symlinks, backup existing
@@ -58,5 +69,5 @@ export function installLauncherScript(
 
   // 8f. Print success messages
   console.log(c.green(`Launcher installed to ~/bin/myclaude`));
-  console.log(c.green(`Launcher bundle installed to ~/.ai-tpk/launcher.js`));
+  console.log(c.green(`Launcher bundle installed to ~/.ai-tpk/launcher.cjs`));
 }

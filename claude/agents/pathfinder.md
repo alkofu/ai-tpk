@@ -393,7 +393,7 @@ Before considering a plan complete, verify:
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
 7. ✅ **Pre-submission checklist passed** - all 8 questions reviewed and any issues corrected before saving
-8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when REVISION_MODE, Askmaw brief, Tracebloom report, or Confirmed Scope block is present)
+8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when Askmaw brief, Tracebloom report, or Confirmed Scope block is present — REVISION_MODE skips via Section 3 directly to Section 5)
 
 ## Tool Usage
 

@@ -388,7 +388,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
    - Provide Pathfinder with **consolidated feedback from Ruinor and all invoked specialists** using the delegation template below
    - Wait for Pathfinder to revise the plan file
    - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations **and** the original user flags from this session)
-   - Continue this review-revise loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS If this is the 3rd or subsequent revision round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another revision cycle.
+   - Continue this review-revise loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS.
+   - **Stalled-loop termination:** If this is the 3rd or subsequent revision round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another revision cycle.
 
    **Revision delegation template** (use this every time DM re-delegates to Pathfinder from Phase 2 step 4, including subsequent revision rounds after repeated REVISE/REJECT verdicts — every iteration of the review-revise loop uses this same template with updated feedback):
    ```
@@ -467,7 +468,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     - Provide Bitsmith with **consolidated feedback from Ruinor and all invoked specialists**
     - Wait for Bitsmith to fix the issues
     - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations **and** the original user flags from this session)
-    - Continue this review-fix loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS If this is the 3rd or subsequent fix round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another fix cycle.
+    - Continue this review-fix loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS.
+    - **Stalled-loop termination:** If this is the 3rd or subsequent fix round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another fix cycle.
 
     When Ruinor issues REJECT (not REVISE), require Bitsmith to produce a written remediation brief — a short summary of what was changed and why — before the re-review invocation. Pass this brief explicitly to Ruinor as context in the re-review delegation prompt. This distinguishes REJECT remediation from REVISE remediation and prevents rubber-stamp re-approvals.
 

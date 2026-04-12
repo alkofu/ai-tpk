@@ -21,7 +21,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
+
+      - name: Assert lockfile unchanged
+        run: git diff --exit-code pnpm-lock.yaml
 
       - name: Type check
         run: pnpm exec tsc --noEmit

@@ -8,10 +8,11 @@ import { fileURLToPath } from "node:url";
 import * as path from "node:path";
 import * as os from "node:os";
 
-// Resolve scriptDir = repo root (parent of src/installer/)
+// scriptDir = repo root; at runtime __filename is dist/installer.js so one
+// dirname reaches dist/ and a second reaches the repo root.
 const __filename = fileURLToPath(import.meta.url);
 const installerDir = path.dirname(__filename);
-const scriptDir = path.dirname(path.dirname(installerDir));
+const scriptDir = path.dirname(installerDir);
 
 try {
   parseArgs(process.argv.slice(2));

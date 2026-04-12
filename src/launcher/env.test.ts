@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { buildEnvVars } from "../env.js";
-import type { ResolvedConfig, GrafanaCluster } from "../types.js";
+import { buildEnvVars } from "./env.js";
+import type { ResolvedConfig, GrafanaCluster } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Dotfile isolation strategy:

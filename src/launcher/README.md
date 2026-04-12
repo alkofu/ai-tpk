@@ -15,7 +15,7 @@ pnpm run launch
 Or directly:
 
 ```bash
-pnpm exec tsx launcher/main.ts
+pnpm exec tsx src/launcher/main.ts
 ```
 
 ### For End-Users (after `./install.sh`)
@@ -28,7 +28,7 @@ myclaude
 
 ## Testing
 
-Tests live in `launcher/test/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files in `src/launcher/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -74,7 +74,7 @@ Shared utilities (cancellation, prompts) are in `utils.ts` and `prompts.ts`. The
 
 ## Integration with install.sh
 
-Installation is handled by `installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.js` and installs the `~/bin/myclaude` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
+Installation is handled by `src/installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.js` and installs the `~/bin/myclaude` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
 
 ## Migration: Existing grafana-mcp Script
 
@@ -83,4 +83,4 @@ Users with the legacy `~/bin/grafana-mcp` script can continue using it or switch
 ## See Also
 
 - **`wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
-- **`installer/launcher-install.ts`** — Installation logic for the launcher
+- **`src/installer/launcher-install.ts`** — Installation logic for the launcher

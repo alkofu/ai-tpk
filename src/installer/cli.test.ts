@@ -1,6 +1,6 @@
 import { describe, it, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { parseArgs } from "../cli.js";
+import { parseArgs } from "./cli.js";
 
 class ExitSentinel extends Error {
   constructor(public readonly code: number) {

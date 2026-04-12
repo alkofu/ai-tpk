@@ -58,15 +58,15 @@ The `.claude/` directory is never synced by the installer — it remains project
 
 ### Developer Notes
 
-The installation logic is implemented in TypeScript under the `installer/` directory:
+The installation logic is implemented in TypeScript under the `src/installer/` directory:
 
-- `installer/constants.ts` — Single source of truth for whitelisted Claude paths, MCP server definitions, and Node.js version requirements
-- `installer/main.ts` — Main entrypoint; orchestrates the install workflow
-- `installer/cli.ts` — CLI argument parser (handles `--help`/`-h`)
-- `installer/colors.ts` — ANSI color output helper
-- `installer/fs-utils.ts` — Filesystem utilities (backup and copy operations)
-- `installer/claude.ts` — Claude config whitelist installer
-- `installer/mcp.ts` — MCP server setup
+- `src/installer/constants.ts` — Single source of truth for whitelisted Claude paths, MCP server definitions, and Node.js version requirements
+- `src/installer/main.ts` — Main entrypoint; orchestrates the install workflow
+- `src/installer/cli.ts` — CLI argument parser (handles `--help`/`-h`)
+- `src/installer/colors.ts` — ANSI color output helper
+- `src/installer/fs-utils.ts` — Filesystem utilities (backup and copy operations)
+- `src/installer/claude.ts` — Claude config whitelist installer
+- `src/installer/mcp.ts` — MCP server setup
 
 The `install.sh` shim in the repo root runs the pre-built esbuild bundle (`dist/installer.js`) and verifies Node.js >= 18.18.0 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
 
@@ -78,7 +78,7 @@ The installer includes a comprehensive test suite using `node:test`:
 pnpm test
 ```
 
-This runs all test files in `installer/test/` with isolated temporary directories. Tests cover filesystem utilities, CLI argument parsing, color output, and the Claude whitelist installer. For more details, see the test files under `installer/test/`.
+This runs all test files colocated with source under `src/installer/` and `src/launcher/` (files matching `*.test.ts`) with isolated temporary directories. Tests cover filesystem utilities, CLI argument parsing, color output, and the Claude whitelist installer. For more details, see the `*.test.ts` files beside their respective source modules.
 
 #### Code Quality: Linting and Formatting
 
@@ -87,7 +87,7 @@ The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) t
 **pnpm scripts:**
 
 - `pnpm run lint` — Run oxlint to check for TypeScript errors and code quality issues
-- `pnpm run format` — Apply oxfmt formatting to all TypeScript files in `installer/`
+- `pnpm run format` — Apply oxfmt formatting to all TypeScript files in `src/`
 - `pnpm run format:check` — Check formatting without modifying files (used in CI)
 
 **Developer workflow:**
@@ -791,7 +791,7 @@ For a comprehensive guide to the review workflow, see
 When making changes to this repository:
 
 1. **Setup** — Follow the Development Setup section above to install dependencies and build the bundle
-2. **Make changes** — Edit TypeScript files in `installer/` or `launcher/`, or configuration files in `claude/`
+2. **Make changes** — Edit TypeScript files in `src/installer/` or `src/launcher/`, or configuration files in `claude/`
 3. **Build** — Run `pnpm run build` to rebuild the installer bundle
 4. **Test** — Run `pnpm test` to execute the test suite
 5. **Lint and format** — Run `pnpm run format` to auto-fix formatting, then `pnpm run lint` to verify code quality

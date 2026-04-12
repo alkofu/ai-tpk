@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { backupIfExists, installPath, installDir } from "../fs-utils.js";
+import { backupIfExists, installPath, installDir } from "./fs-utils.js";
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-tpk-test-"));
 

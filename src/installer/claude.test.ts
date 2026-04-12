@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { installClaudeWhitelist } from "../claude.js";
-import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "../constants.js";
+import { installClaudeWhitelist } from "./claude.js";
+import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "./constants.js";
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-tpk-test-"));
 

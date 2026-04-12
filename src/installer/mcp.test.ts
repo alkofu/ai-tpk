@@ -10,7 +10,7 @@ import {
   computeConfigSignature,
   readStamps,
   writeStamps,
-} from "../mcp.js";
+} from "./mcp.js";
 
 // ---------------------------------------------------------------------------
 // Shared temp directory — cleaned up after all tests complete

@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { installLauncherScript } from "../launcher-install.js";
+import { installLauncherScript } from "./launcher-install.js";
 
 function makeFakeRepo(
   root: string,
   { withBundle = true }: { withBundle?: boolean } = {},
 ): void {
-  const launcherDir = path.join(root, "launcher");
+  const launcherDir = path.join(root, "src", "launcher");
   fs.mkdirSync(launcherDir, { recursive: true });
 
   const shContent =

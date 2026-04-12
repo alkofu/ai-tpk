@@ -5,22 +5,27 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { installLauncherScript } from "../launcher-install.js";
 
-function makeFakeRepo(root: string, { withBundle = true }: { withBundle?: boolean } = {}): void {
+function makeFakeRepo(
+  root: string,
+  { withBundle = true }: { withBundle?: boolean } = {},
+): void {
   const launcherDir = path.join(root, "launcher");
   fs.mkdirSync(launcherDir, { recursive: true });
 
   const shContent =
-    [
-      "#!/usr/bin/env bash",
-      'exec node "$HOME/.ai-tpk/launcher.js" "$@"',
-    ].join("\n") + "\n";
+    ["#!/usr/bin/env bash", 'exec node "$HOME/.ai-tpk/launcher.js" "$@"'].join(
+      "\n",
+    ) + "\n";
   fs.writeFileSync(path.join(launcherDir, "myclaude.sh"), shContent);
   fs.chmodSync(path.join(launcherDir, "myclaude.sh"), 0o755);
 
   if (withBundle) {
     const distDir = path.join(root, "dist");
     fs.mkdirSync(distDir, { recursive: true });
-    fs.writeFileSync(path.join(distDir, "launcher.js"), "// fake launcher bundle\n");
+    fs.writeFileSync(
+      path.join(distDir, "launcher.js"),
+      "// fake launcher bundle\n",
+    );
   }
 }
 
@@ -54,8 +59,12 @@ describe("installLauncherScript", () => {
   });
 
   it("throws if dist/launcher.js is missing", () => {
-    const freshRepo = fs.mkdtempSync(path.join(os.tmpdir(), "launcher-test-fresh-repo-"));
-    const freshHome = fs.mkdtempSync(path.join(os.tmpdir(), "launcher-test-fresh-home-"));
+    const freshRepo = fs.mkdtempSync(
+      path.join(os.tmpdir(), "launcher-test-fresh-repo-"),
+    );
+    const freshHome = fs.mkdtempSync(
+      path.join(os.tmpdir(), "launcher-test-fresh-home-"),
+    );
     try {
       makeFakeRepo(freshRepo, { withBundle: false });
       assert.throws(

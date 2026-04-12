@@ -19,9 +19,7 @@ export function installLauncherScript(
 
   // 8b. Guard: verify required source files exist before any side effects
   if (!fs.existsSync(srcBundle)) {
-    throw new Error(
-      `dist/launcher.js not found. Run 'pnpm run build' first.`,
-    );
+    throw new Error(`dist/launcher.js not found. Run 'pnpm run build' first.`);
   }
   if (!fs.existsSync(srcBashScript)) {
     throw new Error(

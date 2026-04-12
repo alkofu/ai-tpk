@@ -157,9 +157,29 @@ Delegate to Bitsmith to run (from `<main-path>`): `git pull origin main`
 If this fails, report the error but do not treat it as fatal — the local checkout is already
 on `main`.
 
+## Step 10a — Offer plan file cleanup
+
+Derive the current repo slug by running: `git rev-parse --show-toplevel`
+Take the basename of the result. Store it as `<repo-slug>`.
+
+Check whether any plan files exist for this repo:
+`ls ~/.ai-tpk/plans/<repo-slug>/`
+
+If the directory is empty or does not exist, skip this step silently and proceed to Step 11.
+
+If files exist, display them and ask:
+`"Found <count> plan file(s) for this repository in ~/.ai-tpk/plans/<repo-slug>/. Would you like to delete them? (yes / no / select)"`
+
+- **yes**: Delegate to Bitsmith to delete all files in `~/.ai-tpk/plans/<repo-slug>/` using `rm` (one call per file, not chained).
+- **select**: Display a numbered list of the files. Ask the user to enter the numbers of files to delete (comma-separated). Delegate the selected deletions to Bitsmith.
+- **no**: Skip silently.
+
+(Per DM delegation policy, file deletions must be delegated to Bitsmith.)
+
 ## Step 11 — Report final summary
 
 Print a summary:
 - **Worktree removed:** `<worktree-path>`
 - **Branch deleted:** `<branch>` (or "skipped — detached HEAD" or "skipped — see warning above" if Step 8 was skipped or failed)
 - **Current branch:** main (up to date)
+- **Plan files cleaned:** `<list of deleted plan files, or "none deleted" if Step 10a was skipped or user declined>`

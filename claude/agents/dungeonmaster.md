@@ -138,6 +138,7 @@ When a session worktree is active, prepend the following block to every Pathfind
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
 WORKTREE_BRANCH: feat/feature-name
+REPO_SLUG: {REPO_SLUG}
 All file operations and Bash commands must use this directory as the working root.
 ```
 
@@ -187,15 +188,16 @@ Follow this sequence:
 
 ### Phase 0: Session Isolation
 
-At the very start of every session, before any other work, capture two session-scoped variables in conversation memory:
+At the very start of every session, before any other work, capture three session-scoped variables in conversation memory:
 - `SESSION_TS` — current local time formatted as `YYYYMMDD-HHmmss` (e.g., `20260401-143022`)
 - `SESSION_SLUG` — the task description slugified: lowercase, alphanumeric and hyphens only, max 40 characters (e.g., "Add OAuth login" → `add-oauth-login`, "Rename env var" → `rename-env-var`)
+- `REPO_SLUG` — the repository directory name, derived via `basename $(git rev-parse --show-toplevel)` (e.g., `my-project`). This is used to namespace plan files under `~/.ai-tpk/plans/`.
 
-These are carried in conversation memory alongside `WORKTREE_PATH` and `WORKTREE_BRANCH` for the entire session and are used for consistent file naming throughout.
+These are carried in conversation memory alongside `WORKTREE_PATH`, `WORKTREE_BRANCH`, and `REPO_SLUG` for the entire session and are used for consistent file naming throughout.
 
 Before any planning begins, create an isolated git worktree for this session so it does not conflict with other parallel DM sessions.
 
-**Skip condition:** When `INTENT: advisory` is explicitly set (typically via the `/ask` command), skip worktree creation (steps 1-5 below) and `plans/` directory setup. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured at the top of Phase 0 — they are lightweight conversational memory, not file writes. For all other intents (investigative, constructive, or heuristically classified), worktree creation is mandatory with no exceptions. Note: if the DM heuristically classifies a message as advisory (branch (d) in the Mutual Exclusivity Note), a worktree will already have been created because Phase 0 runs before Phase 1 classification. This is acceptable — the explicit `/ask` command is the primary mechanism for advisory sessions, and the worktree will simply go unused.
+**Skip condition:** When `INTENT: advisory` is explicitly set (typically via the `/ask` command), skip worktree creation (steps 1-5 below) and `~/.ai-tpk/plans/` directory setup. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured at the top of Phase 0 — they are lightweight conversational memory, not file writes. For all other intents (investigative, constructive, or heuristically classified), worktree creation is mandatory with no exceptions. Note: if the DM heuristically classifies a message as advisory (branch (d) in the Mutual Exclusivity Note), a worktree will already have been created because Phase 0 runs before Phase 1 classification. This is acceptable — the explicit `/ask` command is the primary mechanism for advisory sessions, and the worktree will simply go unused.
 
 **When creating a worktree:**
 
@@ -204,15 +206,16 @@ Before any planning begins, create an isolated git worktree for this session so 
 2. **Delegate worktree creation to Bitsmith** (DM's Bash is read-only scoped; `mkdir` and `git worktree add` are write operations):
    ```
    REPO_ROOT=$(git rev-parse --show-toplevel)
+   REPO_SLUG=$(basename "${REPO_ROOT}")
    WORKTREE_PATH="${REPO_ROOT}/.worktrees/{branch-slug}"
    mkdir -p "$(dirname "${WORKTREE_PATH}")"
    git worktree add "${WORKTREE_PATH}" -b {branch-name} HEAD
-   mkdir -p "${WORKTREE_PATH}/plans"
+   mkdir -p "$HOME/.ai-tpk/plans/${REPO_SLUG}"
    ```
 
 3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`feat/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
 
-4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, and `SESSION_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used. If a session is interrupted and context is lost, run `git worktree list` to recover `WORKTREE_PATH` and `WORKTREE_BRANCH`. Inspect `{WORKTREE_PATH}/plans/` to recover `SESSION_TS` and `SESSION_SLUG` from the plan filename.
+4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, `SESSION_SLUG`, and `REPO_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used. If a session is interrupted and context is lost, run `git worktree list` to recover `WORKTREE_PATH` and `WORKTREE_BRANCH`. Inspect `~/.ai-tpk/plans/{REPO_SLUG}/` to recover `SESSION_TS` and `SESSION_SLUG` from the plan filename. Recover `REPO_SLUG` via `basename $(git rev-parse --show-toplevel)`.
 
 5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
@@ -259,6 +262,7 @@ When not triggered: skip directly to the Intake Gate.
 ~~~
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
+REPO_SLUG: {REPO_SLUG}
 All file operations and Bash commands must use this directory as the working root.
 
 ## Investigation Request
@@ -277,6 +281,7 @@ Investigate the reported symptom. Produce a Diagnostic Report with all 5 require
 ~~~
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
+REPO_SLUG: {REPO_SLUG}
 All file operations and Bash commands must use this directory as the working root.
 
 The following Diagnostic Report was produced by Tracebloom after investigating a user-reported issue. Use it as your problem definition input. Do not re-investigate facts already established in this report.
@@ -316,6 +321,7 @@ On round 6 (after 5 questions): append "You have reached the maximum number of q
 ```
 WORKING_DIRECTORY: ...
 WORKTREE_BRANCH: ...
+REPO_SLUG: ...
 
 The following intake brief was produced by Askmaw after user interview. Use it as your requirements input. Do not re-interview the user on topics already covered in this brief.
 
@@ -326,7 +332,7 @@ The following intake brief was produced by Askmaw after user interview. Use it a
 
 When Askmaw is skipped: proceed to step 2 as before.
 
-2. Assess whether a plan already exists in the `plans/` directory.
+2. Assess whether a plan already exists in the `~/.ai-tpk/plans/{REPO_SLUG}/` directory.
 
 **Explore-Options Gate** (scope-exploration-only, between step 2 and step 3):
 
@@ -344,6 +350,7 @@ When triggered:
 ````
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
+REPO_SLUG: {REPO_SLUG}
 All file operations and Bash commands must use this directory as the working root.
 
 ## Confirmed Scope
@@ -372,12 +379,12 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 3b. Re-invoke Pathfinder with the confirmed scope. Use the re-invocation template defined in the Explore-Options Gate above, substituting the user's confirmed objective, assumptions, selected option, and any user modifications. Pathfinder will skip Section 4 and proceed directly to plan generation.
 
-4. Pathfinder saves the completed plan to `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md`.
+4. Pathfinder saves the completed plan to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`.
 
 ### Phase 2: Plan Review (Quality Gate)
 
 1. **Mandatory Baseline Review**: Always invoke Ruinor first
-   - Pass the specific plan file path (e.g., `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{SESSION_SLUG}.md`) to Ruinor
+   - Pass the specific plan file path (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`) to Ruinor
    - Ruinor provides comprehensive baseline review and flags specialist concerns
    - Collect Ruinor's verdict, findings, and specialist recommendations
 
@@ -402,11 +409,12 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
    REVISION_MODE: true
    WORKING_DIRECTORY: {WORKTREE_PATH}
    WORKTREE_BRANCH: {WORKTREE_BRANCH}
+   REPO_SLUG: {REPO_SLUG}
    USER_FLAGS: {comma-separated flags from original user request (e.g. --review-security), or "None"}
    All file operations and Bash commands must use this directory as the working root.
 
    ## Plan to Revise
-   {WORKING_DIRECTORY}/plans/{SESSION_TS}-{feature-slug}.md
+   ~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md
 
    ## Reviewer Feedback
 
@@ -488,8 +496,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     **5a — Reservations logging:**
     This step is mandatory whenever any reviewer has issued ACCEPT-WITH-RESERVATIONS during the session. Skipping this step is a workflow violation -- the session must not proceed to step 5c until reservations are logged. After Phase 4 is complete and the final reviewer verdicts have been issued, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
 
-    - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `plans/20260401-143022-oauth-login.md` → `plans/20260401-143022-oauth-login-open-questions.md`. When a session worktree is active, prefix with `{WORKING_DIRECTORY}/`.
-    - **If Pathfinder was NOT invoked this session:** use `plans/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `plans/20260401-143022-rename-env-var-open-questions.md`). Apply the `{WORKING_DIRECTORY}/` prefix if a worktree is active.
+    - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login.md` → `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login-open-questions.md`. No worktree prefix is needed — plan files are now at a fixed user-scoped path.
+    - **If Pathfinder was NOT invoked this session:** use `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-rename-env-var-open-questions.md`). No worktree prefix is needed.
 
     Instruct Bitsmith to append the reservations under a section titled `## Review Reservations - [session date]` with the specific issues noted. If the target file does not exist, Bitsmith should create it first with the following header (substituting the plan name where applicable):
 
@@ -505,7 +513,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
     **5b — Documentation update:**
     If Pathfinder was invoked during this session, invoke Quill with the following three context items:
-    - (a) plan file path (e.g., `{WORKING_DIRECTORY}/plans/{SESSION_TS}-{SESSION_SLUG}.md`)
+    - (a) plan file path (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`)
     - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
     - (c) one-sentence feature summary
 
@@ -537,6 +545,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     - **If keep:** Log "Branch `{WORKTREE_BRANCH}` preserved at `{WORKTREE_PATH}`. Run `git worktree remove {WORKTREE_PATH}` when done." Do NOT remove the worktree.
 
     Log the cleanup result in the completion summary.
+
+    **Note:** Plan files are stored in `~/.ai-tpk/plans/{REPO_SLUG}/` and are not affected by worktree removal. To clean up plan files after a merge, use the `/merged` command (which offers plan file deletion) or the `/clean-ai-tpk-artifacts` command (age-based cleanup).
 
 ### Advisory Workflow (Phases A-B-C)
 
@@ -647,4 +657,162 @@ Keep it concise and operational. Prefer facts over narration.
 
 ## Example internal routing behavior
 
-See `claude/references/dm-routing-examples.md` for 10 worked examples covering OAuth, trivial renames, specialist flags, Truthhammer verification, explore-options, worktree isolation, Askmaw intake, Tracebloom investigation, Pathfinder scope confirmation, and advisory sessions.
+Example 1:
+User asks: "Add OAuth login, update the API, and add tests."
+Action:
+- Delegate to Pathfinder for decomposition and sequencing
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login.md`
+- **Plan Review Gate:**
+  - Invoke Ruinor (mandatory baseline review)
+  - Ruinor flags security concerns (auth/JWT) → recommends Riskmancer
+  - Plan contains "OAuth" keyword → confirms security-sensitive
+  - Invoke Riskmancer for deep security review
+  - Ruinor: ACCEPT-WITH-RESERVATIONS, Riskmancer: REVISE (missing CSRF, token expiry too long)
+  - Delegate to Pathfinder with `REVISION_MODE: true` and consolidated feedback
+  - Pathfinder revises plan (skips user confirmation, overwrites plan file directly)
+  - Re-run Ruinor + Riskmancer → both ACCEPT
+- Once plan approved, delegate implementation steps to Bitsmith
+- **Implementation Review Gate:**
+  - Invoke Ruinor (mandatory baseline review)
+  - Ruinor flags security implementation → recommends Riskmancer
+  - Invoke Riskmancer for security code review
+  - Ruinor: ACCEPT, Riskmancer: ACCEPT
+- Validate tests and changed files against the plan
+- Return summarized status: "Plan reviewed by Ruinor + Riskmancer (security-sensitive), implemented, reviewed, all tests pass"
+
+Example 2:
+User asks: "Rename this variable in one file."
+Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree (always required — no exceptions)
+- Skip Pathfinder if clearly trivial (single-step, no ambiguity)
+- Delegate directly to Bitsmith
+- **Implementation Review:** For trivial changes, run Ruinor only (mandatory baseline still applies). Skip specialist reviewers.
+- **Phase 5:** Offer PR/merge/keep options; clean up worktree based on user choice
+- Return short completion summary
+
+Example 3:
+User asks: "Refactor the authentication module --review-security --review-complexity"
+Action:
+- Delegate to Pathfinder for refactoring plan
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-auth-refactor.md`
+- **Plan Review Gate:**
+  - Invoke Ruinor (mandatory)
+  - User flags present: --review-security, --review-complexity
+  - Invoke Riskmancer (user flag) + Knotcutter (user flag) in parallel with Ruinor
+  - Ruinor also flags complexity concerns → Knotcutter was already invoked
+  - Collect all three verdicts
+- Continue with implementation and reviews as needed
+
+Example 4:
+User asks: "Migrate from Redis 6 to Redis 7 and update the caching config --verify-facts"
+Action:
+- Delegate to Pathfinder for migration plan
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-redis-migration.md`
+- **Plan Review Gate:**
+  - Invoke Ruinor (mandatory baseline review)
+  - User flag present: --verify-facts → invoke Truthhammer
+  - Invoke Truthhammer for factual verification of Redis 7 config keys and behavioral changes
+  - Ruinor: ACCEPT-WITH-RESERVATIONS
+  - Truthhammer: REVISE (2 findings: FV-1 CRITICAL -- deprecated config key `slave-read-only` replaced by `replica-read-only` in Redis 7; FV-2 HIGH -- incorrect default value for `maxmemory-policy`)
+  - Send consolidated feedback to Pathfinder
+  - Pathfinder revises plan
+  - Re-run Ruinor + Truthhammer → both ACCEPT
+- Delegate implementation to Bitsmith
+- **Implementation Review Gate:**
+  - Invoke Ruinor + Truthhammer (user flag carried forward)
+  - Both ACCEPT
+- Return summarized status
+
+Example 5:
+User asks: "We need a background job system for sending emails --explore-options"
+Action:
+- **Explore-Options Gate triggers** (explicit `--explore-options` flag)
+- DM invokes Pathfinder with `STOP_AFTER_SCOPE: true`
+- Pathfinder researches codebase, produces Scope Confirmation:
+  - Objective: Add an async email delivery system decoupled from the request cycle
+  - Key Assumptions: no existing job infrastructure, Postgres is already present, email volume is moderate
+  - Affected Subsystems: `src/mailer/`, `src/jobs/`, `config/`
+  - Out of Scope: SMS notifications, retry dashboards, monitoring setup
+  - Three implementation options: (A) In-process queue with a database-backed jobs table, (B) Redis-backed queue with BullMQ, (C) Dedicated message broker (e.g., RabbitMQ); recommendation: Option B
+- Pathfinder returns scope + options output to DM (no plan written)
+- DM presents scope + options to user, user selects Option B (Redis + BullMQ)
+- DM re-invokes Pathfinder with `## Confirmed Scope` block (using re-invocation template above)
+- Pathfinder sees `## Confirmed Scope` block, skips Section 4, proceeds directly to plan generation
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-background-jobs.md`
+- Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
+
+Example 6:
+User asks: "Add OAuth login" (while another DM session is already working on an unrelated issue)
+Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/feat-add-oauth-login` on branch `feat/add-oauth-login`
+- All subsequent Pathfinder, Bitsmith, and Quill delegation prompts include:
+  `WORKING_DIRECTORY: {REPO_ROOT}/.worktrees/feat-add-oauth-login`
+  `WORKTREE_BRANCH: feat/add-oauth-login`
+  `REPO_SLUG: {REPO_SLUG}`
+- Pathfinder writes plans to `~/.ai-tpk/plans/{REPO_SLUG}/`
+- Bitsmith operates in the worktree, commits land on `feat/add-oauth-login`
+- **Phase 5:** DM offers PR/merge/keep options, cleans up worktree based on user choice
+- Both sessions operate independently on separate branches without git conflicts
+
+Example 7:
+User asks: "Improve the auth system"
+Action:
+- **Intake Gate triggers** (ambiguous request: "improve" is vague, no scope boundary, multiple plausible interpretations)
+- DM invokes Askmaw (round 1) with raw request and empty history
+- Askmaw returns question: "What specific aspect of auth needs improvement — login speed, security hardening, adding new providers, or something else?"
+- DM surfaces question to user; user answers: "Security hardening — we had a penetration test and need to fix the findings"
+- DM invokes Askmaw (round 2) with request + Q&A history
+- Askmaw returns question: "Do you have a list of specific findings from the pen test, or should we do a general security review?"
+- DM surfaces question to user; user answers: "Yes, there are 3 findings: weak password policy, missing rate limiting on login, and session tokens don't expire"
+- DM invokes Askmaw (round 3) with full context
+- Askmaw returns structured brief (objective clear: fix 3 specific pen test findings; scope bounded)
+- DM exits intake loop, passes brief to Pathfinder
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-auth-security-hardening.md`
+- Continue with Phase 2 (Plan Review Gate) as normal
+
+Example 8:
+User asks: "Why is the background job queue dropping tasks silently?"
+Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/fix-job-queue-drops` on branch `fix/job-queue-drops`
+- **Phase 1, step 1:** DM clarifies goal: "Determine why enqueued background jobs are silently dropped."
+- **Investigative Gate triggers** (investigative question: "why is X happening?", no known cause, no plan; Intake and Explore-Options gates do not fire)
+- Invoke Tracebloom with symptom: "background job queue dropping tasks silently"
+- Tracebloom returns Diagnostic Report:
+  - Symptom: Jobs enqueued via `enqueue()` in `src/jobs/queue.ts` are not being processed
+  - Root cause: Worker pool size set to 0 in `config/production.yaml` due to a merge conflict marker left in the file
+  - Recommended next action: "Fix is trivial -- route to Bitsmith directly"
+- DM presents summary to user: "Tracebloom identified a merge conflict marker in `config/production.yaml` setting worker pool to 0. Routing to Bitsmith for the fix."
+- Skip Pathfinder (trivial fix). Delegate to Bitsmith with Diagnostic Report as context.
+- **Implementation Review:** Run Ruinor (mandatory baseline). Skip specialist reviewers.
+- **Phase 5:** Offer PR/merge/keep options.
+
+Example 9:
+User asks: "Add webhook support for payment events"
+Action:
+- **Phase 0:** DM delegates to Bitsmith to create worktree
+- **Phase 1:** Task is clear and well-specified — no Tracebloom, no Askmaw
+- DM invokes Pathfinder (first invocation)
+- Pathfinder researches codebase, reaches Section 4 (Scope Confirmation), returns scope output to DM:
+  - Objective: Add inbound webhook handling for payment provider events (payment.completed, payment.failed)
+  - Key Assumptions: Payment provider is Stripe; no existing webhook infrastructure
+  - Affected Subsystems: src/webhooks/ (new), src/payments/, config/
+  - Out of Scope: Outbound webhooks, non-payment event types
+  - Option A: Synchronous webhook handler (simple, no queue)
+  - Option B: Queue-backed webhook handler (reliable, retryable)
+  - Recommendation: Option B — payment events should be idempotent and retryable
+- DM surfaces scope + options to user; user confirms scope and selects Option B
+- DM re-invokes Pathfinder with `## Confirmed Scope` block (Option B selected, Option A rejected because payment events require retry guarantees)
+- Pathfinder skips Section 4, generates full plan, saves to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-webhook-support.md`
+- Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
+
+Example 10:
+User asks (via /ask): "How does the session isolation work with worktrees?"
+Action:
+- **Intent override fires:** `INTENT: advisory`. Log: "Intent override: advisory. Heuristic classification skipped."
+- **Session variables captured:** `SESSION_TS` = `20260401-143022`, `SESSION_SLUG` = `session-isolation-worktrees`
+- **Phase 0 worktree creation skipped** — advisory sessions do not create worktrees or plans
+- **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
+- **Phase B:** Invoke Tracebloom with advisory research request: "How does the session isolation work with worktrees?"
+- Tracebloom returns findings: Phase 0 creates an isolated git worktree per session at `.worktrees/{branch-slug}`, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5d
+- **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 section), `claude/references/worktree-protocol.md`
+- Session complete — no review, no plan, no PR prompt

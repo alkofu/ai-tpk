@@ -13,6 +13,7 @@ When the Dungeon Master activates a session worktree, it prepends the following 
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
 WORKTREE_BRANCH: feat/feature-name
+REPO_SLUG: {repo-name}
 All file operations and Bash commands must use this directory as the working root.
 ```
 

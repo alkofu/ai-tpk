@@ -7,6 +7,7 @@ import { c } from "./colors.js";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
 import * as os from "node:os";
+import * as fs from "node:fs";
 
 // scriptDir = repo root; at runtime __filename is dist/installer.js so one
 // dirname reaches dist/ and a second reaches the repo root.
@@ -26,6 +27,16 @@ try {
   installClaudeWhitelist(scriptDir, os.homedir());
   installDir(scriptDir, "cursor", ".cursor", os.homedir());
   installDir(scriptDir, "wrappers", ".claude/wrappers", os.homedir());
+
+  // Create ~/.ai-tpk artifact directories
+  const aiTpkDir = path.join(os.homedir(), ".ai-tpk");
+  fs.mkdirSync(path.join(aiTpkDir, "plans"), { recursive: true });
+  fs.mkdirSync(path.join(aiTpkDir, "lessons"), { recursive: true });
+  console.log(
+    c.green(
+      `✓ Created artifact directories: ${aiTpkDir}/plans/, ${aiTpkDir}/lessons/`,
+    ),
+  );
 
   console.log("");
   installMcpServers(scriptDir);

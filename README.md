@@ -553,7 +553,69 @@ Over time the installer may accumulate multiple timestamped backups for the same
 
 The script scans the same directories as `recover.sh` (`~/.claude` and `~/.cursor`), groups backups by their original file path, and shows a summary of everything it would delete before asking for confirmation. Original paths that have only one backup are left untouched. Nothing is deleted unless you explicitly confirm with `y`.
 
+## Cleaning Up Agent Artifacts
+
+Agent-produced files (Pathfinder plans, Everwise lessons) accumulate in `~/.ai-tpk/` over time. Two mechanisms are available for cleanup:
+
+### `/merged` Command — Post-Merge Plan Cleanup
+
+When you run `/merged` after a PR is merged, the command now offers to delete associated plan files:
+
+```bash
+/merged
+```
+
+The command automatically detects the current repository and offers to remove plan files from `~/.ai-tpk/plans/{repo-slug}/`. You can:
+- **Delete all:** Remove all plan files for this repo
+- **Select:** Choose which plan files to delete by number
+- **Skip:** Keep all plan files
+
+This is useful for removing planning artifacts after a feature is shipped.
+
+### `/clean-ai-tpk-artifacts` Command — Age-Based Cleanup
+
+For periodic housekeeping across all repositories, use the age-based cleanup command:
+
+```bash
+/clean-ai-tpk-artifacts          # Delete artifacts older than 14 days (default)
+/clean-ai-tpk-artifacts 30       # Delete artifacts older than 30 days
+/clean-ai-tpk-artifacts 7 --all  # Delete 7-day-old artifacts from ALL repos
+```
+
+**Scope behavior:**
+- **Default (no `--all`):** Searches `~/.ai-tpk/plans/{current-repo-slug}/` for old plans, and `~/.ai-tpk/lessons/` for old lessons. Plans are scoped to the current repository; lesson files are always searched globally (lessons are not repo-scoped).
+- **With `--all` flag:** Searches all repositories' plan directories under `~/.ai-tpk/plans/` and `~/.ai-tpk/lessons/`. Displays a warning that files from other repositories may be included.
+
+The command lists files to be deleted and asks for confirmation before proceeding.
+
 ## Features
+
+### Agent Artifacts Storage
+
+Agent-produced artifacts (plans, open-questions files, lessons) are now stored in user-global directories under `~/.ai-tpk/` to decouple them from worktree lifecycle and make them accessible across repositories:
+
+- **Plans** → `~/.ai-tpk/plans/{repo-slug}/` — One subdirectory per repository, containing plan files and associated open-questions files
+- **Lessons** → `~/.ai-tpk/lessons/` — Flat structure for Everwise Scout analysis recommendations (cross-repo)
+
+These directories are created automatically when you run `install.sh`. Existing session data in repo-relative `plans/` and `lessons/` directories is not automatically migrated; you can manually copy them if needed.
+
+**Migrating from repo-relative locations:**
+
+If you have existing plans or lessons in repo-relative directories (e.g., `my-repo/plans/`, `my-repo/lessons/`), you can preserve them by copying them to the new global location:
+
+```bash
+# For plans (in your repo directory)
+mkdir -p ~/.ai-tpk/plans/$(basename $(git rev-parse --show-toplevel))
+cp plans/*.md ~/.ai-tpk/plans/$(basename $(git rev-parse --show-toplevel))/
+
+# For lessons (in your repo directory)
+mkdir -p ~/.ai-tpk/lessons
+cp lessons/*.jsonl ~/.ai-tpk/lessons/
+```
+
+After copying, you can safely delete the old `plans/` and `lessons/` directories from your repositories.
+
+**Trade-off:** Everwise loses access to historical lesson data that was stored in the repo root (`lessons/candidates.jsonl`, `lessons/recurring.jsonl`, and `lessons/validated.jsonl`). If you have important historical lesson data, manually copy it to `~/.ai-tpk/lessons/` using the commands above before using Everwise after upgrading.
 
 ### Parallel Sessions via Git Worktrees
 
@@ -562,7 +624,7 @@ The Dungeon Master now supports true parallel development workflows using Git wo
 **Key benefits:**
 - Run multiple DungeonMaster sessions simultaneously on the same repository
 - Each session operates on its own branch in its own worktree
-- Plans are isolated within each worktree's `plans/` directory
+- Plans are stored globally in `~/.ai-tpk/plans/{repo-slug}/` and remain accessible after worktree removal
 - Zero git conflicts between parallel sessions
 - At completion, choose to create PR, merge to main, or keep the branch for later
 - Manual cleanup with `git worktree remove` or automatic cleanup at Phase 5
@@ -617,7 +679,8 @@ Claude Code slash commands provide quick workflow shortcuts. Commands are instal
 | `/open-pr` | Creates a pull request following the `open-pull-request` skill workflow: conventional branch naming, conventional title, draft mode, assigned to @me, and full pre-flight checklist. |
 | `/sync-pr` | Rebases the current PR branch onto `refs/remotes/origin/main` and force-pushes with `--force-with-lease`, keeping open PRs in sync with main's latest changes without manual git gymnastics. |
 | `/clean-the-desk` | Cleans up stale local branches (whose upstream PRs have been merged) and removes their associated git worktrees. Prompts for confirmation before any destructive action. |
-| `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, and pulls the latest. Confirms all destructive actions with the user. |
+| `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, pulls the latest, and optionally removes associated plan files from `~/.ai-tpk/plans/{repo-slug}/`. Confirms all destructive actions with the user. |
+| `/clean-ai-tpk-artifacts` | Deletes plan and lesson files older than N days (default 14) from `~/.ai-tpk/`. By default scoped to the current repository's plans; use `--all` flag to clean across all repositories. Prompts for confirmation before deletion. |
 | `/set-aws-profile` | Selects an AWS profile for the CloudWatch MCP server by listing available profiles from `~/.aws/config`, validating the user's selection, and storing it in `~/.claude/.current-aws-profile` (mode 0600). The profile is read at MCP startup. Requires Claude Code restart or MCP server reload to take effect. |
 
 ## Agent Orchestration Workflow
@@ -647,7 +710,7 @@ flowchart TD
     Start([DM: Need Planning?]) --> DelegateP[DM Delegates to<br/>Pathfinder]
     DelegateP --> PF[Pathfinder<br/>Creates Plan]
     PF --> Checklist[Pre-Submission<br/>Checklist ×8]
-    Checklist --> SavePlan[Save to<br/>plans/*.md]
+    Checklist --> SavePlan[Save to<br/>~/.ai-tpk/plans]
     SavePlan --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
 
     MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
@@ -766,8 +829,7 @@ For a comprehensive guide to the review workflow, see
 
 **Key Principles:**
 
-- **Plans are artifacts** - Saved to `plans/*.md` for visibility and version
-  control
+- **Plans are artifacts** - Saved to `~/.ai-tpk/plans/{repo-slug}/` for visibility and persistence
 - **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files
 - **Quality gates enforce quality** - No execution without approved plan, no
   completion without approved implementation

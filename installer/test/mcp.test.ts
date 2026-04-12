@@ -503,7 +503,10 @@ describe("readStamps", () => {
 
   it("returns parsed stamps from valid JSON file", () => {
     const stampsPath = path.join(tmpDir, "valid-stamps.json");
-    const stamps = { grafana: '{"name":"grafana"}', kubernetes: '{"name":"k8s"}' };
+    const stamps = {
+      grafana: '{"name":"grafana"}',
+      kubernetes: '{"name":"k8s"}',
+    };
     fs.writeFileSync(stampsPath, JSON.stringify(stamps), "utf8");
     const result = readStamps(stampsPath);
     assert.deepStrictEqual(result, stamps);

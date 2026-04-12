@@ -195,7 +195,11 @@ export function buildAddArgs(
 }
 
 // Path where install stamps are persisted across runs.
-const STAMPS_PATH = path.join(os.homedir(), ".claude", ".mcp-install-stamps.json");
+const STAMPS_PATH = path.join(
+  os.homedir(),
+  ".claude",
+  ".mcp-install-stamps.json",
+);
 
 /**
  * Computes a stable signature string for a wrapper-based server config.
@@ -308,9 +312,7 @@ export function installMcpServers(repoRoot: string): void {
             stdio: "pipe",
           });
           console.log(
-            c.green(
-              `MCP server '${server.name}' already configured, skipping`,
-            ),
+            c.green(`MCP server '${server.name}' already configured, skipping`),
           );
           continue;
         } catch {

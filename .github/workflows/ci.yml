@@ -38,7 +38,7 @@ jobs:
       - name: Bundle freshness check
         run: |
           pnpm run build
-          git diff --exit-code dist/installer.js || { echo "::error::dist/installer.js is out of date. Run 'pnpm run build' and commit the result."; exit 1; }
+          git diff --exit-code dist/ || { echo "::error::dist/ is out of date. Run 'pnpm run build' and commit the result."; exit 1; }
 
       - name: Test
         run: pnpm test

@@ -5,35 +5,23 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { installLauncherScript } from "../launcher-install.js";
 
-function makeFakeLauncherRepo(root: string): void {
+function makeFakeRepo(root: string, { withBundle = true }: { withBundle?: boolean } = {}): void {
   const launcherDir = path.join(root, "launcher");
-  const mcpDir = path.join(launcherDir, "mcp");
   fs.mkdirSync(launcherDir, { recursive: true });
-  fs.mkdirSync(mcpDir, { recursive: true });
-  fs.mkdirSync(path.join(launcherDir, "test"), { recursive: true });
 
-  fs.writeFileSync(path.join(launcherDir, "main.ts"), "// main");
-  fs.writeFileSync(path.join(launcherDir, "config.ts"), "// config");
-  fs.writeFileSync(path.join(launcherDir, "types.ts"), "// types");
-  fs.writeFileSync(path.join(mcpDir, "grafana.ts"), "// grafana");
-  fs.writeFileSync(path.join(mcpDir, "cloudwatch.ts"), "// cloudwatch");
-  fs.writeFileSync(path.join(launcherDir, "test", "config.test.ts"), "// test");
-  fs.writeFileSync(path.join(launcherDir, "README.md"), "# readme");
-  fs.writeFileSync(
-    path.join(launcherDir, "package.json"),
-    JSON.stringify({
-      name: "myclaude-launcher",
-      dependencies: { tsx: "^4.21.0" },
-    }),
-  );
   const shContent =
     [
       "#!/usr/bin/env bash",
-      'LAUNCHER_DIR="$HOME/.claude/launcher"',
-      'exec "$LAUNCHER_DIR/node_modules/.bin/tsx" main.ts "$@"',
+      'exec node "$HOME/.ai-tpk/launcher.js" "$@"',
     ].join("\n") + "\n";
   fs.writeFileSync(path.join(launcherDir, "myclaude.sh"), shContent);
   fs.chmodSync(path.join(launcherDir, "myclaude.sh"), 0o755);
+
+  if (withBundle) {
+    const distDir = path.join(root, "dist");
+    fs.mkdirSync(distDir, { recursive: true });
+    fs.writeFileSync(path.join(distDir, "launcher.js"), "// fake launcher bundle\n");
+  }
 }
 
 describe("installLauncherScript", () => {
@@ -43,7 +31,8 @@ describe("installLauncherScript", () => {
   before(() => {
     fakeRepo = fs.mkdtempSync(path.join(os.tmpdir(), "launcher-test-repo-"));
     fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), "launcher-test-home-"));
-    makeFakeLauncherRepo(fakeRepo);
+    makeFakeRepo(fakeRepo);
+    installLauncherScript(fakeRepo, { homeDir: fakeHome });
   });
 
   after(() => {
@@ -51,71 +40,65 @@ describe("installLauncherScript", () => {
     fs.rmSync(fakeHome, { recursive: true, force: true });
   });
 
-  it("copies root-level .ts files to ~/.claude/launcher/", () => {
-    installLauncherScript(fakeRepo, {
-      skipNpmInstall: true,
-      homeDir: fakeHome,
-    });
-    const dest = path.join(fakeHome, ".claude", "launcher");
-    assert.ok(fs.existsSync(path.join(dest, "main.ts")));
-    assert.ok(fs.existsSync(path.join(dest, "config.ts")));
-    assert.ok(fs.existsSync(path.join(dest, "types.ts")));
+  it("copies dist/launcher.js to ~/.ai-tpk/launcher.js", () => {
+    const destBundle = path.join(fakeHome, ".ai-tpk", "launcher.js");
+    assert.ok(fs.existsSync(destBundle));
+    const content = fs.readFileSync(destBundle, "utf8");
+    assert.ok(content.includes("fake launcher bundle"));
   });
 
-  it("copies mcp/ subdirectory .ts files", () => {
-    const dest = path.join(fakeHome, ".claude", "launcher", "mcp");
-    assert.ok(fs.existsSync(path.join(dest, "grafana.ts")));
-    assert.ok(fs.existsSync(path.join(dest, "cloudwatch.ts")));
+  it("creates ~/.ai-tpk/ directory if it doesn't exist", () => {
+    const aiTpkDir = path.join(fakeHome, ".ai-tpk");
+    assert.ok(fs.existsSync(aiTpkDir));
+    assert.ok(fs.statSync(aiTpkDir).isDirectory());
   });
 
-  it("does NOT copy test/ directory", () => {
-    const dest = path.join(fakeHome, ".claude", "launcher");
-    assert.ok(!fs.existsSync(path.join(dest, "test")));
+  it("throws if dist/launcher.js is missing", () => {
+    const freshRepo = fs.mkdtempSync(path.join(os.tmpdir(), "launcher-test-fresh-repo-"));
+    const freshHome = fs.mkdtempSync(path.join(os.tmpdir(), "launcher-test-fresh-home-"));
+    try {
+      makeFakeRepo(freshRepo, { withBundle: false });
+      assert.throws(
+        () => installLauncherScript(freshRepo, { homeDir: freshHome }),
+        /dist\/launcher\.js not found/,
+      );
+      assert.ok(!fs.existsSync(path.join(freshHome, ".ai-tpk")));
+    } finally {
+      fs.rmSync(freshRepo, { recursive: true, force: true });
+      fs.rmSync(freshHome, { recursive: true, force: true });
+    }
   });
 
-  it("does NOT copy README.md or myclaude.sh into launcher dir", () => {
-    const dest = path.join(fakeHome, ".claude", "launcher");
-    assert.ok(!fs.existsSync(path.join(dest, "README.md")));
-    assert.ok(!fs.existsSync(path.join(dest, "myclaude.sh")));
-  });
-
-  it("copies package.json to launcher dir", () => {
-    const dest = path.join(fakeHome, ".claude", "launcher", "package.json");
-    assert.ok(fs.existsSync(dest));
-    const pkg = JSON.parse(fs.readFileSync(dest, "utf8")) as { name?: string };
-    assert.equal(pkg.name, "myclaude-launcher");
-  });
-
-  it("installs ~/bin/myclaude with correct content and permissions", () => {
+  it("installs ~/bin/myclaude wrapper with correct content and permissions", () => {
     const binScript = path.join(fakeHome, "bin", "myclaude");
     assert.ok(fs.existsSync(binScript));
     const content = fs.readFileSync(binScript, "utf8");
-    assert.ok(
-      content.includes("$HOME/.claude/launcher"),
-      "should reference launcher dir",
-    );
-    assert.ok(
-      content.startsWith("#!/usr/bin/env bash"),
-      "should have bash shebang",
-    );
+    assert.ok(content.startsWith("#!/usr/bin/env bash"));
+    assert.ok(content.includes(".ai-tpk/launcher.js"));
     const mode = fs.statSync(binScript).mode & 0o777;
-    assert.equal(mode, 0o755, "should be executable");
+    assert.equal(mode, 0o755);
   });
 
-  it("cleans stale files on re-install", () => {
-    // Plant a stale file in the destination
-    const dest = path.join(fakeHome, ".claude", "launcher");
-    fs.writeFileSync(path.join(dest, "stale.ts"), "// stale");
+  it("removes old ~/.claude/launcher/ on re-install (migration cleanup)", () => {
+    const oldLauncherDir = path.join(fakeHome, ".claude", "launcher");
+    fs.mkdirSync(oldLauncherDir, { recursive: true });
+    fs.writeFileSync(path.join(oldLauncherDir, "main.ts"), "// old main");
 
-    // Re-run install
-    installLauncherScript(fakeRepo, {
-      skipNpmInstall: true,
-      homeDir: fakeHome,
-    });
+    installLauncherScript(fakeRepo, { homeDir: fakeHome });
 
-    // Stale file should be gone
-    assert.ok(!fs.existsSync(path.join(dest, "stale.ts")));
-    // Real files should still be there
-    assert.ok(fs.existsSync(path.join(dest, "main.ts")));
+    assert.ok(!fs.existsSync(oldLauncherDir));
+    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.js")));
+  });
+
+  it("preserves unrelated ~/.ai-tpk/ files on re-install", () => {
+    fs.writeFileSync(
+      path.join(fakeHome, ".ai-tpk", "other-tool.json"),
+      '{"tool":"other"}',
+    );
+
+    installLauncherScript(fakeRepo, { homeDir: fakeHome });
+
+    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "other-tool.json")));
+    assert.ok(fs.existsSync(path.join(fakeHome, ".ai-tpk", "launcher.js")));
   });
 });

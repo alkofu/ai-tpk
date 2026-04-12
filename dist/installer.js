@@ -350,79 +350,24 @@ function installMcpServers(repoRoot) {
 import * as fs4 from "node:fs";
 import * as path4 from "node:path";
 import * as os4 from "node:os";
-import { execSync } from "node:child_process";
-var LAUNCHER_SUBDIRS_TO_COPY = ["mcp"];
-var LAUNCHER_ROOT_EXCLUDE = /* @__PURE__ */ new Set([
-  "package.json",
-  // copied separately
-  "myclaude.sh",
-  // copied to ~/bin, not to launcher dir
-  "README.md"
-  // dev-only documentation
-]);
-function installLauncherScript(repoRoot, {
-  skipNpmInstall = false,
-  homeDir = os4.homedir()
-} = {}) {
-  const srcLauncherDir = path4.join(repoRoot, "launcher");
-  const destLauncherDir = path4.join(homeDir, ".claude", "launcher");
+function installLauncherScript(repoRoot, { homeDir = os4.homedir() } = {}) {
+  const srcBundle = path4.join(repoRoot, "dist", "launcher.js");
+  const aiTpkDir = path4.join(homeDir, ".ai-tpk");
+  const destBundle = path4.join(aiTpkDir, "launcher.js");
   const binDir = path4.join(homeDir, "bin");
   const targetBinPath = path4.join(binDir, "myclaude");
-  const srcBashScript = path4.join(srcLauncherDir, "myclaude.sh");
-  const srcPackageJson = path4.join(srcLauncherDir, "package.json");
-  if (fs4.existsSync(destLauncherDir)) {
-    for (const entry of fs4.readdirSync(destLauncherDir, {
-      withFileTypes: true
-    })) {
-      if (entry.name === "node_modules") continue;
-      fs4.rmSync(path4.join(destLauncherDir, entry.name), {
-        recursive: true,
-        force: true
-      });
-    }
+  const srcBashScript = path4.join(repoRoot, "launcher", "myclaude.sh");
+  const oldLauncherDir = path4.join(homeDir, ".claude", "launcher");
+  if (!fs4.existsSync(srcBundle)) {
+    throw new Error(
+      `dist/launcher.js not found. Run 'pnpm run build' first.`
+    );
   }
-  fs4.mkdirSync(destLauncherDir, { recursive: true });
-  const rootEntries = fs4.readdirSync(srcLauncherDir, { withFileTypes: true });
-  for (const entry of rootEntries) {
-    if (entry.isFile() && entry.name.endsWith(".ts") && !LAUNCHER_ROOT_EXCLUDE.has(entry.name)) {
-      fs4.copyFileSync(
-        path4.join(srcLauncherDir, entry.name),
-        path4.join(destLauncherDir, entry.name)
-      );
-    }
-  }
-  for (const subdir of LAUNCHER_SUBDIRS_TO_COPY) {
-    const srcSubdir = path4.join(srcLauncherDir, subdir);
-    const destSubdir = path4.join(destLauncherDir, subdir);
-    if (!fs4.existsSync(srcSubdir)) continue;
-    fs4.mkdirSync(destSubdir, { recursive: true });
-    const subEntries = fs4.readdirSync(srcSubdir, { withFileTypes: true });
-    for (const entry of subEntries) {
-      if (entry.isFile() && entry.name.endsWith(".ts")) {
-        fs4.copyFileSync(
-          path4.join(srcSubdir, entry.name),
-          path4.join(destSubdir, entry.name)
-        );
-      }
-    }
-  }
-  fs4.copyFileSync(srcPackageJson, path4.join(destLauncherDir, "package.json"));
-  if (!skipNpmInstall) {
-    console.log("Installing launcher dependencies...");
-    try {
-      execSync("npm install", {
-        cwd: destLauncherDir,
-        stdio: "inherit"
-      });
-    } catch (err) {
-      console.error(
-        c.red(
-          `Failed to install launcher dependencies in ${destLauncherDir}.
-Run: cd ${destLauncherDir} && npm install`
-        )
-      );
-      throw err;
-    }
+  fs4.mkdirSync(aiTpkDir, { recursive: true });
+  fs4.copyFileSync(srcBundle, destBundle);
+  if (fs4.existsSync(oldLauncherDir)) {
+    fs4.rmSync(oldLauncherDir, { recursive: true, force: true });
+    console.log(c.yellow(`Removed old launcher directory: ${oldLauncherDir}`));
   }
   fs4.mkdirSync(binDir, { recursive: true });
   try {
@@ -441,7 +386,7 @@ Run: cd ${destLauncherDir} && npm install`
   fs4.copyFileSync(srcBashScript, targetBinPath);
   fs4.chmodSync(targetBinPath, 493);
   console.log(c.green(`Launcher installed to ~/bin/myclaude`));
-  console.log(c.green(`Launcher source installed to ~/.claude/launcher/`));
+  console.log(c.green(`Launcher bundle installed to ~/.ai-tpk/launcher.js`));
 }
 
 // installer/main.ts

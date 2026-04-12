@@ -158,9 +158,11 @@ Currently configured servers:
 
 - **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) - Provides read-only access to Kubernetes cluster information via your `~/.kube/config`. Gracefully skips setup if `~/.kube/config` doesn't exist yet (useful for fresh machine setup). The server is only added if not already configured, making the installation idempotent.
 - **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) - Official AWS Labs MCP server providing access to CloudWatch Metrics, Alarms, and Logs (query log groups, run Insights queries, retrieve metrics and alarm history) via your `~/.aws` credentials. Uses a wrapper script (`wrappers/mcp-cloudwatch.sh`) to support dynamic AWS profile selection. Select your active AWS profile by running `/set-aws-profile` in Claude Code—the profile is stored in `~/.claude/.current-aws-profile` and read at MCP startup. Requires `uvx` (`pip install uv` or `brew install uv`). Gracefully skips setup if `~/.aws/credentials` doesn't exist yet. The server is only added if not already configured, making the installation idempotent.
-- **Grafana MCP Server** (`mcp-grafana`) - Access to Grafana dashboards, datasources, metrics, logs, incidents, and more. Uses a wrapper script (`wrappers/mcp-grafana.sh`) that requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` to be exported in your shell environment. Self-healing re-registration: the installer removes and re-adds this server each invocation to fix any prior broken configurations.
+- **Grafana MCP Server** (`mcp-grafana`) - Access to Grafana dashboards, datasources, metrics, logs, incidents, and more. Uses a wrapper script (`wrappers/mcp-grafana.sh`) that requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` to be exported in your shell environment. Registration is skipped when the config has not changed since the last run; if the registration is externally broken (e.g., removed with `claude mcp remove`), the installer detects this and re-adds it automatically.
 
 MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
+
+**Stamp-based skipping:** After a wrapper-based server is registered, the installer records a config signature in `~/.claude/.mcp-install-stamps.json`. On subsequent runs, if the signature matches and the registration is intact, the server is skipped. To force re-registration of all wrapper servers (e.g., after a broken install or to pick up manual `mcp-servers.json` edits that the installer did not detect), delete this file and re-run `./install.sh`.
 
 ### myclaude — Session Launcher
 
@@ -494,7 +496,7 @@ chmod 600 ~/.claude/.current-aws-profile
    ./install.sh
    ```
 
-   For wrapper-based servers, the installer removes and re-adds the server each time (self-healing), so users with prior broken registrations are automatically fixed.
+   For wrapper-based servers, the installer uses stamp-based skipping: it re-registers only when the config has changed or the registration is found to be missing. Externally broken registrations are self-healed automatically.
 
 ##### Graceful Degradation
 

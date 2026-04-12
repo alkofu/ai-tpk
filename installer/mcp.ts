@@ -194,6 +194,91 @@ export function buildAddArgs(
   return result;
 }
 
+// Path where install stamps are persisted across runs.
+const STAMPS_PATH = path.join(
+  os.homedir(),
+  ".claude",
+  ".mcp-install-stamps.json",
+);
+
+/**
+ * Computes a stable signature string for a wrapper-based server config.
+ * The signature captures the fields that affect the `claude mcp add` invocation:
+ * name, scope, transport, and the resolved absolute wrapper path.
+ *
+ * Throws if `server.wrapper` is undefined (not a wrapper-based server).
+ */
+export function computeConfigSignature(
+  server: McpServerConfig,
+  repoRoot: string,
+  homedir: string = os.homedir(),
+): string {
+  if (server.wrapper === undefined) {
+    throw new Error(
+      `computeConfigSignature: server '${server.name}' has no wrapper field`,
+    );
+  }
+  const wrapperPath =
+    server.scope === "user"
+      ? path.join(homedir, ".claude", server.wrapper)
+      : path.join(repoRoot, server.wrapper);
+  return JSON.stringify({
+    name: server.name,
+    scope: server.scope,
+    transport: server.transport,
+    wrapperPath,
+  });
+}
+
+/**
+ * Reads the MCP install stamps file from disk.
+ * Returns {} on ENOENT (file not yet created) or invalid JSON (corrupted).
+ * Re-throws all other errors.
+ */
+export function readStamps(stampsPath: string): Record<string, string> {
+  let raw: string;
+  try {
+    raw = fs.readFileSync(stampsPath, "utf8");
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      (err as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      return {};
+    }
+    throw err;
+  }
+  try {
+    return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    console.log(
+      c.yellow(
+        `Warning: MCP stamps file at ${stampsPath} contains invalid JSON -- resetting`,
+      ),
+    );
+    return {};
+  }
+}
+
+/**
+ * Writes the MCP install stamps to disk as pretty-printed JSON.
+ * On any write failure, logs a yellow warning and returns without throwing.
+ */
+export function writeStamps(
+  stampsPath: string,
+  stamps: Record<string, string>,
+): void {
+  try {
+    fs.writeFileSync(stampsPath, JSON.stringify(stamps, null, 2), "utf8");
+  } catch {
+    console.log(
+      c.yellow(
+        `Warning: failed to write MCP stamps file at ${stampsPath} -- stamp-based skipping will not persist`,
+      ),
+    );
+  }
+}
+
 export function installMcpServers(repoRoot: string): void {
   // Check claude CLI availability
   try {
@@ -203,18 +288,85 @@ export function installMcpServers(repoRoot: string): void {
     return;
   }
 
+  const stamps = readStamps(STAMPS_PATH);
+  const updatedStamps: Record<string, string> = { ...stamps };
+
+  const servers = loadMcpServers(repoRoot);
+
+  // Collect wrapper server names for stale stamp cleanup after the loop.
+  const wrapperServerNames = new Set(
+    servers.filter((s) => s.wrapper !== undefined).map((s) => s.name),
+  );
+
   console.log(c.blue("Configuring MCP servers (user scope)..."));
 
-  for (const server of loadMcpServers(repoRoot)) {
+  for (const server of servers) {
     if (server.wrapper !== undefined) {
-      // Wrapper-based servers: always remove and re-add to self-heal any prior
-      // broken registration (e.g. from when env vars were passed via -e flags).
+      // Wrapper-based servers: stamp-aware skip or remove-then-re-add.
+      const signature = computeConfigSignature(server, repoRoot);
+
+      if (stamps[server.name] === signature) {
+        // Stamp matches — check that the registration is actually present.
+        try {
+          execFileSync("claude", ["mcp", "get", server.name], {
+            stdio: "pipe",
+          });
+          console.log(
+            c.green(`MCP server '${server.name}' already configured, skipping`),
+          );
+          continue;
+        } catch {
+          // Stamp is current but registration is missing — re-add without removing first.
+          console.log(
+            c.yellow(
+              `MCP server '${server.name}' stamp is current but registration is missing, re-adding`,
+            ),
+          );
+        }
+      } else {
+        // Stamp is absent or stale — remove any existing registration and re-add.
+        try {
+          execFileSync("claude", ["mcp", "remove", server.name], {
+            stdio: "pipe",
+          });
+        } catch {
+          // Server was not registered — that is fine, proceed to add
+        }
+      }
+
+      // Check prereq
+      if (server.prereq !== undefined) {
+        try {
+          fs.statSync(expandVars(server.prereq));
+        } catch (err: unknown) {
+          if (
+            err instanceof Error &&
+            (err as NodeJS.ErrnoException).code === "ENOENT"
+          ) {
+            // prereq check is advisory: warn if missing, but always proceed to add
+            console.log(
+              c.yellow(
+                `Warning: ${expandVars(server.prereq)} not found -- ${server.name} MCP will fail until this file is created`,
+              ),
+            );
+          }
+        }
+      }
+
+      // Add the server
       try {
-        execFileSync("claude", ["mcp", "remove", server.name], {
-          stdio: "pipe",
-        });
+        execFileSync(
+          "claude",
+          ["mcp", "add", ...buildAddArgs(server, repoRoot)],
+          {
+            stdio: "pipe",
+          },
+        );
+        updatedStamps[server.name] = signature;
+        console.log(c.green(`MCP server '${server.name}' added`));
       } catch {
-        // Server was not registered — that is fine, proceed to add
+        delete updatedStamps[server.name];
+        console.log(c.red(`Failed to add MCP server '${server.name}'`));
       }
     } else {
       // Command-based servers: skip if already configured
@@ -227,39 +379,48 @@ export function installMcpServers(repoRoot: string): void {
       } catch {
         // Not yet configured — proceed
       }
-    }
 
-    // Check prereq
-    if (server.prereq !== undefined) {
-      try {
-        fs.statSync(expandVars(server.prereq));
-      } catch (err: unknown) {
-        if (
-          err instanceof Error &&
-          (err as NodeJS.ErrnoException).code === "ENOENT"
-        ) {
-          // prereq check is advisory: warn if missing, but always proceed to add
-          console.log(
-            c.yellow(
-              `Warning: ${expandVars(server.prereq)} not found -- ${server.name} MCP will fail until this file is created`,
-            ),
-          );
+      // Check prereq
+      if (server.prereq !== undefined) {
+        try {
+          fs.statSync(expandVars(server.prereq));
+        } catch (err: unknown) {
+          if (
+            err instanceof Error &&
+            (err as NodeJS.ErrnoException).code === "ENOENT"
+          ) {
+            // prereq check is advisory: warn if missing, but always proceed to add
+            console.log(
+              c.yellow(
+                `Warning: ${expandVars(server.prereq)} not found -- ${server.name} MCP will fail until this file is created`,
+              ),
+            );
+          }
         }
       }
-    }
 
-    // Add the server
-    try {
-      execFileSync(
-        "claude",
-        ["mcp", "add", ...buildAddArgs(server, repoRoot)],
-        {
-          stdio: "pipe",
-        },
-      );
-      console.log(c.green(`MCP server '${server.name}' added`));
-    } catch {
-      console.log(c.red(`Failed to add MCP server '${server.name}'`));
+      // Add the server
+      try {
+        execFileSync(
+          "claude",
+          ["mcp", "add", ...buildAddArgs(server, repoRoot)],
+          {
+            stdio: "pipe",
+          },
+        );
+        console.log(c.green(`MCP server '${server.name}' added`));
+      } catch {
+        console.log(c.red(`Failed to add MCP server '${server.name}'`));
+      }
     }
   }
+
+  // Remove stale stamps for servers no longer in the config.
+  for (const key of Object.keys(updatedStamps)) {
+    if (!wrapperServerNames.has(key)) {
+      delete updatedStamps[key];
+    }
+  }
+
+  writeStamps(STAMPS_PATH, updatedStamps);
 }

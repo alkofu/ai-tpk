@@ -216,7 +216,21 @@ Before any planning begins, create an isolated git worktree for this session so 
 
 1. Clarify the user goal in one sentence.
 
-**Mutual exclusivity note:** After clarifying the goal, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:
+**Intent Override** (before classification):
+
+If the user's message begins with `INTENT: investigative` or `INTENT: constructive`, skip heuristic classification and route directly:
+- `INTENT: investigative` → fire the Investigative Gate immediately (skip the Mutual Exclusivity classification below)
+- `INTENT: constructive` → skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly)
+
+The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
+
+When an intent override fires, log it: "Intent override: {investigative|constructive}. Heuristic classification skipped."
+
+Strip the `INTENT:` line from the message before passing the remaining text to downstream agents. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented.
+
+When not triggered: proceed to the Mutual Exclusivity Note below.
+
+**Mutual exclusivity note:** When no explicit `INTENT:` override is present, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:
 - **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → Investigative Gate → Tracebloom
 - **(b) Ambiguous or underspecified** (the task needs clarification before planning) → Intake Gate → Askmaw
 - **(c) Ready for planning** (clear, bounded, constructive task) → proceed to Pathfinder (which will internally handle scope confirmation and options discovery in its Section 4)

@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { expandVars, loadMcpServers, buildAddArgs } from "../mcp.js";
+import {
+  expandVars,
+  loadMcpServers,
+  buildAddArgs,
+  computeConfigSignature,
+  readStamps,
+  writeStamps,
+} from "../mcp.js";
 
 // ---------------------------------------------------------------------------
 // Shared temp directory — cleaned up after all tests complete
@@ -414,5 +421,117 @@ describe("buildAddArgs — command-based server", () => {
       "simple",
       "simple-cmd",
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeConfigSignature
+// ---------------------------------------------------------------------------
+
+describe("computeConfigSignature", () => {
+  const baseServer = {
+    name: "grafana",
+    scope: "user" as const,
+    transport: "stdio" as const,
+    wrapper: "wrappers/mcp-grafana.sh",
+  };
+  const repoRoot = "/tmp/fake-repo";
+  const fakeHomedir = "/tmp/fake-home";
+
+  it("produces identical signatures for identical inputs", () => {
+    const sig1 = computeConfigSignature(baseServer, repoRoot, fakeHomedir);
+    const sig2 = computeConfigSignature(baseServer, repoRoot, fakeHomedir);
+    assert.strictEqual(sig1, sig2);
+  });
+
+  it("produces different signatures when wrapper path changes", () => {
+    const other = { ...baseServer, wrapper: "wrappers/mcp-other.sh" };
+    const sig1 = computeConfigSignature(baseServer, repoRoot, fakeHomedir);
+    const sig2 = computeConfigSignature(other, repoRoot, fakeHomedir);
+    assert.notStrictEqual(sig1, sig2);
+  });
+
+  it("produces different signatures when transport changes", () => {
+    const other = { ...baseServer, transport: "sse" as const };
+    const sig1 = computeConfigSignature(baseServer, repoRoot, fakeHomedir);
+    const sig2 = computeConfigSignature(other, repoRoot, fakeHomedir);
+    assert.notStrictEqual(sig1, sig2);
+  });
+
+  it("produces different signatures when scope changes", () => {
+    const other = { ...baseServer, scope: "project" as const };
+    const sig1 = computeConfigSignature(baseServer, repoRoot, fakeHomedir);
+    const sig2 = computeConfigSignature(other, repoRoot, fakeHomedir);
+    assert.notStrictEqual(sig1, sig2);
+  });
+
+  it("resolves user-scope wrapper against homedir", () => {
+    const localHome = "/custom/home";
+    const sig = computeConfigSignature(baseServer, repoRoot, localHome);
+    const expectedPath = path.join(
+      localHome,
+      ".claude",
+      "wrappers/mcp-grafana.sh",
+    );
+    assert.ok(
+      sig.includes(expectedPath),
+      `expected signature to contain "${expectedPath}", got: ${sig}`,
+    );
+  });
+
+  it("throws when server has no wrapper field", () => {
+    const commandServer = {
+      name: "kubernetes",
+      scope: "user" as const,
+      transport: "stdio" as const,
+      command: "kubectl",
+    };
+    assert.throws(() => computeConfigSignature(commandServer, repoRoot));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readStamps
+// ---------------------------------------------------------------------------
+
+describe("readStamps", () => {
+  it("returns empty object when file does not exist", () => {
+    const nonexistent = path.join(tmpDir, "no-such-stamps.json");
+    const result = readStamps(nonexistent);
+    assert.deepStrictEqual(result, {});
+  });
+
+  it("returns parsed stamps from valid JSON file", () => {
+    const stampsPath = path.join(tmpDir, "valid-stamps.json");
+    const stamps = { grafana: '{"name":"grafana"}', kubernetes: '{"name":"k8s"}' };
+    fs.writeFileSync(stampsPath, JSON.stringify(stamps), "utf8");
+    const result = readStamps(stampsPath);
+    assert.deepStrictEqual(result, stamps);
+  });
+
+  it("returns empty object and does not throw on corrupted JSON", () => {
+    const stampsPath = path.join(tmpDir, "corrupt-stamps.json");
+    fs.writeFileSync(stampsPath, "not valid json {{{", "utf8");
+    const result = readStamps(stampsPath);
+    assert.deepStrictEqual(result, {});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// writeStamps
+// ---------------------------------------------------------------------------
+
+describe("writeStamps", () => {
+  it("writes stamps to disk as pretty JSON", () => {
+    const stampsPath = path.join(tmpDir, "written-stamps.json");
+    const stamps = { grafana: "sig1", kubernetes: "sig2" };
+    writeStamps(stampsPath, stamps);
+    const written = fs.readFileSync(stampsPath, "utf8");
+    assert.strictEqual(written, JSON.stringify(stamps, null, 2));
+  });
+
+  it("does not throw when path is unwritable", () => {
+    const stampsPath = path.join(tmpDir, "no", "such", "dir", "stamps.json");
+    assert.doesNotThrow(() => writeStamps(stampsPath, { key: "value" }));
   });
 });

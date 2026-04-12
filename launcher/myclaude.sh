@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LAUNCHER_DIR="$HOME/.claude/launcher"
+LAUNCHER_BUNDLE="$HOME/.ai-tpk/launcher.js"
 
-if [[ ! -f "$LAUNCHER_DIR/main.ts" ]]; then
-  printf 'Error: myclaude launcher not found at %s\n' "$LAUNCHER_DIR" >&2
+if [[ ! -f "$LAUNCHER_BUNDLE" ]]; then
+  printf 'Error: myclaude launcher not found at %s\n' "$LAUNCHER_BUNDLE" >&2
   printf 'Re-run install.sh to reinstall it.\n' >&2
   exit 1
 fi
@@ -21,11 +21,4 @@ case ":$PATH:" in
     ;;
 esac
 
-cd "$LAUNCHER_DIR"
-TSX_BIN="$LAUNCHER_DIR/node_modules/.bin/tsx"
-if [[ ! -x "$TSX_BIN" ]]; then
-  printf 'Error: tsx not found at %s\n' "$TSX_BIN" >&2
-  printf 'Re-run install.sh to reinstall dependencies.\n' >&2
-  exit 1
-fi
-exec "$TSX_BIN" main.ts "$@"
+exec node "$LAUNCHER_BUNDLE" "$@"

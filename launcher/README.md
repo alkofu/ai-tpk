@@ -4,17 +4,21 @@ The launcher is a TypeScript module that implements the `myclaude` interactive w
 
 ## Quick Start
 
+### For Developers (requires pnpm)
+
 From the repository root:
 
 ```bash
-npm run launch
+pnpm run launch
 ```
 
 Or directly:
 
 ```bash
-npx tsx launcher/main.ts
+pnpm exec tsx launcher/main.ts
 ```
+
+### For End-Users (after `./install.sh`)
 
 After installation via `./install.sh`, the launcher is available as:
 
@@ -27,7 +31,7 @@ myclaude
 Tests live in `launcher/test/`. Run all tests (installer + launcher) with:
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## Grafana Configuration Format
@@ -70,7 +74,7 @@ Shared utilities (cancellation, prompts) are in `utils.ts` and `prompts.ts`. The
 
 ## Integration with install.sh
 
-Installation is handled by `installer/launcher-install.ts`. The process is idempotent: it cleans prior artifacts, copies source to `~/.claude/launcher/`, runs `npm install` locally, and installs the `~/bin/myclaude` bootstrap script. The installed launcher has zero runtime dependency on the ai-tpk repository.
+Installation is handled by `installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.js` and installs the `~/bin/myclaude` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
 
 ## Migration: Existing grafana-mcp Script
 

@@ -30,7 +30,7 @@ When `WORKING_DIRECTORY:` is present in the delegation prompt:
 
 - Always use absolute paths rooted in `{WORKING_DIRECTORY}`. Do not construct paths relative to an assumed current directory.
 - Never use `cd ... &&` or any compound shell command to simulate a working directory change. This violates the Bash style rule defined in `claude/references/bash-style.md` and does not persist the CWD across separate Bash calls.
-- For tools that resolve configuration relative to CWD, use the tool's own directory flag where available (e.g., `npm --prefix {WORKING_DIRECTORY} install`, `make -C {WORKING_DIRECTORY}`).
+- For tools that resolve configuration relative to CWD, use the tool's own directory flag where available (e.g., `pnpm --dir {WORKING_DIRECTORY} install`, `make -C {WORKING_DIRECTORY}`).
 - If a tool has no CWD flag and cannot be invoked with an absolute path, surface the limitation rather than resorting to compound command chaining.
 
 ## Git Command Behavior

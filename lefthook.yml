@@ -2,7 +2,7 @@ pre-push:
   commands:
     lint:
       glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"
-      run: npm run lint
+      run: pnpm run lint
     format-check:
       glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"
-      run: npm run format:check
+      run: pnpm run format:check

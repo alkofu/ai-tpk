@@ -27,6 +27,8 @@ plans/
 
 # Node.js
 node_modules/
+
+# Build output
 dist/
 
 # Lefthook local overrides (machine-specific, not for version control)

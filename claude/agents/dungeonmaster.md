@@ -523,7 +523,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     - note any unfinished items or follow-ups
     - Reservations logged: yes/no -- [file path or "N/A if no ACCEPT-WITH-RESERVATIONS verdicts"]
     - if Quill was invoked in 5b, include a line noting that documentation was updated; otherwise note that documentation update was skipped (no planning session)
-    - Worktree status (path, branch, or 'skipped' if no worktree)
+    - Worktree status (path, branch, cleanup action taken, or 'skipped' if no worktree)
+    - Token usage: read the session's enriched chronicle file — glob `logs/talekeeper-*.jsonl` in the worktree root (or repo root if no worktree is active) and select the file most recently modified during this session. Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` across all entries using `jq`. Report as: "Tokens: {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read" (divide raw counts by 1000, round to 1 decimal). If the chronicle file is not found, unreadable, or contains no token data, report "Token usage: unavailable".
     - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
     **5d — Worktree log:**
@@ -604,7 +605,8 @@ When responding back to the main thread, structure your result as:
   - Specialist reviews invoked (if any): Riskmancer / Windwarden / Knotcutter / Truthhammer verdicts
 - Final validation
 - Documentation: updated by Quill / skipped (no planning session)
-- Worktree: `{path}` on branch `{branch}` — preserved / skipped (no worktree)
+- Worktree: `{path}` on branch `{branch}` — {cleanup action taken} / skipped (no worktree)
+- Token usage: {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read (or "unavailable")
 - Risks / follow-ups
 
 For advisory sessions (`INTENT: advisory`), use this simplified structure instead:

@@ -111,8 +111,9 @@ Processes the raw sub-agent event log captured during the session into a structu
 1. Reads `logs/talekeeper-raw.jsonl`
 2. Filters out `hook-agent-*` noise and `talekeeper` self-captures
 3. Extracts structured fields (agent type, session ID, reviewer verdicts) from each entry
-4. Writes an enriched JSONL chronicle to `logs/talekeeper-{session_id}.jsonl`
-5. Clears the raw log on success
+4. Reads the agent's transcript file (recorded in `agent_transcript_path`) and sums token usage across all `type: "assistant"` entries
+5. Writes an enriched JSONL chronicle to `logs/talekeeper-{session_id}.jsonl`
+6. Clears the raw log on success
 
 **Enriched Chronicle Schema:**
 
@@ -128,8 +129,12 @@ Each JSONL line in `logs/talekeeper-{session_id}.jsonl` contains:
 | `summary` | string | Structural summary of the agent's completion (not free-text input) |
 | `verdict` | string or null | For reviewer agents only: `ACCEPT`, `REVISE`, `REJECT`, or `ACCEPT-WITH-RESERVATIONS`; `null` otherwise |
 | `agent_transcript_path` | string or null | For SubagentStop events: path to the agent's JSONL transcript in `~/.claude/projects/`; `null` for non-SubagentStop events |
+| `input_tokens` | integer | Total input tokens consumed by the agent (summed across all assistant turns); `0` when transcript is unavailable |
+| `output_tokens` | integer | Total output tokens produced by the agent; `0` when transcript is unavailable |
+| `cache_creation_input_tokens` | integer | Total tokens written to the prompt cache by the agent; `0` when transcript is unavailable |
+| `cache_read_input_tokens` | integer | Total tokens read from the prompt cache by the agent; `0` when transcript is unavailable |
 
-The `agent_transcript_path` field enables downstream tools (like Everwise Scout) to discover and read raw subagent transcripts for deeper analysis.
+The `agent_transcript_path` field enables downstream tools (like Everwise Scout) to discover and read raw subagent transcripts for deeper analysis. The token fields enable Everwise to identify agents or sessions with disproportionate token consumption without requiring direct transcript access.
 
 **Configuration:**
 - Script: `claude/hooks/talekeeper-enrich.sh`

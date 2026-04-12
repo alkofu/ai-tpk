@@ -16,7 +16,7 @@ await Promise.all([
     entryPoints: ['src/launcher/main.ts'],
     bundle: true,
     platform: 'node',
-    format: 'esm',
+    format: 'cjs',
     target: 'node24',
     outfile: 'dist/launcher.js',
     banner: {

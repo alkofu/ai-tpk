@@ -359,8 +359,11 @@ function installLauncherScript(repoRoot, { homeDir = os4.homedir() } = {}) {
   const srcBashScript = path4.join(repoRoot, "launcher", "myclaude.sh");
   const oldLauncherDir = path4.join(homeDir, ".claude", "launcher");
   if (!fs4.existsSync(srcBundle)) {
+    throw new Error(`dist/launcher.js not found. Run 'pnpm run build' first.`);
+  }
+  if (!fs4.existsSync(srcBashScript)) {
     throw new Error(
-      `dist/launcher.js not found. Run 'pnpm run build' first.`
+      `launcher/myclaude.sh not found. The repository may be incomplete.`
     );
   }
   fs4.mkdirSync(aiTpkDir, { recursive: true });

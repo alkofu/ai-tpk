@@ -2,7 +2,7 @@ import * as esbuild from 'esbuild'
 
 await Promise.all([
   esbuild.build({
-    entryPoints: ['installer/main.ts'],
+    entryPoints: ['src/installer/main.ts'],
     bundle: true,
     platform: 'node',
     format: 'esm',
@@ -13,7 +13,7 @@ await Promise.all([
     },
   }),
   esbuild.build({
-    entryPoints: ['launcher/main.ts'],
+    entryPoints: ['src/launcher/main.ts'],
     bundle: true,
     platform: 'node',
     format: 'esm',

@@ -23,10 +23,10 @@
     "prepare": "lefthook install",
     "build": "tsx build.ts",
     "setup": "node dist/installer.js",
-    "launch": "tsx launcher/main.ts",
-    "test": "node --import tsx/esm --test 'installer/test/**/*.test.ts' 'launcher/test/**/*.test.ts'",
-    "lint": "oxlint installer/ launcher/",
-    "format": "oxfmt --write installer/ launcher/",
-    "format:check": "oxfmt --check installer/ launcher/"
+    "launch": "tsx src/launcher/main.ts",
+    "test": "node --import tsx/esm --test 'src/installer/**/*.test.ts' 'src/launcher/**/*.test.ts'",
+    "lint": "oxlint src/installer/ src/launcher/",
+    "format": "oxfmt --write src/installer/ src/launcher/",
+    "format:check": "oxfmt --check src/installer/ src/launcher/"
   }
 }

@@ -14,7 +14,7 @@ export function installLauncherScript(
   const destBundle = path.join(aiTpkDir, "launcher.js");
   const binDir = path.join(homeDir, "bin");
   const targetBinPath = path.join(binDir, "myclaude");
-  const srcBashScript = path.join(repoRoot, "launcher", "myclaude.sh");
+  const srcBashScript = path.join(repoRoot, "src", "launcher", "myclaude.sh");
   const oldLauncherDir = path.join(homeDir, ".claude", "launcher");
 
   // 8b. Guard: verify required source files exist before any side effects
@@ -23,7 +23,7 @@ export function installLauncherScript(
   }
   if (!fs.existsSync(srcBashScript)) {
     throw new Error(
-      `launcher/myclaude.sh not found. The repository may be incomplete.`,
+      `src/launcher/myclaude.sh not found. The repository may be incomplete.`,
     );
   }
 

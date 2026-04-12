@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 // with and without NO_COLOR set.
 
 const __filename = fileURLToPath(import.meta.url);
-const installerDir = path.dirname(path.dirname(__filename));
+const installerDir = path.dirname(__filename);
 
 function runColorCheck(colorName: string, noColor: boolean): string {
   const script = `

@@ -8,10 +8,10 @@ import { fileURLToPath } from "node:url";
 import * as path from "node:path";
 import * as os from "node:os";
 
-// Resolve scriptDir = repo root (parent of installer/)
+// Resolve scriptDir = repo root (parent of src/installer/)
 const __filename = fileURLToPath(import.meta.url);
 const installerDir = path.dirname(__filename);
-const scriptDir = path.dirname(installerDir);
+const scriptDir = path.dirname(path.dirname(installerDir));
 
 try {
   parseArgs(process.argv.slice(2));

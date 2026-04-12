@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { loadConfig, saveConfig } from "../config.js";
+import { loadConfig, saveConfig } from "./config.js";
 
 // ---------------------------------------------------------------------------
 // The real CONFIG_FILE path (hardcoded in config.ts — no path injection).

@@ -542,7 +542,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 This workflow fires when `INTENT: advisory` is detected (typically via the `/ask` command). It is a lightweight, read-only Q&A path that bypasses the entire constructive/investigative pipeline.
 
-**What is skipped:** Pathfinder, Bitsmith, Ruinor, Quill, all review gates, all completion cleanup. No plan file is written. No code is changed.
+**What is skipped:** Pathfinder, Bitsmith, Ruinor, Quill, all review gates, all completion cleanup. No plan file is written. No code is changed. No files are written.
 
 **What is NOT skipped:** Session variable capture (`SESSION_TS`, `SESSION_SLUG`) — these are lightweight conversational memory and are retained for logging and potential pipeline transitions.
 

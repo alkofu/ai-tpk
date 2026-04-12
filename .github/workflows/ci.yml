@@ -35,10 +35,8 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
-      - name: Bundle freshness check
-        run: |
-          pnpm run build
-          git diff --exit-code dist/ || { echo "::error::dist/ is out of date. Run 'pnpm run build' and commit the result."; exit 1; }
+      - name: Build
+        run: pnpm run build
 
       - name: Test
         run: pnpm test

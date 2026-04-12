@@ -516,7 +516,7 @@ Pull requests targeting `main` are automatically validated by a GitHub Actions w
 2. **Lint** — `pnpm run lint` checks for code quality issues
 3. **Format check** — `pnpm run format:check` verifies code is properly formatted
 4. **Assert lockfile unchanged** — `git diff --exit-code pnpm-lock.yaml` verifies the lockfile has not changed
-5. **Bundle freshness check** — `pnpm run build` followed by `git diff --exit-code dist/` verifies the committed bundles match source
+5. **Build** — `pnpm run build` verifies the project bundles without errors
 6. **Test** — `pnpm test` runs the test suite
 
 All checks must pass before a PR can be merged. If CI fails, review the error messages, fix the issues locally, and push your changes. For formatting issues, run `pnpm run format` and commit the changes.

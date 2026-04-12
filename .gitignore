@@ -28,10 +28,8 @@ plans/
 # Node.js
 node_modules/
 
-# Intermediate build artifacts (tsx compilation of build.ts, tsc outputs)
-dist/build.js
-dist/installer/
-dist/launcher/
+# Build output
+dist/
 
 # Lefthook local overrides (machine-specific, not for version control)
 lefthook-local.yml

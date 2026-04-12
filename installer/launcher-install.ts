@@ -17,10 +17,15 @@ export function installLauncherScript(
   const srcBashScript = path.join(repoRoot, "launcher", "myclaude.sh");
   const oldLauncherDir = path.join(homeDir, ".claude", "launcher");
 
-  // 8b. Guard: verify dist/launcher.js exists before any side effects
+  // 8b. Guard: verify required source files exist before any side effects
   if (!fs.existsSync(srcBundle)) {
     throw new Error(
       `dist/launcher.js not found. Run 'pnpm run build' first.`,
+    );
+  }
+  if (!fs.existsSync(srcBashScript)) {
+    throw new Error(
+      `launcher/myclaude.sh not found. The repository may be incomplete.`,
     );
   }
 

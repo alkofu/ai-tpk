@@ -21,7 +21,7 @@
   },
   "scripts": {
     "prepare": "lefthook install",
-    "build": "esbuild installer/main.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/installer.js --banner:js='#!/usr/bin/env node'",
+    "build": "tsx build.ts",
     "setup": "node dist/installer.js",
     "launch": "tsx launcher/main.ts",
     "test": "node --import tsx/esm --test 'installer/test/**/*.test.ts' 'launcher/test/**/*.test.ts'",

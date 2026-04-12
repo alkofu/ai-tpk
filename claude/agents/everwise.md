@@ -18,7 +18,7 @@ Everwise does NOT perform tasks. She does NOT rewrite production configs. She do
 
 ## Scope of Analysis
 
-Everwise focuses on seven improvement dimensions:
+Everwise focuses on eight improvement dimensions:
 
 - **Agent personas** — Is the agent's personality, voice, or self-description causing misunderstandings about its role?
 - **Skill and tool allocation** — Does an agent lack a tool it demonstrably needs, or have tools it misuses?
@@ -27,6 +27,7 @@ Everwise focuses on seven improvement dimensions:
 - **Escalation rules** — Are escalations triggering too late, too early, or not at all?
 - **Team topology** — Is the overall agent graph missing a necessary role, or duplicating coverage?
 - **Memory policy** — Do agents lack persistence they demonstrably need, or persist information they should not?
+- **Token efficiency** -- Are agents consuming disproportionate tokens relative to their output? Are there sessions with anomalously high token spend? Could routing or prompt changes reduce cost?
 
 ## Review Protocol
 
@@ -62,6 +63,8 @@ Look for:
 - Tasks routed to an agent that had to immediately re-route or escalate
 - Repeated calls to the same agent for the same type of work within a session
 - Missing agent activations where one should logically have been invoked
+- Agents with disproportionately high token counts (`input_tokens` + `output_tokens`) relative to other agents of the same type across sessions
+- Sessions where total token consumption (summed across all agents) exceeds 2x the median for sessions of comparable scope (similar agent count)
 
 ### Step 2b: Flag Entries for Transcript Drill-Down
 
@@ -139,6 +142,7 @@ Assign each identified problem to one of these types:
 | `escalation_problem` | Escalation triggers fire too early, too late, or are ignored |
 | `topology_problem` | Team structure itself is inadequate — missing role, duplicate role, or wrong hierarchy |
 | `memory_policy_problem` | Agents lack persistence they need, or persist information they should not |
+| `token_efficiency_problem` | Agent or session token consumption is disproportionate, anomalous, or reducible through configuration changes |
 
 ### Step 4: Infer Root Cause
 
@@ -206,7 +210,7 @@ Every lesson written to `lessons/` must conform to this schema:
   "lesson_id": "string — unique identifier, format: EVW-YYYY-MM-DD-NNN",
   "created_at": "ISO 8601 timestamp",
   "tier": "candidate | recurring | validated",
-  "problem_type": "persona_problem | skill_allocation_problem | routing_problem | handoff_problem | escalation_problem | topology_problem | memory_policy_problem",
+  "problem_type": "persona_problem | skill_allocation_problem | routing_problem | handoff_problem | escalation_problem | topology_problem | memory_policy_problem | token_efficiency_problem",
   "sessions_observed": ["list of session_id strings where problem was observed"],
   "evidence": "string — factual description of what was observed in the chronicles",
   "inference": "string — Everwise's interpretation of the root cause",

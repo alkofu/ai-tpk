@@ -51,6 +51,31 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
   last_msg=$(echo "$entry" | jq -r '.last_assistant_message // ""')
   agent_transcript_path=$(echo "$entry" | jq -r '.agent_transcript_path // ""')
 
+  # Extract token usage from agent transcript if available
+  input_tokens=0
+  output_tokens=0
+  cache_creation_input_tokens=0
+  cache_read_input_tokens=0
+
+  if [ -n "$agent_transcript_path" ]
+  then
+    if [ -f "$agent_transcript_path" ]
+    then
+      file_size=$(wc -c < "$agent_transcript_path" 2>/dev/null || echo "0")
+      if [ "$file_size" -le 52428800 ]
+      then
+        token_json=$(jq -s '[.[] | select(.type == "assistant") | .message.usage // {}] | { input_tokens: (map(.input_tokens // 0) | add // 0), output_tokens: (map(.output_tokens // 0) | add // 0), cache_creation_input_tokens: (map(.cache_creation_input_tokens // 0) | add // 0), cache_read_input_tokens: (map(.cache_read_input_tokens // 0) | add // 0) }' "$agent_transcript_path" 2>/dev/null)
+        if [ -n "$token_json" ]
+        then
+          input_tokens=$(echo "$token_json" | jq -r '.input_tokens // 0' 2>/dev/null || echo "0")
+          output_tokens=$(echo "$token_json" | jq -r '.output_tokens // 0' 2>/dev/null || echo "0")
+          cache_creation_input_tokens=$(echo "$token_json" | jq -r '.cache_creation_input_tokens // 0' 2>/dev/null || echo "0")
+          cache_read_input_tokens=$(echo "$token_json" | jq -r '.cache_read_input_tokens // 0' 2>/dev/null || echo "0")
+        fi
+      fi
+    fi
+  fi
+
   # Build summary from structural metadata only (not interpreting free-text)
   summary="${agent_type} completed (${hook_event_name})"
 
@@ -80,7 +105,11 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
     --arg summary "$summary" \
     --argjson verdict "$verdict" \
     --argjson agent_transcript_path "$atp_arg" \
-    '{timestamp: $ts, event_type: $event_type, agent_type: $agent_type, agent_id: $agent_id, session_id: $session_id, summary: $summary, verdict: $verdict, agent_transcript_path: $agent_transcript_path}'
+    --argjson input_tokens "$input_tokens" \
+    --argjson output_tokens "$output_tokens" \
+    --argjson cache_creation_input_tokens "$cache_creation_input_tokens" \
+    --argjson cache_read_input_tokens "$cache_read_input_tokens" \
+    '{timestamp: $ts, event_type: $event_type, agent_type: $agent_type, agent_id: $agent_id, session_id: $session_id, summary: $summary, verdict: $verdict, agent_transcript_path: $agent_transcript_path, input_tokens: $input_tokens, output_tokens: $output_tokens, cache_creation_input_tokens: $cache_creation_input_tokens, cache_read_input_tokens: $cache_read_input_tokens}'
 
 done >> "$OUTPUT_FILE" 2>/dev/null
 

@@ -100,10 +100,9 @@ After codebase research and interview are complete but before writing the full p
 
 **Skip conditions (first match wins — skip this entire section):**
 
-1. `REVISION_MODE: true` is present — Note: when REVISION_MODE is present, Section 3's own skip already jumps directly to Section 5 (Generate Plan), bypassing Section 4. The REVISION_MODE skip condition in Section 4 is a defensive fallback for future refactoring.
-2. Delegation prompt contains a complete Askmaw `## Intake Brief` with substantive content in all fields
-3. Delegation prompt contains a `## Diagnostic Report` from Tracebloom
-4. Delegation prompt contains a `## Confirmed Scope` block (re-invocation after prior scope confirmation)
+1. Delegation prompt contains a complete Askmaw `## Intake Brief` with substantive content in all fields
+2. Delegation prompt contains a `## Diagnostic Report` from Tracebloom
+3. Delegation prompt contains a `## Confirmed Scope` block (re-invocation after prior scope confirmation)
 
 **`STOP_AFTER_SCOPE: true` handling:** Execute Section 4 fully, produce scope + options output, then STOP — do not write a plan, return structured scope output to DM. DM presents scope + options to the user and waits. If the user does not ask to proceed with planning, the advisory session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
 
@@ -153,6 +152,8 @@ Please confirm the scope above and, if multiple options were presented, select y
 ```
 
 **`## Confirmed Scope` re-invocation handling:** When the delegation prompt contains a `## Confirmed Scope` block, treat it as authoritative scope input and proceed directly to Section 5 (Generate Plan). Do not repeat scope confirmation.
+
+> **Note:** This template must match the re-invocation template in `dungeonmaster.md`. If either file is edited, update both to keep the handoff contract in sync.
 
 **Pathfinder re-invocation template (after scope confirmation):**
 
@@ -392,7 +393,7 @@ Before considering a plan complete, verify:
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
 7. ✅ **Pre-submission checklist passed** - all 8 questions reviewed and any issues corrected before saving
-8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when REVISION_MODE, Askmaw brief, Tracebloom report, or Confirmed Scope block is present)
+8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when Askmaw brief, Tracebloom report, or Confirmed Scope block is present — REVISION_MODE skips via Section 3 directly to Section 5)
 
 ## Tool Usage
 

@@ -208,7 +208,7 @@ Before any planning begins, create an isolated git worktree for this session so 
 
 3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`feat/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
 
-4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, and `SESSION_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used.
+4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, and `SESSION_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used. If a session is interrupted and context is lost, run `git worktree list` to recover `WORKTREE_PATH` and `WORKTREE_BRANCH`. Inspect `{WORKTREE_PATH}/plans/` to recover `SESSION_TS` and `SESSION_SLUG` from the plan filename.
 
 5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
@@ -387,14 +387,16 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 4. If revision needed:
    - Provide Pathfinder with **consolidated feedback from Ruinor and all invoked specialists** using the delegation template below
    - Wait for Pathfinder to revise the plan file
-   - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations)
-   - Continue this review-revise loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS
+   - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations **and** the original user flags from this session)
+   - Continue this review-revise loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS.
+   - **Stalled-loop termination:** If this is the 3rd or subsequent revision round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another revision cycle.
 
    **Revision delegation template** (use this every time DM re-delegates to Pathfinder from Phase 2 step 4, including subsequent revision rounds after repeated REVISE/REJECT verdicts — every iteration of the review-revise loop uses this same template with updated feedback):
    ```
    REVISION_MODE: true
    WORKING_DIRECTORY: {WORKTREE_PATH}
    WORKTREE_BRANCH: {WORKTREE_BRANCH}
+   USER_FLAGS: {comma-separated flags from original user request (e.g. --review-security), or "None"}
    All file operations and Bash commands must use this directory as the working root.
 
    ## Plan to Revise
@@ -444,7 +446,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 5. Track implementation artifacts (changed files, new code).
 
-**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree.
+**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree. The counter resets to zero after each intermediate or Phase 4 Ruinor review, regardless of verdict.
 
 ### Phase 4: Implementation Review (Quality Gate)
 
@@ -465,8 +467,9 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 4. If fixes needed:
     - Provide Bitsmith with **consolidated feedback from Ruinor and all invoked specialists**
     - Wait for Bitsmith to fix the issues
-    - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations)
-    - Continue this review-fix loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS
+    - **Return to step 1**: Re-run Ruinor (and conditionally re-run specialists based on new recommendations **and** the original user flags from this session)
+    - Continue this review-fix loop until all reviewers issue ACCEPT or ACCEPT-WITH-RESERVATIONS.
+    - **Stalled-loop termination:** If this is the 3rd or subsequent fix round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another fix cycle.
 
     When Ruinor issues REJECT (not REVISE), require Bitsmith to produce a written remediation brief — a short summary of what was changed and why — before the re-review invocation. Pass this brief explicitly to Ruinor as context in the re-review delegation prompt. This distinguishes REJECT remediation from REVISE remediation and prevents rubber-stamp re-approvals.
 

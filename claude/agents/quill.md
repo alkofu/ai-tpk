@@ -1,7 +1,7 @@
 ---
 name: quill
 color: pink
-description: "MUST BE USED to craft or update project documentation. Use PROACTIVELY after major features, API changes, or when onboarding developers. Produces READMEs, API specs, architecture guides, and user manuals."
+description: "Documentation specialist. Produces or updates project docs (READMEs, API specs, architecture guides, user manuals) from a session plan and a list of changed files."
 tools: "Read, Grep, Glob, Bash, Write, Edit"
 model: claude-haiku-4-5
 permissionMode: acceptEdits

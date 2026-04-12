@@ -357,7 +357,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 3. Invoke Pathfinder (first invocation). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active.
 
    **What Pathfinder returns depends on skip conditions:**
-   - If `REVISION_MODE: true` is present, a complete Askmaw brief covers all fields, a Tracebloom Diagnostic Report is present, or a `## Confirmed Scope` block is present in the delegation prompt → Pathfinder skips Section 4 (Scope Confirmation) and returns a completed plan directly. Proceed to step 4.
+   - If `REVISION_MODE: true` is present, a complete Askmaw brief covers all fields, a Tracebloom Diagnostic Report is present, or a `## Confirmed Scope` block is present in the delegation prompt → Pathfinder skips Section 4 (Scope Confirmation) and writes the completed plan to disk and signals completion. Proceed to step 4.
    - Otherwise → Pathfinder researches the codebase, runs Section 4 (Scope Confirmation), and returns a structured Scope Confirmation output to DM **without writing a plan**. Proceed to step 3a.
 
 3a. When Pathfinder returns Scope Confirmation output (not a plan):

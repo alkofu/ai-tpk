@@ -523,26 +523,17 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     - note any unfinished items or follow-ups
     - Reservations logged: yes/no -- [file path or "N/A if no ACCEPT-WITH-RESERVATIONS verdicts"]
     - if Quill was invoked in 5b, include a line noting that documentation was updated; otherwise note that documentation update was skipped (no planning session)
-    - Worktree status (path, branch, cleanup action taken, or 'skipped' if no worktree)
+    - Worktree status (path, branch, or 'skipped' if no worktree)
     - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
-    **5d — Worktree cleanup:**
-    Ask the user:
-    > "Session branch `{WORKTREE_BRANCH}` is ready. Would you like to: (a) create a PR, (b) merge to main locally, or (c) keep the branch for later?"
-
-    - **If PR:** Delegate to Bitsmith to push the branch and create a PR (using the `/open-pr` command or `gh pr create`). Then ask: "PR created. Would you like to keep the worktree for iterating on review feedback, or remove it?" If keep: log "Branch `{WORKTREE_BRANCH}` preserved at `{WORKTREE_PATH}` for PR iteration." If remove: delegate to Bitsmith to run `git worktree remove {WORKTREE_PATH}`.
-
-    - **If merge:** Delegate to Bitsmith to run `git checkout main && git merge --no-ff {WORKTREE_BRANCH}`. **Error handling:** If the merge fails (conflicts), do NOT proceed with worktree removal or branch deletion. Abort cleanup, inform the user of the merge failure, and fall back to the "keep" option. If successful: delegate to Bitsmith to run `git worktree remove {WORKTREE_PATH}` and `git branch -d {WORKTREE_BRANCH}`.
-
-    - **If keep:** Log "Branch `{WORKTREE_BRANCH}` preserved at `{WORKTREE_PATH}`. Run `git worktree remove {WORKTREE_PATH}` when done." Do NOT remove the worktree.
-
-    Log the cleanup result in the completion summary.
+    **5d — Worktree log:**
+    Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Run `/open-pr` to create a pull request, or handle cleanup manually."
 
 ### Advisory Workflow (Phases A-B-C)
 
 This workflow fires when `INTENT: advisory` is detected (typically via the `/ask` command). It is a lightweight, read-only Q&A path that bypasses the entire constructive/investigative pipeline.
 
-**What is skipped:** Pathfinder, Bitsmith, Ruinor, Quill, all review gates, all completion cleanup. No plan file is written. No code is changed. No files are written.
+**What is skipped:** Worktree creation (Phase 0 steps 1-5), Pathfinder, Bitsmith, Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written.
 
 **What is NOT skipped:** Session variable capture (`SESSION_TS`, `SESSION_SLUG`) — these are lightweight conversational memory and are retained for logging and potential pipeline transitions.
 
@@ -593,7 +584,7 @@ Assemble agent findings (if any) with DM's own understanding into a clear, direc
 - If DM answered directly: no attribution needed
 - Compile a Sources list of files, agent findings, or external references cited during the advisory session for inclusion in the output contract
 - No review gate — there is no code to review
-- The advisory session ends after presenting the answer. No completion summary, no worktree cleanup, no PR prompt.
+- The advisory session ends after presenting the answer. No completion summary, no worktree log step.
 
 **Follow-up handling:** If the user asks follow-up questions in the same session, repeat Phases A-B-C for each follow-up. The session remains in advisory mode until the user explicitly requests a constructive or investigative action (e.g., "OK, let's fix that" or "Create a plan for this"), at which point DM transitions to the standard pipeline starting from Phase 0.
 
@@ -613,7 +604,7 @@ When responding back to the main thread, structure your result as:
   - Specialist reviews invoked (if any): Riskmancer / Windwarden / Knotcutter / Truthhammer verdicts
 - Final validation
 - Documentation: updated by Quill / skipped (no planning session)
-- Worktree: `{path}` on branch `{branch}` — {cleanup action taken} / skipped (no worktree)
+- Worktree: `{path}` on branch `{branch}` — preserved / skipped (no worktree)
 - Risks / follow-ups
 
 For advisory sessions (`INTENT: advisory`), use this simplified structure instead:

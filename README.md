@@ -270,16 +270,11 @@ Agent-produced files (Pathfinder plans, Everwise lessons) accumulate in `~/.ai-t
 
 ### `/merged` Command — Post-Merge Plan Cleanup
 
-When you run `/merged` after a PR is merged, the command now offers to delete associated plan files:
+When you run `/merged` after a PR is merged, the command offers to delete associated plan files from `~/.ai-tpk/plans/{repo-slug}/`. Cleanup is session-aware:
 
-```bash
-/merged
-```
-
-The command automatically detects the current repository and offers to remove plan files from `~/.ai-tpk/plans/{repo-slug}/`. You can:
-- **Delete all:** Remove all plan files for this repo
-- **Select:** Choose which plan files to delete by number
-- **Skip:** Keep all plan files
+- **Session files** (prefixed with the current session timestamp) are identified automatically and presented together for a simple yes/no confirmation.
+- **Other files** (from previous sessions) are offered separately with a yes/no/select prompt so you can keep, bulk-delete, or individually pick what to remove.
+- If the session timestamp is unavailable (e.g. `/merged` was run in a new session), all files are listed together with a single yes/no/select prompt.
 
 This is useful for removing planning artifacts after a feature is shipped.
 

@@ -177,8 +177,10 @@ in Phase 0 of the DM workflow that created the worktree for this session).
 - **If `SESSION_TS` is available:** Files whose names begin with `{SESSION_TS}-` are
   "session files". All remaining files are "other files".
 - **If `SESSION_TS` is not available** (e.g., `/merged` was run in a new session):
-  All files are treated as "other files". Skip the session-files prompt below and
-  proceed directly to the other-files prompt.
+  All files are treated as undifferentiated. Skip the session-files prompt and the
+  other-files prompt below. Instead, display all files and ask:
+  `"Found <count> plan file(s) for this repository in ~/.ai-tpk/plans/<repo-slug>/. Would you like to delete them? (yes / no / select)"`
+  Proceed with yes/no/select behaviour as described in the other-files prompt.
 
 **Session files prompt (when SESSION_TS is available and session files exist):**
 

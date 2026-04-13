@@ -21,21 +21,9 @@ Hooks allow you to run automated checks or tasks at specific points in your Clau
 
 Runs when a Bash command falls outside the `allowedTools` list and requires permission.
 
-**Behavior:**
-1. Reads the permission request event from stdin
-2. Extracts the Bash command and strips quoted strings to avoid false positives
-3. Detects compound operators: `&&`, `;` (semicolon), or embedded newlines
-4. Denies permission if compound operators are found, returning a message directing the agent to split the command into separate Bash calls
-5. For single commands, appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
-6. Fails open (no output, exit 0) if `jq` is unavailable
+**Purpose:** Enforces the no-compound-commands rule (defined in `claude/references/bash-style.md`) at the permission stage and logs non-allowed single commands for manual review. Script: `claude/hooks/permission-learn.sh`.
 
-**Purpose:** Enforces the no-compound-commands rule defined in `claude/references/bash-style.md` at the permission stage. Keeps the human permission checkpoint intact for any single command not already covered by `allowedTools`, while providing a log for manual review of what commands are being requested.
-
-**Configuration:**
-- Script: `claude/hooks/permission-learn.sh`
-- Type: PermissionRequest hook
-- Timeout: 5 seconds
-- Requires `jq`; fails gracefully if unavailable
+**Non-obvious behaviors:** Fails open if `jq` is unavailable (no output, exit 0). Quoted strings are stripped before compound-operator detection to avoid false positives (e.g., `grep "a && b" file.txt` is allowed).
 
 **Log format** (`~/.claude/permission-requests.log`):
 ```
@@ -52,11 +40,9 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 
 Runs at the start of every Claude Code session to restore a previously stored terminal tab title for resumed sessions. Title generation is handled by the Stop hook (`tab-rename-stop.sh`).
 
-**Behavior:**
-1. Reads the session start event from stdin and parses `session_id` via `jq`; exits silently if `session_id` is absent
-2. Checks for a `--name` override — walks up to 3 levels of process ancestry; if `--name` (long form only; `-n` is intentionally not checked to avoid false positives with unrelated processes) is detected, exits without setting a title
-3. Looks up `~/.claude/session-titles/{session_id}`; if no file exists (new session), exits silently — title generation will be handled by the Stop hook after the first exchange
-4. If a stored title is found, detects the active terminal emulator and restores the title to the terminal tab
+**Purpose:** Restores a previously stored terminal tab title when resuming a session. Script: `claude/hooks/session-start.sh`.
+
+**Non-obvious behaviors:** `--name` override is detected via process ancestry (walks up to 3 levels); `-n` is intentionally excluded to avoid false positives. New sessions exit silently — title generation is deferred to the Stop hook after the first exchange.
 
 **Supported terminals and detection:**
 
@@ -68,35 +54,15 @@ Runs at the start of every Claude Code session to restore a previously stored te
 
 **Detection rationale:** tmux is checked before `$TERM_PROGRAM` because the tmux window name is the visible label regardless of the host terminal emulator (e.g., iTerm2 running in tmux integration mode shows the tmux window name, not the iTerm2 tab title).
 
-**`--name` interaction:** If the user launches Claude with `--name` (to set a session name explicitly), the hook detects this via process ancestry inspection and exits without overwriting the title.
-
 **Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title restore does not block session startup.
-
-**Dependencies:**
-- `bash` — required
-- `jq` — required; used for payload parsing; hook exits silently if unavailable
-- `cmux` CLI — optional; used for cmux tab renaming; falls back to OSC 0 escape if not in PATH
-
-**Configuration:**
-- Script: `claude/hooks/session-start.sh`
-- Type: Async SessionStart hook
-- Timeout: 30 seconds
 
 #### SubagentStop Hook - Session Capture
 
 Runs after every sub-agent completion to capture raw session event data.
 
-**Behavior:**
-1. Reads the sub-agent completion event from stdin
-2. Filters out internal `hook-agent-*` events (Stop hook agents are not real sub-agents)
-3. Appends a timestamped JSONL entry to `logs/talekeeper-raw.jsonl`
-4. Always exits 0 — logging must never block the session
+**Purpose:** Appends raw sub-agent completion events to `logs/talekeeper-raw.jsonl` for later enrichment. Script: `claude/hooks/talekeeper-capture.sh`.
 
-**Configuration:**
-- Script: `claude/hooks/talekeeper-capture.sh`
-- Type: Command hook
-- Timeout: 5 seconds
-- Requires `jq` for filtering; falls back to a minimal entry if unavailable
+**Non-obvious behavior:** Filters out `hook-agent-*` events — Stop hook agents are not real sub-agents and must not pollute the log. Always exits 0; logging must never block the session.
 
 #### Stop Hook - Session Enrichment
 
@@ -106,14 +72,9 @@ Note: A second Stop hook (`tab-rename-stop.sh`) also fires asynchronously for te
 
 **Session enrichment (async):**
 
-Processes the raw sub-agent event log captured during the session into a structured chronicle.
+Processes the raw sub-agent event log captured during the session into a structured enriched JSONL chronicle. Script: `claude/hooks/talekeeper-enrich.sh`.
 
-1. Reads `logs/talekeeper-raw.jsonl`
-2. Filters out `hook-agent-*` noise and `talekeeper` self-captures
-3. Extracts structured fields (agent type, session ID, reviewer verdicts) from each entry
-4. Reads the agent's transcript file (recorded in `agent_transcript_path`) and sums token usage across all `type: "assistant"` entries
-5. Writes an enriched JSONL chronicle to `logs/talekeeper-{session_id}.jsonl`
-6. Clears the raw log on success
+**Non-obvious behaviors:** Filters out `hook-agent-*` events and `talekeeper` self-captures. Reads each agent's transcript file (`agent_transcript_path`) and sums token usage across all assistant turns. Clears the raw log on success.
 
 **Enriched Chronicle Schema:**
 
@@ -136,45 +97,21 @@ Each JSONL line in `logs/talekeeper-{session_id}.jsonl` contains:
 
 The `agent_transcript_path` field enables downstream tools (like Everwise Scout) to discover and read raw subagent transcripts for deeper analysis. The token fields enable Everwise to identify agents or sessions with disproportionate token consumption without requiring direct transcript access.
 
-**Configuration:**
-- Script: `claude/hooks/talekeeper-enrich.sh`
-- Type: Async command hook
-- Timeout: 60 seconds
-- Requires `jq`; exits silently if unavailable or raw log is empty
-
 #### Stop Hook - Terminal Tab Title Generation
 
 Runs after every Claude turn (Stop hook) to generate and store an AI-derived terminal tab title. Title generation fires once per session — subsequent Stop hook invocations are no-ops once a title file exists for the session.
 
-**Behavior:**
-1. Reads the Stop event from stdin; parses `session_id`, `transcript_path`, `cwd`, and `last_assistant_message`
-2. Single-fire guard: if `~/.claude/session-titles/{session_id}` already exists, exits immediately
-3. Checks for a `--name` override via process ancestry (walk up to 3 levels); if `--name` is detected, creates an empty sentinel file at `~/.claude/session-titles/{session_id}` and exits — this prevents future Stop hook invocations from generating a title, and also causes `session-start.sh` to exit silently on resume (preserving whatever title the terminal shows)
-4. Counts non-meta user messages in the transcript JSONL; exits without generating a title if fewer than 1 user message is found (e.g., the session ended before the first exchange completed)
-5. Extracts the first user prompt from the transcript JSONL file and the last assistant response from the Stop event payload
-6. Gathers lightweight project context: directory name and git repo name (if available)
-7. Calls `claude -p --bare --model haiku` with a constrained system prompt to generate a 2–5 word session title; `--bare` strips the default system prompt; pipe mode (`-p`) does not fire session hooks, avoiding recursive invocation
-8. Sanitizes the title (removes embedded newlines, strips surrounding whitespace, truncates to 40 characters)
-9. Stores the title at `~/.claude/session-titles/{session_id}`
-10. Detects the active terminal emulator and sets the tab title
+**Purpose:** Generates an AI-derived terminal tab title after the first exchange and stores it for future session resume. Script: `claude/hooks/tab-rename-stop.sh`.
+
+**Non-obvious behaviors:**
+- Single-fire guard: once `~/.claude/session-titles/{session_id}` exists, the hook exits immediately — subsequent Stop invocations are no-ops.
+- `--name` sentinel: if launched with `--name`, the hook writes an *empty* sentinel file. This locks the title to whatever the terminal already shows and causes `session-start.sh` to exit silently on resume.
+- Minimum 1 user message required before title generation — sessions that end before the first exchange produce no title.
+- Uses `claude -p --bare --model haiku` in pipe mode to generate the title; pipe mode (`-p`) does not fire session hooks, preventing recursive invocation.
 
 **Supported terminals and detection:** Same table as the SessionStart hook above.
 
-**`--name` interaction:** If a session was started with `--name`, the hook writes an empty sentinel file. This means the session title is locked to whatever the terminal already shows — no AI title is generated now or on future resumes.
-
 **Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title generation does not block the user between turns.
-
-**Dependencies:**
-- `bash` — required
-- `jq` — required; used for transcript parsing and payload extraction; hook exits silently if unavailable
-- `claude` CLI — required; used for AI title generation; hook exits silently if invocation fails
-- `git` — optional; used for repo name context; absent git context is handled gracefully
-- `cmux` CLI — optional; used for cmux tab renaming; falls back to OSC 0 escape if not in PATH
-
-**Configuration:**
-- Script: `claude/hooks/tab-rename-stop.sh`
-- Type: Async Stop hook
-- Timeout: 30 seconds
 
 ## Instructions: User-Global vs. Project-Level
 

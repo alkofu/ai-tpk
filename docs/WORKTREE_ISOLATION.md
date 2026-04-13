@@ -39,18 +39,7 @@ Both sessions operate independently:
 
 ### Worktree Creation (Phase 0)
 
-When you start a DungeonMaster session, it performs **Phase 0: Session Isolation** before any planning:
-
-1. **Branch naming:** The task description is converted to a branch name following the pattern `dm/{slugified-task}`. Examples:
-   - "Add OAuth login" → `dm/add-oauth-login`
-   - "Fix database query performance" → `dm/fix-database-query-performance`
-   - "Refactor auth module" → `dm/refactor-auth-module`
-
-2. **Worktree creation:** A new git worktree is created at `.worktrees/{slug}/` on the dedicated branch
-
-3. **Plans directory:** A local `plans/` directory is created within the worktree (gitignored, like the main repo's plans/)
-
-4. **Session context:** All subsequent work (Pathfinder planning, Bitsmith implementation, Quill documentation) operates within the worktree
+DM performs **Phase 0: Session Isolation** before any planning. Branch names follow the pattern `dm/{slugified-task}` (e.g., "Add OAuth login" → `dm/add-oauth-login`). See `claude/agents/dungeonmaster.md` for the full Phase 0 specification.
 
 ### Skip Conditions
 
@@ -95,8 +84,6 @@ After Phase 0 completes, your repository structure looks like:
 └── .gitignore               # Contains .worktrees/ and plans/
 ```
 
-Each worktree is on its own branch and has its own working tree, but shares the git object database for efficiency.
-
 ## Managing Worktrees
 
 ### Listing Active Worktrees
@@ -117,56 +104,16 @@ Output example:
                               ghi9012 [dm/fix-db-perf]
 ```
 
-### Cleaning Up Worktrees
+### Cleanup
 
-At Phase 5 (session completion), DungeonMaster logs the branch as ready and advises you to run `/open-pr` to create a pull request, or to handle cleanup manually. The worktree and branch are always preserved — nothing is removed automatically.
+At Phase 5 (session completion), DungeonMaster logs the branch as ready and advises you to run `/open-pr`. The worktree and branch are always preserved — nothing is removed automatically.
 
-#### Manual Cleanup
-
-If you have stale worktrees or want to clean up manually:
+Use standard git worktree commands to remove stale worktrees and branches:
 
 ```bash
-# Remove a specific worktree
-git worktree remove .worktrees/dm-add-oauth-login
-
-# Prune stale worktree entries (if a worktree directory was deleted manually)
+git worktree remove .worktrees/{slug}
 git worktree prune
-
-# List all worktree branches (those starting with dm/)
-git branch --list 'dm/*'
-
-# Delete a merged branch
-git branch -d dm/add-oauth-login
-
-# Force delete a branch (if not fully merged)
-git branch -D dm/add-oauth-login
-```
-
-**Cleanup checklist:**
-
-1. Check if the worktree is no longer needed: `git worktree list`
-2. Remove the worktree: `git worktree remove .worktrees/{slug}`
-3. Clean up any stale entries: `git worktree prune`
-4. Delete the branch: `git branch -d dm/{slug}`
-
-### Orphaned Worktrees
-
-If a DungeonMaster session crashes before Phase 5, worktrees may be left behind. These are harmless but clutter your working directory.
-
-To clean them up:
-
-```bash
-# List all worktrees to find orphans
-git worktree list
-
-# Remove the orphaned worktree
-git worktree remove .worktrees/dm-abandoned-task
-
-# Prune stale entries
-git worktree prune
-
-# Clean up the orphaned branch
-git branch -d dm/abandoned-task
+git branch -d dm/{slug}
 ```
 
 ## Suppressing Worktree Creation
@@ -200,8 +147,6 @@ Sub-agents respect this context:
 - **Pathfinder:** Writes plans to `{WORKING_DIRECTORY}/plans/` instead of the main repo's `plans/`
 - **Bitsmith:** Performs all code changes within the worktree, commits land on the worktree's branch
 - **Quill:** Writes documentation updates relative to the worktree
-
-You don't need to do anything — the context is automatically propagated by DungeonMaster.
 
 ### Bitsmith's Path Mismatch Guard
 
@@ -304,59 +249,22 @@ fatal: 'dm/add-oauth-login' already exists.
 
 DungeonMaster retries with a numeric suffix (e.g., `dm/add-oauth-login-2`) after 3 attempts before falling back to the main working tree.
 
-### Stale Worktrees After Crash
+### Stale or Crashed Worktrees
 
-If a session crashes before Phase 5:
-
-```bash
-# List orphaned worktrees
-git worktree list
-
-# Remove the orphaned worktree
-git worktree remove .worktrees/dm-crashed-task
-
-# Clean up references
-git worktree prune
-git branch -D dm/crashed-task
-```
+If a session crashes before Phase 5, use the Cleanup commands above to remove the orphaned worktree and branch.
 
 ### Worktree on Wrong Branch
 
 If you manually switch branches within a worktree, git may confuse the worktree state. To fix:
 
 ```bash
-# Check current state
-git worktree list
-
-# Remove and recreate the worktree (Phase 0 will handle this next session)
 git worktree remove .worktrees/dm-corrupted-task
 git worktree prune
 ```
 
 ### Merge Conflicts When Merging Manually
 
-If you merge your worktree branch to main and encounter conflicts:
-
-1. Worktree is preserved at `.worktrees/dm-{task}/`
-2. Resolve conflicts manually:
-
-   ```bash
-   cd .worktrees/dm-{task}
-   git diff main
-   # Resolve conflicts manually
-   git add .
-   git commit -m "Resolve merge conflicts"
-   cd ../..
-   git checkout main
-   git merge --no-ff dm/{task}
-   ```
-
-3. Clean up when ready:
-
-   ```bash
-   git worktree remove .worktrees/dm-{task}
-   git branch -d dm/{task}
-   ```
+Merge conflicts are resolved in the worktree using standard git conflict resolution. See standard git documentation for merge conflict workflows. Clean up the worktree and branch when done (see Cleanup above).
 
 ## Design Rationale
 
@@ -381,12 +289,7 @@ This enables truly parallel development workflows where multiple issues can be w
    - Good: "Add OAuth login with multi-factor authentication"
    - Bad: "Stuff"
 
-2. **Monitor your worktrees** periodically
-
-   ```bash
-   git worktree list  # Check active worktrees
-   git branch --list 'dm/*'  # List all DM branches
-   ```
+2. **Monitor your worktrees** periodically — see the Cleanup section above for the commands.
 
 3. **Clean up worktrees after completion**
    - Stale worktrees consume disk space
@@ -396,9 +299,7 @@ This enables truly parallel development workflows where multiple issues can be w
    - The worktree stays active for feedback iteration after the PR is created
    - Delete the worktree when the PR is merged
 
-5. **Merge manually** when you are confident the work needs no review
-   - `git checkout main && git merge --no-ff dm/{slug}`
-   - Then remove the worktree and branch manually
+5. **Merge manually** when you are confident the work needs no review — then remove the worktree and branch (see Cleanup section above).
 
 6. **Use `--no-worktree`** only for trivial changes
    - Most tasks benefit from worktree isolation

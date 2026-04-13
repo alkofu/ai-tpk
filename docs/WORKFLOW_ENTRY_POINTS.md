@@ -20,18 +20,12 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 
 **Flow:**
 1. Dungeon Master routes to **Tracebloom** for investigation
-2. Tracebloom produces a **Diagnostic Report** with 5 structured fields:
-   - **Symptom** — problem restated precisely
-   - **Investigation summary** — what was examined and found
-   - **Root cause** — the identified cause, or "Inconclusive"
-   - **Evidence** — file paths, line numbers, commits, configs
-   - **Recommended next action** — route to Pathfinder, route to Bitsmith, inconclusive, or no bug found
-3. DM evaluates the report's recommendation:
+2. Tracebloom produces a **Diagnostic Report** (symptom, investigation summary, root cause, evidence, recommended next action)
+3. DM evaluates the report's recommendation and routes accordingly:
    - **"Route to Pathfinder"** → Proceed to planning with the report as context
    - **"Fix is trivial"** → Skip planning, route directly to Bitsmith
    - **"Inconclusive"** → Present findings to user, ask how to proceed
    - **"No bug found"** → Session ends unless user disagrees
-4. If routing to Pathfinder: Tracebloom's findings become the problem definition (no re-investigation)
 
 **Key property:** Read-only investigation. Tracebloom never writes, edits, or runs write-bearing commands. The Diagnostic Report is structured to feed directly into Pathfinder's planning.
 
@@ -53,20 +47,13 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 
 **Flow:**
 1. Dungeon Master evaluates the request
-2. If ambiguous → Routes to **Askmaw** for intake interview, collects clarifications into an **Intake Brief**
+2. If ambiguous → Routes to **Askmaw** for intake interview, collecting an **Intake Brief**
 3. If already clear → Proceeds directly to **Pathfinder**
-4. Pathfinder produces a **Plan** with:
-   - Objective
-   - Assumptions
-   - Constraints
-   - Step-by-step execution plan
-   - Validation criteria
-   - Risks and rollback considerations
-5. Plan review → Ruinor baseline + conditional specialist reviews
-6. Plan revision loop (if reviewers flag issues)
-7. Implementation → Bitsmith executes the approved plan
-8. Implementation review → Ruinor baseline + conditional specialist reviews
-9. Completion → Quill updates documentation
+4. Pathfinder produces a **Plan** (objective, assumptions, constraints, execution steps, validation criteria, risks)
+5. Plan review → Ruinor baseline + conditional specialist reviews → revision loop if needed
+6. Implementation → Bitsmith executes the approved plan
+7. Implementation review → Ruinor baseline + conditional specialist reviews
+8. Completion → Quill updates documentation
 
 **Key property:** Structured planning before execution. Plans are saved to disk, reviewed, and form the blueprint for implementation.
 
@@ -130,34 +117,7 @@ User request received
 
 ### Scenario: "Why is the background job queue dropping tasks?"
 
-**Phase 1: Investigation (Tracebloom)**
-- User reports: "Background jobs enqueued via enqueue() are not being processed"
-- DM routes to Tracebloom
-- Tracebloom investigates:
-  - Checks job queue configuration
-  - Examines recent git history for config changes
-  - Finds merge conflict marker in `config/production.yaml`
-  - Worker pool size set to 0 due to the conflict
-- Diagnostic Report:
-  - Symptom: Jobs are silently dropped
-  - Investigation: Config and git history reviewed
-  - Root cause: Merge conflict marker in production config (worker pool = 0)
-  - Evidence: `config/production.yaml` line 47
-  - Recommended next action: **"Fix is trivial — route to Bitsmith directly"**
-
-**Phase 2: Implementation (Bitsmith) — Plan Skipped**
-- DM skips Pathfinder (report says fix is trivial)
-- Routes directly to Bitsmith with the Diagnostic Report as context
-- Bitsmith:
-  - Reads the report
-  - Fixes the merge conflict marker in `config/production.yaml`
-  - Verifies the configuration is valid
-  - Deploys and tests that jobs are now processed
-
-**Phase 3: Implementation Review**
-- Ruinor review
-- No additional specialists needed
-- Completion
+Tracebloom investigates config and git history; finds a merge conflict marker in `config/production.yaml` leaving the worker pool size at 0. Diagnostic Report recommends **"Fix is trivial — route to Bitsmith directly"**. DM skips Pathfinder and routes to Bitsmith, which resolves the conflict marker. Ruinor reviews the change; no specialists needed. Session complete.
 
 ---
 
@@ -165,48 +125,7 @@ User request received
 
 ### Scenario: "Why are database queries timing out?"
 
-**Phase 1: Investigation (Tracebloom)**
-- User reports: "Database queries are taking >5 seconds"
-- DM routes to Tracebloom
-- Tracebloom investigates:
-  - Checks slow query logs
-  - Examines recent schema changes via git history
-  - Tests hypothesis about missing indexes
-  - Traces affected query patterns
-- Diagnostic Report:
-  - Symptom: Queries >5 seconds on users table
-  - Investigation: Logs, schema history, and patterns examined
-  - Root cause: Missing index on frequently-filtered columns (email, status)
-  - Evidence: `schema.sql` shows no index, slow query log shows repeated full table scans
-  - Recommended next action: **"Route to Pathfinder for planning a fix"**
-
-**Phase 2: Planning (Pathfinder)**
-- DM routes to Pathfinder with Tracebloom's report
-- Pathfinder:
-  - Uses the root cause (missing indexes) directly as the problem
-  - Does NOT re-investigate the slow queries
-  - Checks if there are secondary concerns (e.g., should we add monitoring?)
-  - Produces plan:
-    - Step 1: Add index on (email, status) columns
-    - Step 2: Verify query performance improves to <100ms
-    - Step 3: Add index monitoring to prevent future regressions
-  - Plan includes testing and validation
-
-**Phase 3: Plan Review**
-- Ruinor review
-- Windwarden invoked (performance-related)
-- Both reviewers ACCEPT
-- Plan approved
-
-**Phase 4: Implementation (Bitsmith)**
-- Bitsmith executes the plan
-- Creates the indexes
-- Runs queries to verify performance
-
-**Phase 5: Implementation Review & Completion**
-- Ruinor review
-- Code merged
-- Quill updates documentation
+Tracebloom examines slow query logs and schema history; identifies missing indexes on frequently-filtered columns (`email`, `status`). Diagnostic Report recommends **"Route to Pathfinder for planning a fix"**. Pathfinder uses the root cause directly (no re-investigation), produces a plan to add the missing indexes with monitoring. Ruinor and Windwarden both ACCEPT. Bitsmith executes the plan; Quill updates documentation at completion.
 
 ---
 
@@ -229,5 +148,3 @@ When using the Dungeon Master's worktree feature:
 - All file paths in the Diagnostic Report are absolute paths within the worktree
 - The Diagnostic Report is passed verbatim to Pathfinder in the worktree's context
 - Plans reference the same worktree for consistency
-
-This ensures that investigation, planning, and implementation all operate on the same isolated branch and worktree.

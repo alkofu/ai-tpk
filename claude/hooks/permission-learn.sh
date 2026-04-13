@@ -1,6 +1,6 @@
 #!/bin/bash
 # permission-learn.sh — PermissionRequest hook
-# Denies compound Bash commands; logs single-command requests for manual review.
+# Denies compound Bash commands and process substitution; logs single-command requests for manual review.
 # Fails open if jq is unavailable.
 
 # Read hook payload from stdin
@@ -43,6 +43,12 @@ NEWLINE_COUNT=$(printf '%s' "$STRIPPED" | wc -l | tr -d ' ')
 if [ "$NEWLINE_COUNT" -gt 0 ]; then
   COMPOUND=1
 fi
+if printf '%s' "$STRIPPED" | grep -qF '<('; then
+  COMPOUND=1
+fi
+if printf '%s' "$STRIPPED" | grep -qF '>('; then
+  COMPOUND=1
+fi
 
 if [ "$COMPOUND" -eq 1 ]; then
   jq -n '{
@@ -50,7 +56,7 @@ if [ "$COMPOUND" -eq 1 ]; then
       hookEventName: "PermissionRequest",
       decision: {
         behavior: "deny",
-        message: "Compound commands (&&, ;, newlines) are not allowed. Split into separate Bash calls — one command per call."
+        message: "Compound commands (&&, ;, newlines) and process substitution (<(...), >(...)) are not allowed. Split into separate Bash calls — one command per call. Replace process substitution with temp files."
       }
     }
   }'

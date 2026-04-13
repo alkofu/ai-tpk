@@ -20,5 +20,5 @@ The `validate-before-pr` skill MUST be invoked before any PR creation. It runs l
 
 ## Bash Command Style
 
-- Never chain commands using `&&` or `;`. Pipes (`|`) are permitted only for data transformation — see `claude/references/bash-style.md` for full guidance.
+- Never chain commands using `&&` or `;`, and never use process substitution (`<(...)` / `>(...)`). Pipes (`|`) are permitted only for data transformation — see `claude/references/bash-style.md` for full guidance.
 - Always issue each command as a separate, standalone Bash call.

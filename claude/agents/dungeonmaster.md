@@ -128,6 +128,7 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 | Flag | Effect |
 |------|--------|
 | `--explore-options` | Scope-exploration mode: invoke Pathfinder to surface scope and implementation options, then stop. No plan is written, no execution follows. Use when you want to evaluate approaches before committing. This is a constructive-pipeline flag — it has no effect when `INTENT: advisory` is active. |
+| `--save-report` | Report-persistence mode: after Phase C synthesis in the Advisory Workflow, delegate to Bitsmith to write the synthesis output to `{REPO_ROOT}/reports/{SESSION_TS}-{SESSION_SLUG}.md`. The inline answer is always delivered first; the report file is additive. If `git rev-parse --show-toplevel` fails (not in a git repo), warn the user and skip the file write. This is an advisory-pipeline flag — it has no effect outside `INTENT: advisory`. |
 
 ### Worktree Context Block
 
@@ -197,7 +198,7 @@ These are carried in conversation memory alongside `WORKTREE_PATH`, `WORKTREE_BR
 
 Before any planning begins, create an isolated git worktree for this session so it does not conflict with other parallel DM sessions.
 
-**Skip condition:** When `INTENT: advisory` is explicitly set (typically via the `/ask` command), skip worktree creation (steps 1-5 below) and `~/.ai-tpk/plans/` directory setup. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured at the top of Phase 0 — they are lightweight conversational memory, not file writes. For all other intents (investigative, constructive, or heuristically classified), worktree creation is mandatory with no exceptions. Note: if the DM heuristically classifies a message as advisory (branch (d) in the Mutual Exclusivity Note), a worktree will already have been created because Phase 0 runs before Phase 1 classification. This is acceptable — the explicit `/ask` command is the primary mechanism for advisory sessions, and the worktree will simply go unused.
+**Skip condition:** When `INTENT: advisory` is explicitly set (typically via the `/ask` or `/ops` command), skip worktree creation (steps 1-5 below) and `~/.ai-tpk/plans/` directory setup. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured at the top of Phase 0 — they are lightweight conversational memory, not file writes. For all other intents (investigative, constructive, or heuristically classified), worktree creation is mandatory with no exceptions. Note: if the DM heuristically classifies a message as advisory (branch (d) in the Mutual Exclusivity Note), a worktree will already have been created because Phase 0 runs before Phase 1 classification. This is acceptable — the explicit `/ask` command is the primary mechanism for advisory sessions, and the worktree will simply go unused.
 
 **When creating a worktree:**
 
@@ -228,13 +229,13 @@ Before any planning begins, create an isolated git worktree for this session so 
 If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, or `INTENT: advisory`, skip heuristic classification and route directly:
 - `INTENT: investigative` → fire the Investigative Gate immediately (skip the Mutual Exclusivity classification below)
 - `INTENT: constructive` → skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly)
-- `INTENT: advisory` → enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured.
+- `INTENT: advisory` → enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report`), capture it as an active workflow flag for this session before stripping.
 
-The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`, `/ask`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
+The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`, `/ask`, `/ops`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
 
 When an intent override fires, log it: "Intent override: {investigative|constructive|advisory}. Heuristic classification skipped."
 
-Strip the `INTENT:` line from the message before passing the remaining text to downstream agents. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. Exception: when `INTENT: advisory` is active, workflow flags are not applicable — advisory sessions bypass the constructive pipeline where workflow flags operate.
+Strip the `INTENT:` line (including any flags on it, such as `--save-report`) from the message before passing the remaining text to downstream agents. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. Exception: when `INTENT: advisory` is active, constructive-pipeline workflow flags (e.g., `--explore-options`) are not applicable — advisory sessions bypass the constructive pipeline. The `--save-report` flag is the sole exception: it is an advisory-pipeline flag and remains active when `INTENT: advisory` is set.
 
 When not triggered: proceed to the Mutual Exclusivity Note below.
 
@@ -542,13 +543,15 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 ### Advisory Workflow (Phases A-B-C)
 
-This workflow fires when `INTENT: advisory` is detected (typically via the `/ask` command). It is a lightweight, read-only Q&A path that bypasses the entire constructive/investigative pipeline.
+This workflow fires when `INTENT: advisory` is detected (typically via the `/ask` or `/ops` command). It is a lightweight, read-only Q&A path that bypasses the entire constructive/investigative pipeline.
 
-**What is skipped:** Worktree creation (Phase 0 steps 1-5), Pathfinder, Bitsmith, Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written.
+**What is skipped:** Worktree creation (Phase 0 steps 1-5), Pathfinder, Bitsmith (unless `--save-report` is active), Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written — except when `--save-report` is active, in which case Bitsmith is invoked solely to write the report file after Phase C synthesis.
 
 **What is NOT skipped:** Session variable capture (`SESSION_TS`, `SESSION_SLUG`) — these are lightweight conversational memory and are retained for logging and potential pipeline transitions.
 
 **Relationship to `--explore-options`:** The `--explore-options` workflow flag is a constructive-pipeline flag that invokes Pathfinder for scope and options discovery. It has no effect when `INTENT: advisory` is active. These are distinct concepts: `INTENT: advisory` is a Q&A mode; `--explore-options` is a scope-exploration mode within the constructive pipeline.
+
+**Relationship to `--save-report`:** The `--save-report` workflow flag is an advisory-pipeline flag that persists the Phase C synthesis output to disk. It is only meaningful when `INTENT: advisory` is active. When set, Phase C delegates a single write operation to Bitsmith after delivering the inline answer. The `/ops` command pre-sets this flag.
 
 **Phase A — Question Classification:**
 
@@ -597,6 +600,42 @@ Assemble agent findings (if any) with DM's own understanding into a clear, direc
 - No review gate — there is no code to review
 - The advisory session ends after presenting the answer. No completion summary, no worktree log step.
 
+**`--save-report` post-synthesis step (conditional):**
+
+When `--save-report` is active, execute the following after delivering the inline answer:
+
+1. Determine the repo root: run `git rev-parse --show-toplevel`. If this fails (not a git repo), log a warning to the user ("Not inside a git repository — skipping report file write.") and skip steps 2-3. Do not error or crash.
+2. Compute the report path: `{REPO_ROOT}/reports/{SESSION_TS}-{SESSION_SLUG}.md`
+3. Delegate to Bitsmith with the following template:
+
+~~~
+## Report Write Task
+
+Write the advisory report to disk. This is a single file write — no code changes, no tests, no review needed.
+
+**Report path:** {REPO_ROOT}/reports/{SESSION_TS}-{SESSION_SLUG}.md
+**Directory creation:** Run `mkdir -p {REPO_ROOT}/reports` before writing.
+
+**Report content:** Write the following content to the file:
+
+---begin report content---
+# Advisory Report: {SESSION_SLUG}
+
+**Date:** {SESSION_TS}
+**Question:** {user's original question, verbatim}
+
+## Answer
+
+{Phase C synthesis output — the full answer as delivered inline, including agent attributions}
+
+## Sources
+
+{Sources list compiled during Phase C}
+---end report content---
+~~~
+
+4. After Bitsmith confirms the write, log the report path to the user: "Report saved to `{report path}`"
+
 **Follow-up handling:** If the user asks follow-up questions in the same session, repeat Phases A-B-C for each follow-up. The session remains in advisory mode until the user explicitly requests a constructive or investigative action (e.g., "OK, let's fix that" or "Create a plan for this"), at which point DM transitions to the standard pipeline starting from Phase 0.
 
 ## Output contract
@@ -625,6 +664,7 @@ For advisory sessions (`INTENT: advisory`), use this simplified structure instea
 - Agents consulted (list, or "None — answered directly")
 - Answer summary (1-3 sentences)
 - Sources (files, agent findings, or external references cited)
+- Report saved: `{path}` (only when `--save-report` is active; omit this line otherwise)
 
 Keep it concise and operational. Prefer facts over narration.
 
@@ -809,3 +849,17 @@ Action:
 - Tracebloom returns findings: Phase 0 creates an isolated git worktree per session at `.worktrees/{branch-slug}`, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5d
 - **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 section), `claude/references/worktree-protocol.md`
 - Session complete — no review, no plan, no PR prompt
+
+Example 11:
+User asks (via /ops): "What authentication patterns are used in this codebase?"
+Action:
+- **Intent override fires:** `INTENT: advisory --save-report`. Log: "Intent override: advisory. Heuristic classification skipped." Capture `--save-report` as active workflow flag. Strip `INTENT: advisory --save-report` from message.
+- **Session variables captured:** `SESSION_TS` = `20260413-110000`, `SESSION_SLUG` = `auth-patterns-codebase`
+- **Phase 0 worktree creation skipped** — advisory sessions do not create worktrees or plans
+- **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
+- **Phase B:** Invoke Tracebloom with advisory research request: "What authentication patterns are used in this codebase?"
+- Tracebloom returns findings on auth patterns used in the codebase
+- **Phase C:** DM synthesises Tracebloom's findings into a direct answer. Delivers answer inline to user.
+- **`--save-report` post-synthesis:** DM runs `git rev-parse --show-toplevel` → succeeds, returns `/home/user/my-project`. Delegates to Bitsmith: write report to `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`. Bitsmith creates directory and writes file. DM logs: "Report saved to `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`"
+- Session complete — no review, no plan, no PR prompt
+- Output contract: Question, Agents consulted (Tracebloom), Answer summary, Sources, Report saved: `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`

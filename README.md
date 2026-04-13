@@ -58,17 +58,9 @@ The `.claude/` directory is never synced by the installer — it remains project
 
 ### Developer Notes
 
-The installation logic is implemented in TypeScript under the `src/installer/` directory:
+The installation logic is implemented in TypeScript under `src/installer/`. See the source files there for implementation details.
 
-- `src/installer/constants.ts` — Single source of truth for whitelisted Claude paths, MCP server definitions, and Node.js version requirements
-- `src/installer/main.ts` — Main entrypoint; orchestrates the install workflow
-- `src/installer/cli.ts` — CLI argument parser (handles `--help`/`-h`)
-- `src/installer/colors.ts` — ANSI color output helper
-- `src/installer/fs-utils.ts` — Filesystem utilities (backup and copy operations)
-- `src/installer/claude.ts` — Claude config whitelist installer
-- `src/installer/mcp.ts` — MCP server setup
-
-The `install.sh` shim in the repo root runs the pre-built esbuild bundle (`dist/installer.js`) and verifies Node.js >= 18.18.0 is available. This design keeps the installer maintainable and testable while preserving backwards compatibility with the original Bash script's user interface.
+The `install.sh` shim in the repo root runs the pre-built esbuild bundle (`dist/installer.js`) and verifies Node.js >= 18.18.0 is available.
 
 #### Running Tests
 
@@ -78,7 +70,7 @@ The installer includes a comprehensive test suite using `node:test`:
 pnpm test
 ```
 
-This runs all test files colocated with source under `src/installer/` and `src/launcher/` (files matching `*.test.ts`) with isolated temporary directories. Tests cover filesystem utilities, CLI argument parsing, color output, and the Claude whitelist installer. For more details, see the `*.test.ts` files beside their respective source modules.
+This runs all test files colocated with source under `src/installer/` and `src/launcher/` (files matching `*.test.ts`) with isolated temporary directories. For more details, see the `*.test.ts` files beside their respective source modules.
 
 #### Code Quality: Linting and Formatting
 
@@ -94,20 +86,9 @@ The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) t
 
 Before committing code, run `pnpm run format` to auto-format your changes. This keeps the codebase consistent and prevents formatting failures in CI.
 
-Configuration files:
-- `.oxlintrc.json` — Linting rules (correctness and suspicious errors denied, perf warnings)
-- `.oxfmtrc.json` — Formatting options (2 spaces, double quotes, semicolons)
-
 **Pre-Push Hook:**
 
-The project uses **Lefthook** to automatically validate code quality before pushing. When you run `pnpm install`, the `prepare` script installs git hooks that run on every push (if JS/TS files have changed):
-
-- `pnpm run lint` — Checks for code quality issues
-- `pnpm run format:check` — Verifies code formatting
-
-If either check fails, the push is blocked. Run `pnpm run format` to auto-fix formatting issues, then try pushing again. These same checks are enforced in CI on all pull requests.
-
-Lefthook config: `lefthook.yml` (glob patterns scope checks to JS/TS files only)
+Lefthook runs lint and format checks on every push when JS/TS files have changed. If either check fails, the push is blocked. Run `pnpm run format` to auto-fix formatting issues. Hook configuration lives in `lefthook.yml`.
 
 ## Installation
 
@@ -156,9 +137,9 @@ The installer automatically configures user-scoped MCP (Model Context Protocol) 
 
 Currently configured servers:
 
-- **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) - Provides read-only access to Kubernetes cluster information via your `~/.kube/config`. Gracefully skips setup if `~/.kube/config` doesn't exist yet (useful for fresh machine setup). The server is only added if not already configured, making the installation idempotent.
-- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) - Official AWS Labs MCP server providing access to CloudWatch Metrics, Alarms, and Logs (query log groups, run Insights queries, retrieve metrics and alarm history) via your `~/.aws` credentials. Uses a wrapper script (`wrappers/mcp-cloudwatch.sh`) to support dynamic AWS profile selection. Select your active AWS profile by running `/set-aws-profile` in Claude Code—the profile is stored in `~/.claude/.current-aws-profile` and read at MCP startup. Requires `uvx` (`pip install uv` or `brew install uv`). Gracefully skips setup if `~/.aws/credentials` doesn't exist yet. The server is only added if not already configured, making the installation idempotent.
-- **Grafana MCP Server** (`mcp-grafana`) - Access to Grafana dashboards, datasources, metrics, logs, incidents, and more. Uses a wrapper script (`wrappers/mcp-grafana.sh`) that requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` to be exported in your shell environment. Registration is skipped when the config has not changed since the last run; if the registration is externally broken (e.g., removed with `claude mcp remove`), the installer detects this and re-adds it automatically.
+- **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) — Read-only Kubernetes cluster access via `~/.kube/config`. Skips setup gracefully if that file does not exist.
+- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist.
+- **Grafana MCP Server** (`mcp-grafana`) — Grafana dashboards, datasources, and incident access. Uses `wrappers/mcp-grafana.sh`, which requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in the shell environment.
 
 MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
 
@@ -244,284 +225,13 @@ These variables are passed to `claude --agent dungeonmaster`, and they flow thro
 
 #### MCP Server Configuration Format
 
-Server definitions are stored in `/mcp-servers.json` (repository root) using a declarative JSON schema. This allows configuration changes without modifying the installer code.
+Server definitions live in `mcp-servers.json` at the repo root. Each server uses either a `command` field (inline command array) or a `wrapper` field (path to a script in `wrappers/`) — the two are mutually exclusive. `$HOME` and `$USER` variable expansion is supported in string values.
 
-##### JSON Schema
-
-**Command-based server example:**
-
-```json
-{
-  "servers": [
-    {
-      "name": "kubernetes",
-      "scope": "user",
-      "transport": "stdio",
-      "prereq": "$HOME/.kube/config",
-      "env": { "KUBECONFIG": "$HOME/.kube/config" },
-      "command": "npx",
-      "args": ["--yes", "mcp-server-kubernetes@3.4.0"]
-    }
-  ]
-}
-```
-
-**Wrapper-based server example:**
-
-```json
-{
-  "servers": [
-    {
-      "name": "grafana",
-      "scope": "user",
-      "transport": "stdio",
-      "wrapper": "wrappers/mcp-grafana.sh"
-    }
-  ]
-}
-```
-
-**Field Reference:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Unique server identifier (e.g., `"kubernetes"`, `"grafana"`) |
-| `scope` | string | Yes | Installation scope; must be `"user"` or `"project"` |
-| `transport` | string | Yes | Communication protocol; must be one of: `"stdio"`, `"sse"`, `"streamable-http"` |
-| `prereq` | string | No | Path to check before installation (e.g., `"$HOME/.kube/config"`); advisory warning only—installation proceeds if missing |
-| `command` | string | Conditional | Executable name (e.g., `"npx"`, `"node"`). Required if `wrapper` is not present; mutually exclusive with `wrapper` |
-| `args` | array | No | Command arguments passed to the executable (each element supports variable expansion). Only used with `command` |
-| `env` | object | No | Environment variables passed to the MCP server (keys and values support variable expansion). Only used with `command` |
-| `wrapper` | string | Conditional | Relative path to a shell script (e.g., `"wrappers/mcp-grafana.sh"`) that wraps the server command and resolves runtime environment variables. Required if `command` is not present; mutually exclusive with `command` |
-
-**Key constraint:** A server must have exactly one of `command` or `wrapper`, never both.
-
-##### Variable Expansion
-
-`$HOME`, `${HOME}`, `$USER`, and `${USER}` are automatically expanded using safe string replacement (no shell evaluation):
-
-- `$HOME` and `${HOME}` expand to the user's home directory
-- `$USER` and `${USER}` expand to the current system username
-
-This applies to:
-- `prereq` paths: `"$HOME/.kube/config"` → `/Users/alice/.kube/config`
-- `env` values (command-based servers only): `"KUBECONFIG=$HOME/.kube/config"` → `"KUBECONFIG=/Users/alice/.kube/config"`
-- `args` elements (command-based servers only): `["mcp-server-$USER"]` → `["mcp-server-alice"]`
-
-**Note:** Wrapper scripts resolve their own environment variables at runtime using bash variable syntax (e.g., `${VAR:?}`), not the installer's `expandVars` function.
-
-##### Command-Based Servers vs. Wrapper-Based Servers
-
-**Command-based servers** use the `command` and `args` fields to directly invoke an executable with environment variables passed via `-e` flags:
-
-```json
-{
-  "name": "kubernetes",
-  "scope": "user",
-  "transport": "stdio",
-  "command": "npx",
-  "args": ["--yes", "mcp-server-kubernetes@3.4.0"],
-  "env": { "KUBECONFIG": "$HOME/.kube/config" }
-}
-```
-
-**Wrapper-based servers** use a shell script (`wrapper` field) that resolves runtime environment variables at invocation time. This is necessary when environment variables contain user-specific values (like API keys or service URLs) that cannot be determined at install time:
-
-```json
-{
-  "name": "grafana",
-  "scope": "user",
-  "transport": "stdio",
-  "wrapper": "wrappers/mcp-grafana.sh"
-}
-```
-
-**When to use a wrapper:**
-- The MCP server requires environment variables that depend on user configuration (e.g., `GRAFANA_URL`, API tokens)
-- Variables must be resolved from the shell environment at MCP invocation time, not at installer time
-- The `command` and `wrapper` fields are mutually exclusive—a server must use one or the other, never both
-
-##### Wrapper Script Convention
-
-Wrapper scripts live in the `wrappers/` directory and follow this pattern:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Validate required environment variables with clear error messages
-: "${REQUIRED_VAR:?Error: REQUIRED_VAR is not set}"
-
-# Execute the real MCP server command, preserving stdin/stdout/stderr
-exec uvx mcp-server-name "$@"
-```
-
-**Key requirements:**
-- **Shebang:** `#!/usr/bin/env bash` (required for `claude mcp add` to recognize it as executable)
-- **Strict mode:** `set -euo pipefail` (fail fast on errors or undefined variables)
-- **Variable validation:** Use `${VAR:?Error message}` syntax to validate required variables exist and provide clear failure messages
-- **Exec:** Use `exec` to replace the shell process (required for stdio transport to work correctly)
-- **Arguments:** Preserve `"$@"` to forward any arguments from `claude mcp add` to the wrapped command
-- **Executable bit:** Preserved in git via `git update-index --chmod=+x` or by committing from a Unix system
-
-**Example: Grafana MCP Server**
-
-The `wrappers/mcp-grafana.sh` script validates `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` at runtime:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-: "${GRAFANA_URL:?Error: GRAFANA_URL is not set}"
-: "${GRAFANA_SERVICE_ACCOUNT_TOKEN:?Error: GRAFANA_SERVICE_ACCOUNT_TOKEN is not set}"
-
-exec uvx mcp-grafana "$@"
-```
-
-Users must export these variables in their shell before invoking Claude:
-
-```bash
-export GRAFANA_URL="https://grafana.example.com"
-export GRAFANA_SERVICE_ACCOUNT_TOKEN="glsa_xxxxxxxxxxxx"
-claude
-```
-
-If either variable is missing, the wrapper fails immediately with a clear error message.
-
-**Example: AWS CloudWatch MCP Server**
-
-The `wrappers/mcp-cloudwatch.sh` script resolves an AWS profile from a dotfile (`~/.claude/.current-aws-profile`) with a fallback to the `$AWS_PROFILE` environment variable:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Resolve AWS profile: dotfile takes priority over env var
-DOTFILE="$HOME/.claude/.current-aws-profile"
-if [[ -f "$DOTFILE" ]] && [[ -s "$DOTFILE" ]]; then
-  IFS= read -r AWS_PROFILE < "$DOTFILE"
-  # Trim whitespace...
-fi
-
-# Validate profile name and fail helpfully if missing
-if [[ -n "${AWS_PROFILE:-}" ]]; then
-  if [[ ! "$AWS_PROFILE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-    printf 'Error: invalid AWS profile name "%s" -- must match [a-zA-Z0-9_-]+\n' "$AWS_PROFILE" >&2
-    exit 1
-  fi
-  export AWS_PROFILE
-  echo "CloudWatch MCP: using AWS profile '$AWS_PROFILE'" >&2
-  exec uvx awslabs.cloudwatch-mcp-server@0.0.19 "$@"
-fi
-
-# No profile found — print available profiles from ~/.aws/config
-printf 'Error: no AWS profile set.\n' >&2
-# ... (list available profiles from ~/.aws/config)
-exit 1
-```
-
-Users select their active AWS profile using the `/set-aws-profile` slash command, which stores the profile name in `~/.claude/.current-aws-profile` (mode 0600):
-
-```bash
-/set-aws-profile
-# Choose a profile from the list
-# Profile set to `my-profile`. Restart Claude Code or reload MCP servers for this to take effect.
-```
-
-Alternatively, users can manually set the profile:
-
-```bash
-echo "my-profile" > ~/.claude/.current-aws-profile
-chmod 600 ~/.claude/.current-aws-profile
-```
-
-##### Adding a New MCP Server
-
-**For command-based servers:**
-
-1. Edit `/mcp-servers.json` and add a new entry to the `servers` array:
-
-   ```json
-   {
-     "name": "my-server",
-     "scope": "user",
-     "transport": "stdio",
-     "command": "my-server",
-     "args": ["--flag"]
-   }
-   ```
-
-2. Re-run the installer:
-
-   ```bash
-   ./install.sh
-   ```
-
-   The new server is added to `~/.claude.json` if the `claude` CLI is available. If the server is already configured, it is skipped (idempotent operation).
-
-**For wrapper-based servers:**
-
-1. Create a wrapper script in `wrappers/{server-name}.sh`:
-
-   ```bash
-   #!/usr/bin/env bash
-   set -euo pipefail
-
-   : "${REQUIRED_VAR:?Error: REQUIRED_VAR is not set}"
-
-   exec uvx {server-package} "$@"
-   ```
-
-2. Make the script executable:
-
-   ```bash
-   chmod +x wrappers/{server-name}.sh
-   git update-index --chmod=+x wrappers/{server-name}.sh  # Preserve executable bit in git
-   ```
-
-3. Add an entry to `/mcp-servers.json`:
-
-   ```json
-   {
-     "name": "{server-name}",
-     "scope": "user",
-     "transport": "stdio",
-     "wrapper": "wrappers/{server-name}.sh"
-   }
-   ```
-
-4. Re-run the installer:
-
-   ```bash
-   ./install.sh
-   ```
-
-   For wrapper-based servers, the installer uses stamp-based skipping: it re-registers only when the config has changed or the registration is found to be missing. Externally broken registrations are self-healed automatically.
-
-##### Graceful Degradation
-
-If `/mcp-servers.json` is missing from the repository:
-- The installer logs a yellow warning: `"Warning: mcp-servers.json not found -- skipping MCP server setup"`
-- No error is raised
-- Installation continues normally
-
-If the file exists but contains malformed JSON or schema violations:
-- A clear error message is logged, including the invalid field and server name
-- Installation stops with a non-zero exit code
-- Examples: `"scope" must be 'user' or 'project'`, `"transport" must be 'stdio', 'sse', or 'streamable-http'`
+Two key operational behaviors: a missing `mcp-servers.json` produces a warning and skips MCP setup (installation continues); a malformed JSON file or schema violation stops installation with a non-zero exit code. See `mcp-servers.json` for the schema and `src/installer/mcp.ts` for the installation logic.
 
 ## Continuous Integration
 
-Pull requests targeting `main` are automatically validated by a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on Node.js 24. The workflow performs six checks in sequence:
-
-1. **Type check** — `pnpm exec tsc --noEmit` ensures TypeScript types are correct
-2. **Lint** — `pnpm run lint` checks for code quality issues
-3. **Format check** — `pnpm run format:check` verifies code is properly formatted
-4. **Assert lockfile unchanged** — `git diff --exit-code pnpm-lock.yaml` verifies the lockfile has not changed
-5. **Build** — `pnpm run build` verifies the project bundles without errors
-6. **Test** — `pnpm test` runs the test suite
-
-All checks must pass before a PR can be merged. If CI fails, review the error messages, fix the issues locally, and push your changes. For formatting issues, run `pnpm run format` and commit the changes.
+Pull requests targeting `main` are validated by a GitHub Actions workflow at `.github/workflows/ci.yml`. See the workflow file for the specific checks that run. For formatting failures, run `pnpm run format` and commit the result.
 
 ## Updating
 

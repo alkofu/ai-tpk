@@ -63,6 +63,28 @@ if [ "$COMPOUND" -eq 1 ]; then
   exit 0
 fi
 
+# Check for --no-verify flag in git commit/push commands
+NOVERIFY=0
+if printf '%s' "$STRIPPED" | grep -qE 'git\s+(commit|push)\b.*--no-verify'; then
+  NOVERIFY=1
+fi
+if printf '%s' "$STRIPPED" | grep -qE 'git\s+commit\b.*\s-n(\s|$)'; then
+  NOVERIFY=1
+fi
+
+if [ "$NOVERIFY" -eq 1 ]; then
+  jq -n '{
+    hookSpecificOutput: {
+      hookEventName: "PermissionRequest",
+      decision: {
+        behavior: "deny",
+        message: "--no-verify is not allowed. Git hooks exist for a reason — do not skip them. If a hook fails, investigate and fix the underlying issue."
+      }
+    }
+  }'
+  exit 0
+fi
+
 # Single command — log the request for manual review, then exit 0 with no JSON
 # output so the normal permission dialog handles it.
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)

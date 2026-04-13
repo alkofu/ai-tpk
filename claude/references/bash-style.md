@@ -60,6 +60,14 @@ tee >(grep ERROR > errors.log) < app.log
 1. `cp app.log /tmp/app-copy.log`
 2. `grep ERROR /tmp/app-copy.log > errors.log`
 
+## Rule: No `--no-verify` on Git Commands
+
+Do not use `git commit --no-verify`, `git commit -n`, or `git push --no-verify`. These flags bypass pre-commit hooks and disable safety checks (lint, secrets scanning, message format validation).
+
+**Enforcement:** `permission-learn.sh` (PermissionRequest hook) denies these commands before execution.
+
+If a pre-commit or pre-push hook fails, investigate and fix the underlying issue rather than bypassing it.
+
 ## Rationale
 
 Compound commands:
@@ -70,6 +78,10 @@ Compound commands:
 Process substitution additionally:
 - Spawns subshells that each trigger a separate Claude Code permission request
 - Cannot be split within a single command — requires rewriting with temp files
+
+Skipping hooks (`--no-verify`):
+- Masks real issues such as lint failures, secrets in commits, or malformed messages
+- Leads to commits that violate project standards and are harder to audit or revert
 
 ## Applies To
 

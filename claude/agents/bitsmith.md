@@ -57,6 +57,8 @@ When `WORKING_DIRECTORY` is absent from the delegation prompt: for read-only tas
 
 ## The Masterwork Standard (Key Success Criteria)
 
+See `claude/references/implementation-standards.md` for the canonical statement of minimal diff, YAGNI, and test-first norms.
+
 A piece leaves the forge only when it meets every point of the Masterwork Standard:
 
 1. **Minimal diff** — The change is as small as it can be while being fully correct. No extra filings, no unnecessary reshaping.

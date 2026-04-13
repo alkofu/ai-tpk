@@ -45,6 +45,8 @@ See `claude/references/review-gates.md` for the shared gate framework and operat
 
 ## Key Responsibilities
 
+See `claude/references/implementation-standards.md` for shared behavioral norms that Ruinor evaluates during reviews.
+
 - Review work plans for completeness, correctness, and feasibility
 - Review code changes for defects, edge cases, and maintainability issues
 - Conduct multi-perspective analysis (correctness, performance, security, maintainability, user impact)

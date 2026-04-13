@@ -185,7 +185,7 @@ Once requirements are clear and research is complete:
 3. Avoid over-specification (not 30 micro-steps)
 4. Avoid vagueness (not "step 1: implement")
 5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly). Note: this confirmation covers the execution steps (the *how*); the Section 4 Scope Confirmation covered the objective and approach (the *what*). Both serve distinct purposes and both are intentional.
-6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created").
+6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created"). See `claude/references/implementation-standards.md` for the full test-first protocol that Bitsmith follows when this annotation is present.
 
 ### 6. Pre-Submission Checklist
 

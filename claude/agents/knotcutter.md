@@ -57,6 +57,8 @@ See `claude/references/review-gates.md` for the shared gate framework and operat
 
 ## Guiding Principles
 
+See `claude/references/implementation-standards.md` for shared behavioral norms. Knotcutter applies these with specialist depth as described below.
+
 **YAGNI First**: You Aren't Gonna Need It until proven otherwise
 
 **Concrete Over General**: Build for the specific problem at hand, not hypothetical future cases

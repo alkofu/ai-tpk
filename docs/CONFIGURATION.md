@@ -25,9 +25,10 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 1. Reads the permission request event from stdin
 2. Extracts the Bash command and strips quoted strings to avoid false positives
 3. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`)
-4. Denies permission if any banned syntax is found, returning a message directing the agent to split the command into separate Bash calls and replace process substitution with temp files
-5. For single commands, appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
-6. Fails open (no output, exit 0) if `jq` is unavailable
+4. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands
+5. Denies permission if any banned syntax is found, returning a message directing the agent to split the command into separate Bash calls, replace process substitution with temp files, or fix the underlying hook failure instead of bypassing it
+6. For single commands, appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
+7. Fails open (no output, exit 0) if `jq` is unavailable
 
 **Purpose:** Enforces the bash style rules defined in `claude/references/bash-style.md` at the permission stage. Keeps the human permission checkpoint intact for any single command not already covered by `allowedTools`, while providing a log for manual review of what commands are being requested.
 
@@ -46,8 +47,12 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 - Denied: `git status && git diff` (contains `&&` — agent is told to split into separate calls)
 - Denied: `cd repo ; npm install` (contains `;`)
 - Denied: `diff <(sort a.txt) <(sort b.txt)` (process substitution — agent is told to use temp files)
+- Denied: `git commit --no-verify -m "msg"` (bypasses pre-commit hooks)
+- Denied: `git commit -n -m "msg"` (short form of `--no-verify` for `git commit`)
+- Denied: `git push --no-verify` (bypasses pre-push hooks)
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
 - Logged + normal dialog: `grep "a && b" file.txt` (compound operator is inside a quoted string — no false positive)
+- Allowed: `echo -n hello`, `git log -n 5` (context-aware: `-n` only blocked in `git commit` context)
 
 #### SessionStart Hook - Terminal Tab Title Restore
 
@@ -164,6 +169,10 @@ Simply @-mention the agent by name (e.g., `@quill` or `@riskmancer`) in your Cla
 Reference files contain shared behavioral vocabulary loaded by agents at runtime. These files eliminate duplication across multiple agent definitions and ensure consistency in how agents apply shared concepts.
 
 ### Available References
+
+- **`bash-style.md`** — Required Bash command style for all agents with Bash tool access. Defines three enforced rules: no compound commands (`&&`, `;`), no process substitution (`<(`, `>(`), and no `--no-verify` on git commands. The PermissionRequest hook enforces all three rules automatically.
+
+- **`implementation-standards.md`** — Shared behavioral norms for implementation, planning, and review agents: Minimal Diff, YAGNI, and Test-First Protocol. Bitsmith, Pathfinder, Ruinor, and Knotcutter cite this as the canonical source. Each agent may elaborate with role-specific depth in its own definition file.
 
 - **`verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales (Ruinor's CRITICAL/MAJOR/MINOR and Specialist CRITICAL/HIGH/MEDIUM/LOW). Reviewer agents load this reference when issuing verdicts. Defines shared vocabulary while noting that domain-specific application is defined per-agent.
 

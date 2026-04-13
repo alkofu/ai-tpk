@@ -140,6 +140,7 @@ Currently configured servers:
 - **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) — Read-only Kubernetes cluster access via `~/.kube/config`. Skips setup gracefully if that file does not exist.
 - **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist.
 - **Grafana MCP Server** (`mcp-grafana`) — Grafana dashboards, datasources, and incident access. Uses `wrappers/mcp-grafana.sh`, which requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in the shell environment.
+- **GitHub MCP Server** (`@modelcontextprotocol/server-github`) — GitHub repository, issue, PR, and code search access. Requires `GITHUB_PERSONAL_ACCESS_TOKEN` set in `mcp-servers.json` before running `install.sh`. Note: the npm package was archived 2025-05-29; the Docker-based successor (`ghcr.io/github/github-mcp-server`) is not used here to avoid a Docker dependency.
 
 MCP servers are available in all repositories once configured. For detailed information about hooks, agents, and other configuration options, see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
 
@@ -585,6 +586,7 @@ When adding new hooks, agents, or skills, update the relevant documentation in `
 Agent definitions can reference shared behavioral vocabulary defined in `claude/references/`. This eliminates duplication across multiple agents:
 
 - **`claude/references/github-auth-probe.md`** — Canonical procedure for verifying GitHub account access before pushing or committing. Both `commit-message-guide` and `open-pull-request` skills reference this to ensure consistent GitHub authentication checks.
+- **`claude/references/implementation-standards.md`** — Shared behavioral norms (Minimal Diff, YAGNI, Test-First) for implementation, planning, and review agents. Bitsmith, Pathfinder, Ruinor, and Knotcutter all cite this as the canonical source; each may elaborate in its own definition file.
 - **`claude/references/review-gates.md`** — Shared two-gate review framework (Plan Review Gate and Implementation Review Gate) for all reviewer agents (Ruinor, Riskmancer, Windwarden, Knotcutter, Truthhammer). Defines universal operational constraints (read-only operation, in-memory returns) and plan-file-scoping rules. Each reviewer agent defines its own domain-specific criteria for each gate inline in its definition file.
 - **`claude/references/verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales. Agents load this reference when issuing verdicts to ensure consistent evaluation vocabulary.
 - **`claude/references/worktree-protocol.md`** — Shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. Agents load this reference when operating in isolated worktrees to ensure consistent path handling.

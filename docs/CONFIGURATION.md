@@ -17,7 +17,7 @@ Pre-configured marketplaces for plugin discovery:
 
 Hooks allow you to run automated checks or tasks at specific points in your Claude workflow.
 
-#### PermissionRequest Hook - Compound Command Enforcement and Request Logging
+#### PermissionRequest Hook - Bash Style Enforcement and Request Logging
 
 Runs when a Bash command falls outside the `allowedTools` list and requires permission.
 
@@ -47,7 +47,7 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 - Denied: `cd repo ; npm install` (contains `;`)
 - Denied: `diff <(sort a.txt) <(sort b.txt)` (process substitution — agent is told to use temp files)
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
-- Allowed silently: `grep "a && b" file.txt` (compound operator is inside a quoted string)
+- Logged + normal dialog: `grep "a && b" file.txt` (compound operator is inside a quoted string — no false positive)
 
 #### SessionStart Hook - Terminal Tab Title Restore
 

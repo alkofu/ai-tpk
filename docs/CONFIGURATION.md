@@ -21,9 +21,21 @@ Hooks allow you to run automated checks or tasks at specific points in your Clau
 
 Runs when a Bash command falls outside the `allowedTools` list and requires permission.
 
-**Purpose:** Enforces the no-compound-commands rule (defined in `claude/references/bash-style.md`) at the permission stage and logs non-allowed single commands for manual review. Script: `claude/hooks/permission-learn.sh`.
+**Behavior:**
+1. Reads the permission request event from stdin
+2. Extracts the Bash command and strips quoted strings to avoid false positives
+3. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`)
+4. Denies permission if any banned syntax is found, returning a message directing the agent to split the command into separate Bash calls and replace process substitution with temp files
+5. For single commands, appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
+6. Fails open (no output, exit 0) if `jq` is unavailable
 
-**Non-obvious behaviors:** Fails open if `jq` is unavailable (no output, exit 0). Quoted strings are stripped before compound-operator detection to avoid false positives (e.g., `grep "a && b" file.txt` is allowed).
+**Purpose:** Enforces the bash style rules defined in `claude/references/bash-style.md` at the permission stage. Keeps the human permission checkpoint intact for any single command not already covered by `allowedTools`, while providing a log for manual review of what commands are being requested.
+
+**Configuration:**
+- Script: `claude/hooks/permission-learn.sh`
+- Type: PermissionRequest hook
+- Timeout: 5 seconds
+- Requires `jq`; fails gracefully if unavailable
 
 **Log format** (`~/.claude/permission-requests.log`):
 ```
@@ -33,6 +45,7 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 **Example:**
 - Denied: `git status && git diff` (contains `&&` — agent is told to split into separate calls)
 - Denied: `cd repo ; npm install` (contains `;`)
+- Denied: `diff <(sort a.txt) <(sort b.txt)` (process substitution — agent is told to use temp files)
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
 - Allowed silently: `grep "a && b" file.txt` (compound operator is inside a quoted string)
 

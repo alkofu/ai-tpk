@@ -54,10 +54,13 @@ _tab_rename_set_title() {
   elif [ "$TERMINAL" = "iterm2" ]; then
     printf '\033]0;%s\007' "$TITLE" 2>/dev/null
   elif [ "$TERMINAL" = "cmux" ]; then
-    if command -v cmux &>/dev/null; then
-      cmux rename-tab "$TITLE" 2>/dev/null
+    if command -v cmux >/dev/null 2>&1; then
+      if ! cmux rename-workspace "$TITLE" 2>/dev/null; then
+        printf 'tab-rename: cmux rename-workspace failed — workspace name may not have changed\n' >&2
+      fi
     else
-      printf '\033]0;%s\007' "$TITLE" 2>/dev/null
+      printf 'tab-rename: cmux not found in PATH — falling back to OSC escape sequence\n' >&2
+      printf '\033]0;%s\007' "$TITLE"
     fi
   fi
 }

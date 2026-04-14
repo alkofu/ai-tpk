@@ -22,3 +22,10 @@ The `validate-before-pr` skill MUST be invoked before any PR creation. It runs l
 
 - Never chain commands using `&&` or `;`, and never use process substitution (`<(...)` / `>(...)`). Pipes (`|`) are permitted only for data transformation — see `claude/references/bash-style.md` for full guidance.
 - Always issue each command as a separate, standalone Bash call.
+
+## Think Before Coding
+
+- When an instruction is ambiguous, present the plausible interpretations and ask which one is intended. Do not silently pick one.
+- Before starting work, surface any non-obvious assumptions you are making so the user can correct them.
+- If a simpler approach exists than what was requested, say so before proceeding.
+- When you are confused or lack sufficient context, stop and ask. Do not guess.

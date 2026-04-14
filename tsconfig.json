@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2022", "ES2023.Array"],
     "module": "Node16",
     "moduleResolution": "Node16",
     "strict": true,

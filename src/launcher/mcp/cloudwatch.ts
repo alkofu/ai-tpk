@@ -44,6 +44,18 @@ export function parseProfileSections(
     }
   }
 
+  if (format === "credentials") {
+    const seen = new Set<string>();
+    return profiles
+      .filter((p) => {
+        const key = p.replace(/\./g, "_");
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .toSorted();
+  }
+
   return profiles;
 }
 

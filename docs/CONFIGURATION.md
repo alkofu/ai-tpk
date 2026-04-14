@@ -137,11 +137,18 @@ Claude Code loads instructions at two levels:
 
 ### User-Global Instructions (claude/CLAUDE.md)
 
-`claude/CLAUDE.md` is installed to `~/.claude/CLAUDE.md` by the installer and loaded by Claude Code at session start for every project. It mandates three skills that apply globally across all work:
+`claude/CLAUDE.md` is installed to `~/.claude/CLAUDE.md` by the installer and loaded by Claude Code at session start for every project. It contains two types of global constraints:
+
+**Mandatory skills** — three skills that apply globally across all work:
 
 - **`commit-message-guide`** — required for all git commits; conventional commit format is enforced, no exceptions
 - **`open-pull-request`** — required for all pull requests and merge requests; no other PR creation method is allowed
 - **`validate-before-pr`** — runs lint and format checks as a mandatory gate before PR creation; must pass before open-pull-request can be invoked
+
+**Behavioral constraints** — directives that govern how Claude Code behaves before and during execution:
+
+- **Bash Command Style** — prohibits command chaining (`&&`, `;`) and process substitution; each command must be issued as a standalone Bash call
+- **Think Before Coding** — requires surfacing ambiguous interpretations before acting, disclosing non-obvious assumptions, proposing simpler alternatives when they exist, and stopping to ask rather than guessing when context is insufficient
 
 ### Project-Level Instructions (.claude/CLAUDE.md)
 

@@ -26,11 +26,14 @@ fi
 printf 'Error: no AWS profile set.\n' >&2
 printf 'Set one by running /set-aws-profile in Claude Code, or:\n' >&2
 printf '  echo "my-profile" > ~/.claude/.current-aws-profile\n\n' >&2
-printf 'Available profiles in ~/.aws/config:\n' >&2
+printf 'Available profiles:\n' >&2
 if [[ -f "$HOME/.aws/config" ]]; then
   grep -E '^\[(default|profile [^]]+)\]' "$HOME/.aws/config" \
     | sed 's/^\[profile //;s/^\[//;s/\]$//' >&2
+elif [[ -f "$HOME/.aws/credentials" ]]; then
+  grep -E '^\[[^]]+\]' "$HOME/.aws/credentials" \
+    | sed 's/^\[//;s/\]$//' >&2
 else
-  printf '  (no ~/.aws/config found)\n' >&2
+  printf '  (no ~/.aws/config or ~/.aws/credentials found)\n' >&2
 fi
 exit 1

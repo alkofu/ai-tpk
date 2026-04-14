@@ -199,7 +199,7 @@ The wizard lets you select a cluster and choose a role (Viewer or Editor). If yo
 
 #### CloudWatch Configuration
 
-The launcher reads AWS profiles from `~/.aws/config` (standard AWS CLI configuration). In the wizard, select your active profile for the current session. The launcher stores this choice in `~/.claude/.current-aws-profile` so the CloudWatch MCP server wrapper can resolve it at startup.
+The launcher reads AWS profiles from `~/.aws/config` (preferred) or `~/.aws/credentials` (fallback when config is absent). In the wizard, select your active profile for the current session. The launcher stores this choice in `~/.claude/.current-aws-profile` so the CloudWatch MCP server wrapper can resolve it at startup.
 
 **Note:** This is equivalent to running `/set-aws-profile` in Claude — the launcher and the slash command write to the same dotfile, so they stay in sync.
 
@@ -390,7 +390,7 @@ Claude Code slash commands provide quick workflow shortcuts. Commands are instal
 | `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, pulls the latest, and optionally removes associated plan files from `~/.ai-tpk/plans/{repo-slug}/`. Confirms all destructive actions with the user. |
 | `/clean-ai-tpk-artifacts` | Deletes plan and lesson files older than N days (default 14) from `~/.ai-tpk/`. By default scoped to the current repository's plans; use `--all` flag to clean across all repositories. Prompts for confirmation before deletion. |
 | `/merge-pr` | Syncs the current PR branch with main, waits for all required CI checks to pass, squash-merges the PR, deletes the remote branch, and automatically chains into `/merged` for post-merge cleanup. |
-| `/set-aws-profile` | Selects an AWS profile for the CloudWatch MCP server by listing available profiles from `~/.aws/config`, validating the user's selection, and storing it in `~/.claude/.current-aws-profile` (mode 0600). The profile is read at MCP startup. Requires Claude Code restart or MCP server reload to take effect. |
+| `/set-aws-profile` | Selects an AWS profile for the CloudWatch MCP server by listing available profiles from `~/.aws/config` (preferred) or `~/.aws/credentials` (fallback), validating the user's selection, and storing it in `~/.claude/.current-aws-profile` (mode 0600). The profile is read at MCP startup. Requires Claude Code restart or MCP server reload to take effect. |
 
 ## Agent Orchestration Workflow
 

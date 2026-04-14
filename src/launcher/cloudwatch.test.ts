@@ -131,7 +131,7 @@ aws_access_key_id = AKIA...
       "[default]\n[foo-bar]\n[baz_qux]\n",
       "credentials",
     );
-    assert.deepStrictEqual(profiles, ["default", "foo-bar", "baz_qux"]);
+    assert.deepStrictEqual(profiles, ["baz_qux", "default", "foo-bar"]);
   });
 
   it("returns empty array for content with no section headers", () => {
@@ -140,6 +140,50 @@ aws_access_key_id = AKIA...
       "credentials",
     );
     assert.deepStrictEqual(profiles, []);
+  });
+
+  it("deduplicates entries that differ only by . vs _ — keeps first occurrence", () => {
+    const content = `
+[default]
+aws_access_key_id = AKIA...
+
+[foo.bar]
+aws_access_key_id = AKIA...
+
+[foo_bar]
+aws_access_key_id = AKIA...
+
+[baz]
+aws_access_key_id = AKIA...
+`;
+    const profiles = parseProfileSections(content, "credentials");
+    assert.deepStrictEqual(profiles, ["baz", "default", "foo.bar"]);
+  });
+
+  it("deduplicates entries that differ only by . vs _ — underscore-first ordering", () => {
+    const content = `
+[default]
+aws_access_key_id = AKIA...
+
+[foo_bar]
+aws_access_key_id = AKIA...
+
+[foo.bar]
+aws_access_key_id = AKIA...
+
+[baz]
+aws_access_key_id = AKIA...
+`;
+    const profiles = parseProfileSections(content, "credentials");
+    assert.ok(
+      profiles.includes("foo_bar"),
+      "foo_bar should be kept (first occurrence)",
+    );
+    assert.ok(
+      !profiles.includes("foo.bar"),
+      "foo.bar should be removed (duplicate)",
+    );
+    assert.deepStrictEqual(profiles, ["baz", "default", "foo_bar"]);
   });
 });
 

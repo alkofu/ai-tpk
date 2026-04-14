@@ -12,9 +12,9 @@ fi
 
 # Validate profile name if set
 if [[ -n "${AWS_PROFILE:-}" ]]; then
-  # Valid AWS profile names: letters, digits, hyphens, underscores only (per AWS SDKref)
-  if [[ ! "$AWS_PROFILE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-    printf 'Error: invalid AWS profile name "%s" -- must match [a-zA-Z0-9_-]+\n' "$AWS_PROFILE" >&2
+  # Valid AWS profile names: letters, digits, hyphens, underscores, dots (per AWS SDKref)
+  if [[ ! "$AWS_PROFILE" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
+    printf 'Error: invalid AWS profile name "%s" -- must match [a-zA-Z0-9_.-]+\n' "$AWS_PROFILE" >&2
     exit 1
   fi
   export AWS_PROFILE
@@ -32,7 +32,9 @@ if [[ -f "$HOME/.aws/config" ]]; then
     | sed 's/^\[profile //;s/^\[//;s/\]$//' >&2
 elif [[ -f "$HOME/.aws/credentials" ]]; then
   grep -E '^\[[^]]+\]' "$HOME/.aws/credentials" \
-    | sed 's/^\[//;s/\]$//' >&2
+    | sed 's/^\[//;s/\]$//' \
+    | awk '{key=$0; gsub(/\./, "_", key); if(!seen[key]++) print $0}' \
+    | sort >&2
 else
   printf '  (no ~/.aws/config or ~/.aws/credentials found)\n' >&2
 fi

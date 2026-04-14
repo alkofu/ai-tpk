@@ -13,6 +13,8 @@ List available AWS profiles from `~/.aws/config` or `~/.aws/credentials` and let
    - If `~/.aws/config` does not exist, fall back to `~/.aws/credentials`:
      - Include every `[<name>]` section header as a profile name (including `[default]`)
      - Note: credentials file uses bare section names with no `profile` prefix
+     - Deduplicate: treat `.` and `_` as equivalent when comparing names — if two entries differ only by `.` vs `_` in the same position(s), show only the first occurrence and suppress the duplicate
+     - Sort the final list alphabetically
    - If neither file exists or contains no profiles, tell the user and stop.
 
 2. **Show the current active profile** (if any): read `~/.claude/.current-aws-profile` — if it exists and is non-empty, display its first line as the current profile next to "(active)". If the file does not exist, note "no profile currently set."

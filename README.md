@@ -31,6 +31,7 @@ Keep AI tool configurations version-controlled and portable across machines. The
 │   └── commands/        # Slash commands for Claude Code
 ├── .claude/         # Project-scope Claude Code config (this repo only)
 │   ├── CLAUDE.md         # Project-level instructions (scope clarification guard)
+│   ├── commands/        # Repo-scoped slash commands (e.g., /build-and-install)
 │   └── skills/          # Project-scoped skills
 ├── cursor/          # Cursor configurations (coming soon)
 ├── docs/            # Documentation
@@ -262,7 +263,7 @@ Over time the installer may accumulate multiple timestamped backups for the same
 ./clean-backups.sh
 ```
 
-The script scans the same directories as `recover.sh` (`~/.claude` and `~/.cursor`), groups backups by their original file path, and shows a summary of everything it would delete before asking for confirmation. Original paths that have only one backup are left untouched. Nothing is deleted unless you explicitly confirm with `y`.
+The script scans the same directories as `recover.sh` (`~/.claude` and `~/.cursor`), groups backups by their original file path, and displays the list of files it will delete before proceeding immediately. Original paths that have only one backup are left untouched.
 
 ## Cleaning Up Agent Artifacts
 
@@ -562,7 +563,7 @@ When making changes to this repository:
 
 1. **Setup** — Follow the Development Setup section above to install dependencies and build the bundle
 2. **Make changes** — Edit TypeScript files in `src/installer/` or `src/launcher/`, or configuration files in `claude/`
-3. **Build** — Run `pnpm run build` to rebuild the installer bundle
+3. **Build and reinstall** — Run `pnpm run build` to rebuild the installer bundle, then `./install.sh` to deploy to `~/.claude/`, then `./clean-backups.sh` to remove stale backups. The `/build-and-install` repo-scope slash command automates all three steps in sequence.
 4. **Test** — Run `pnpm test` to execute the test suite
 5. **Lint and format** — Run `pnpm run format` to auto-fix formatting, then `pnpm run lint` to verify code quality
 6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing

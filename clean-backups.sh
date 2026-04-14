@@ -77,18 +77,6 @@ for f in "${to_delete[@]}"; do
 done
 printf "\n%d file(s) will be deleted.\n\n" "${#to_delete[@]}"
 
-printf "${YELLOW}Proceed? [y/N]:${NC} "
-read -r input || true
-
-case "$input" in
-  y|Y)
-    ;;
-  *)
-    printf "${YELLOW}Aborted. Nothing deleted.${NC}\n"
-    exit 0
-    ;;
-esac
-
 for f in "${to_delete[@]}"; do
   rm -r "$f"
   printf "${GREEN}Deleted:${NC} %s\n" "$f"

@@ -6,43 +6,92 @@ import type { CloudWatchConfig } from "../types.js";
 import { handleCancel } from "../utils.js";
 
 const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".aws", "config");
+const DEFAULT_CREDENTIALS_PATH = path.join(os.homedir(), ".aws", "credentials");
 
-export function loadAwsProfiles(configPath?: string): string[] {
-  const resolvedPath = configPath ?? DEFAULT_CONFIG_PATH;
-
-  if (!fs.existsSync(resolvedPath)) {
-    throw new Error(
-      `AWS config not found at ${resolvedPath}. Create it or deselect CloudWatch.`,
-    );
-  }
-
-  const lines = fs.readFileSync(resolvedPath, "utf8").split("\n");
+export function parseProfileSections(
+  content: string,
+  format: "config" | "credentials",
+): string[] {
+  const lines = content.split("\n");
   const profiles: string[] = [];
 
   for (const line of lines) {
     const trimmed = line.trim();
-    // Match [default] or [profile <name>]
-    const defaultMatch = /^\[default\]$/i.exec(trimmed);
-    if (defaultMatch) {
-      profiles.push("default");
-      continue;
-    }
-    const profileMatch = /^\[profile\s+([^\]]+)\]$/i.exec(trimmed);
-    if (profileMatch) {
-      const profileName = profileMatch[1].trim();
-      if (profileName) {
-        profiles.push(profileName);
+
+    if (format === "config") {
+      // Match [default] or [profile <name>]
+      const defaultMatch = /^\[default\]$/i.exec(trimmed);
+      if (defaultMatch) {
+        profiles.push("default");
+        continue;
+      }
+      const profileMatch = /^\[profile\s+([^\]]+)\]$/i.exec(trimmed);
+      if (profileMatch) {
+        const profileName = profileMatch[1].trim();
+        if (profileName) {
+          profiles.push(profileName);
+        }
+      }
+    } else {
+      // credentials format: every [<name>] header is a profile name (including [default])
+      const sectionMatch = /^\[([^\]]+)\]$/.exec(trimmed);
+      if (sectionMatch) {
+        const profileName = sectionMatch[1].trim();
+        if (profileName) {
+          profiles.push(profileName);
+        }
       }
     }
   }
 
-  if (profiles.length === 0) {
+  return profiles;
+}
+
+export function loadAwsProfiles(
+  configPath?: string,
+  credentialsPath?: string,
+): string[] {
+  const resolvedConfigPath = configPath ?? DEFAULT_CONFIG_PATH;
+  const resolvedCredentialsPath = credentialsPath ?? DEFAULT_CREDENTIALS_PATH;
+  const configExplicitlyProvided = configPath !== undefined;
+
+  if (fs.existsSync(resolvedConfigPath)) {
+    const content = fs.readFileSync(resolvedConfigPath, "utf8");
+    const profiles = parseProfileSections(content, "config");
+
+    if (profiles.length === 0) {
+      throw new Error(
+        `No AWS profiles found in ${resolvedConfigPath}. Check the file format.`,
+      );
+    }
+
+    return profiles;
+  }
+
+  if (configExplicitlyProvided) {
+    // Caller pointed at a specific path that does not exist — preserve existing error
     throw new Error(
-      `No AWS profiles found in ${resolvedPath}. Check the file format.`,
+      `AWS config not found at ${resolvedConfigPath}. Create it or deselect CloudWatch.`,
     );
   }
 
-  return profiles;
+  // Default config path absent — try credentials file
+  if (fs.existsSync(resolvedCredentialsPath)) {
+    const content = fs.readFileSync(resolvedCredentialsPath, "utf8");
+    const profiles = parseProfileSections(content, "credentials");
+
+    if (profiles.length === 0) {
+      throw new Error(
+        `No AWS profiles found in ${resolvedCredentialsPath}. Check the file format.`,
+      );
+    }
+
+    return profiles;
+  }
+
+  throw new Error(
+    `No AWS configuration found. Expected ~/.aws/config or ~/.aws/credentials. Create one of these files or deselect CloudWatch.`,
+  );
 }
 
 export async function configureCloudWatch(

@@ -271,13 +271,13 @@ Agent-produced files (Pathfinder plans, Everwise lessons) accumulate in `~/.ai-t
 
 ### `/merged` Command — Post-Merge Plan Cleanup
 
-When you run `/merged` after a PR is merged, the command offers to delete associated plan files from `~/.ai-tpk/plans/{repo-slug}/`. Cleanup is session-aware:
+When you run `/merged` after a PR is merged, the command silently auto-deletes plan files from `~/.ai-tpk/plans/{repo-slug}/` that belong to the current session (matched by session timestamp prefix). No prompt is shown for these files.
 
-- **Session files** (prefixed with the current session timestamp) are identified automatically and presented together for a simple yes/no confirmation.
-- **Other files** (from previous sessions) are offered separately with a yes/no/select prompt so you can keep, bulk-delete, or individually pick what to remove.
-- If the session timestamp is unavailable (e.g. `/merged` was run in a new session), all files are listed together with a single yes/no/select prompt.
+If the session timestamp is unavailable (e.g. `/merged` was run in a new session without worktree context), no plan files are touched and no prompt is shown.
 
-This is useful for removing planning artifacts after a feature is shipped.
+Files from other sessions are never mentioned or deleted by `/merged`. Use `/clean-ai-tpk-artifacts` for cross-session cleanup.
+
+This is useful for removing planning artifacts after a feature is shipped without any interruption to the cleanup flow.
 
 ### `/clean-ai-tpk-artifacts` Command — Age-Based Cleanup
 
@@ -387,7 +387,7 @@ Claude Code slash commands provide quick workflow shortcuts. Commands are instal
 | `/open-pr` | Creates a pull request following the `open-pull-request` skill workflow: conventional branch naming, conventional title, draft mode, assigned to @me, and full pre-flight checklist. |
 | `/sync-pr` | Rebases the current PR branch onto `refs/remotes/origin/main` and force-pushes with `--force-with-lease`, keeping open PRs in sync with main's latest changes without manual git gymnastics. |
 | `/clean-the-desk` | Cleans up stale local branches (whose upstream PRs have been merged) and removes their associated git worktrees. Prompts for confirmation before any destructive action. |
-| `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, pulls the latest, and optionally removes associated plan files from `~/.ai-tpk/plans/{repo-slug}/`. Confirms all destructive actions with the user. |
+| `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, pulls the latest, and silently auto-deletes current-session plan files from `~/.ai-tpk/plans/{repo-slug}/`. Confirms all destructive actions with the user. |
 | `/clean-ai-tpk-artifacts` | Deletes plan and lesson files older than N days (default 14) from `~/.ai-tpk/`. By default scoped to the current repository's plans; use `--all` flag to clean across all repositories. Prompts for confirmation before deletion. |
 | `/merge-pr` | Syncs the current PR branch with main, waits for all required CI checks to pass, squash-merges the PR, deletes the remote branch, and automatically chains into `/merged` for post-merge cleanup. |
 | `/address-pr-comments` | Reviews and replies to unresolved inline GitHub PR review comments — fetches threads via GraphQL, reads current file state, categorizes each comment (FIX, COMPROMISE, PUSH-BACK, ALREADY-ADDRESSED, ACKNOWLEDGE), proposes a reply for user approval, and posts approved replies via the REST API. Saves a session summary to `~/.ai-tpk/pr-review-comments/` with resume support across sessions. |

@@ -16,12 +16,12 @@
     "Bash(ls *)",
     "Bash(cd *)",
     "Bash(npm *)",
-    "Bash(npx *)",
     "Bash(pnpm *)",
     "Bash(yarn *)",
     "Bash(* --help)",
     "Bash(* --version)",
     "Bash(python *)",
+    "Bash(python3 *)",
     "mcp__grafana__search_dashboards",
     "mcp__grafana__get_dashboard_by_uid",
     "mcp__grafana__get_dashboard_summary",
@@ -117,6 +117,7 @@
       }
     ]
   },
+  "_comment_allowedTools": "Bash patterns are mirrored in claude/hooks/permission-learn.sh matches_allowed_tools(). Update both when changing Bash tool patterns.",
   "defaultMode": "dontAsk",
   "enabledPlugins": {},
   "extraKnownMarketplaces": {

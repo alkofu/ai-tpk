@@ -24,13 +24,27 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 **Behavior:**
 1. Reads the permission request event from stdin
 2. Extracts the Bash command and strips quoted strings to avoid false positives
-3. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`)
-4. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands
-5. Denies permission if any banned syntax is found, returning a message directing the agent to split the command into separate Bash calls, replace process substitution with temp files, or fix the underlying hook failure instead of bypassing it
-6. For single commands, appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
+3. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`) — denies if found
+4. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands — denies if found
+5. For commands that pass the deny checks: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. If it matches, runs five safety guards; auto-approves if all pass
+6. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
 7. Fails open (no output, exit 0) if `jq` is unavailable
 
-**Purpose:** Enforces the bash style rules defined in `claude/references/bash-style.md` at the permission stage. Keeps the human permission checkpoint intact for any single command not already covered by `allowedTools`, while providing a log for manual review of what commands are being requested.
+**Why auto-approve?** Claude Code classifies commands containing `$VAR`, `${VAR}`, or `~` as "too-complex" and bypasses `allowedTools` pattern matching in `settings.json`, triggering a permission dialog even when the base command (e.g., `git log`, `mkdir`) is already trusted. The hook closes that gap by performing its own pattern match after neutralizing the expansions.
+
+**Safety guards (auto-approve path only):**
+
+| Guard | What it blocks |
+|-------|---------------|
+| Dangerous keywords | `eval`, `exec`, `source`, `sudo` as standalone words (whitespace-delimited to avoid false positives on `--exec-path`, `--source`) |
+| `git -c` injection | `git -c key=val` config overrides that can redirect git to arbitrary executables |
+| `python -c` / `python3 -c` | Inline code execution arguments |
+| `npx` | All `npx` commands (arbitrary package download cannot be distinguished from local project scripts) |
+| Complex constructs | Backticks, `$(...)`, pipes, redirections, and complex parameter expansions beyond `$VAR`/`${VAR}` |
+
+All guards operate on single-quote-stripped input so that dangerous constructs inside double-quoted strings (e.g., `--format="$(date)"`) remain visible and are caught.
+
+**Purpose:** Enforces the bash style rules defined in `claude/references/bash-style.md` at the permission stage. Eliminates disruptive permission dialogs for trusted commands that contain simple variable expansions, while keeping the human permission checkpoint intact for commands that are not covered by `allowedTools` or that fail a safety guard.
 
 **Configuration:**
 - Script: `claude/hooks/permission-learn.sh`
@@ -40,18 +54,30 @@ Runs when a Bash command falls outside the `allowedTools` list and requires perm
 
 **Log format** (`~/.claude/permission-requests.log`):
 ```
-2026-04-09T14:27:44Z | agent_type=Bitsmith | agent_id=abc123 | command=npm install express
+2026-04-09T14:27:44Z | agent_type=Bitsmith | agent_id=abc123 | [auto-approved] command=git log --format=$FORMAT
+2026-04-09T14:27:50Z | agent_type=Bitsmith | agent_id=abc123 | command=docker ps
 ```
 
-**Example:**
+Auto-approved entries include the `[auto-approved]` marker; commands falling through to the permission dialog have no marker.
+
+**Examples:**
 - Denied: `git status && git diff` (contains `&&` — agent is told to split into separate calls)
 - Denied: `cd repo ; npm install` (contains `;`)
 - Denied: `diff <(sort a.txt) <(sort b.txt)` (process substitution — agent is told to use temp files)
 - Denied: `git commit --no-verify -m "msg"` (bypasses pre-commit hooks)
 - Denied: `git commit -n -m "msg"` (short form of `--no-verify` for `git commit`)
 - Denied: `git push --no-verify` (bypasses pre-push hooks)
+- Auto-approved: `git log --format=$FORMAT` (matches `git *`, simple expansion only, no safety guard triggered)
+- Auto-approved: `mkdir -p $HOME/.config` (matches `mkdir *`)
+- Auto-approved: `ls ~/projects` (matches `ls *`, tilde is a simple expansion)
+- Auto-approved: `gh pr list --repo $REPO` (matches `gh pr *`)
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
-- Logged + normal dialog: `grep "a && b" file.txt` (compound operator is inside a quoted string — no false positive)
+- Logged + normal dialog: `grep "a && b" file.txt` (compound operator inside a quoted string — no false positive on deny; no allowedTools pattern match — falls through)
+- Logged + normal dialog: `gh extension install $PKG` (no matching allowedTools pattern for `gh extension`)
+- Logged + normal dialog: `git log --format="$(date)"` (safety guard: `$(...)` inside double quotes)
+- Logged + normal dialog: `git -c core.editor="vi" diff` (safety guard: `git -c` config injection)
+- Logged + normal dialog: `python3 -c "code"` (safety guard: `python3 -c`)
+- Logged + normal dialog: `sudo rm -rf $DIR` (safety guard: dangerous keyword `sudo`)
 - Allowed: `echo -n hello`, `git log -n 5` (context-aware: `-n` only blocked in `git commit` context)
 
 #### SessionStart Hook - Terminal Tab Title Restore

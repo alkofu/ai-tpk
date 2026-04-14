@@ -157,47 +157,30 @@ Delegate to Bitsmith to run (from `<main-path>`): `git pull origin main`
 If this fails, report the error but do not treat it as fatal — the local checkout is already
 on `main`.
 
-## Step 10a — Offer plan file cleanup
+## Step 10a — Auto-clean session plan files
+
+Check whether `SESSION_TS` is present in your conversation memory.
+
+**If SESSION_TS is not available** (e.g., `/merged` was run in a new session without
+worktree context): Skip this step silently. Do not list, prompt about, or delete any
+plan files. Do not run `git rev-parse`, `ls`, or any other command. Proceed to Step 11.
+
+**If SESSION_TS is available:**
 
 Derive the current repo slug by running: `git rev-parse --show-toplevel`
 Take the basename of the result. Store it as `<repo-slug>`.
 
-Check whether any plan files exist for this repo:
-`ls -1 ~/.ai-tpk/plans/<repo-slug>/`
+List files matching the session timestamp in the plan directory:
+`ls -1 ~/.ai-tpk/plans/<repo-slug>/{SESSION_TS}-* 2>/dev/null`
 
-If the directory is empty or does not exist, skip this step silently and proceed to Step 11.
+If no files match (command produces no output or the directory does not exist), skip
+this step silently and proceed to Step 11.
 
-If files exist, apply the following partitioning logic:
+If matching files exist, delegate to Bitsmith to delete each file using `rm` (one call
+per file, not chained). Do not prompt the user. Do not mention or touch any files that
+do not match `{SESSION_TS}-*`.
 
-**Partition: session files vs. other files**
-
-Check whether `SESSION_TS` is present in your conversation memory (it should have been set
-in Phase 0 of the DM workflow that created the worktree for this session).
-
-- **If `SESSION_TS` is available:** Files whose names begin with `{SESSION_TS}-` are
-  "session files". All remaining files are "other files".
-- **If `SESSION_TS` is not available** (e.g., `/merged` was run in a new session):
-  All files are treated as undifferentiated. Skip the session-files prompt and the
-  other-files prompt below. Instead, display all files and ask:
-  `"Found <count> plan file(s) for this repository in ~/.ai-tpk/plans/<repo-slug>/. Would you like to delete them? (yes / no / select)"`
-  Proceed with yes/no/select behaviour as described in the other-files prompt.
-
-**Session files prompt (when SESSION_TS is available and session files exist):**
-
-List the session files by name. Ask:
-`"Found <count> plan file(s) from this session in ~/.ai-tpk/plans/<repo-slug>/: <list>. Delete them? (yes / no)"`
-
-- **yes**: Delegate to Bitsmith to delete the session files using `rm` (one call per file, not chained).
-- **no**: Skip silently.
-
-**Other files prompt (when non-session files exist):**
-
-List the other files by name. Ask:
-`"Found <count> additional plan file(s) from other sessions in ~/.ai-tpk/plans/<repo-slug>/. Would you like to delete them? (yes / no / select)"`
-
-- **yes**: Delegate to Bitsmith to delete all other files using `rm` (one call per file, not chained).
-- **select**: Display a numbered list of the other files. Ask the user to enter the numbers of files to delete (comma-separated). Delegate the selected deletions to Bitsmith.
-- **no**: Skip silently.
+Store the list of deleted file names for use in Step 11's summary.
 
 (Per DM delegation policy, file deletions must be delegated to Bitsmith.)
 
@@ -207,4 +190,4 @@ Print a summary:
 - **Worktree removed:** `<worktree-path>`
 - **Branch deleted:** `<branch>` (or "skipped — detached HEAD" or "skipped — see warning above" if Step 8 was skipped or failed)
 - **Current branch:** main (up to date)
-- **Plan files cleaned:** `<list of deleted plan files grouped as "session: ..." and "other: ...", or "none deleted" if Step 10a was skipped or user declined>`
+- **Plan files cleaned:** `<list of deleted session plan files, or "none" if Step 10a was skipped>`

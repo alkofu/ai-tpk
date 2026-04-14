@@ -128,7 +128,7 @@ its Step 0 shortcut (session-context path) instead of running the full discovery
 a worktree), do not synthesize these values — let `/merged` run its normal discovery flow.
 
 Execute `/merged`. The `/merged` command handles: worktree removal, local branch deletion,
-checkout of main, pull latest, and plan file cleanup offer. No additional cleanup is needed
+checkout of main, pull latest, and session plan file cleanup. No additional cleanup is needed
 in this command.
 
 If `/merged` encounters errors, its own error handling will report them. Do not wrap

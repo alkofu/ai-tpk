@@ -4,7 +4,7 @@ Example 1:
 User asks: "Add OAuth login, update the API, and add tests."
 Action:
 - Delegate to Pathfinder for decomposition and sequencing
-- Pathfinder saves plan to `plans/20260401-143022-oauth-login.md`
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login.md`
 - **Plan Review Gate:**
   - Invoke Ruinor (mandatory baseline review)
   - Ruinor flags security concerns (auth/JWT) → recommends Riskmancer
@@ -37,7 +37,7 @@ Example 3:
 User asks: "Refactor the authentication module --review-security --review-complexity"
 Action:
 - Delegate to Pathfinder for refactoring plan
-- Pathfinder saves plan to `plans/20260401-143022-auth-refactor.md`
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-auth-refactor.md`
 - **Plan Review Gate:**
   - Invoke Ruinor (mandatory)
   - User flags present: --review-security, --review-complexity
@@ -50,7 +50,7 @@ Example 4:
 User asks: "Migrate from Redis 6 to Redis 7 and update the caching config --verify-facts"
 Action:
 - Delegate to Pathfinder for migration plan
-- Pathfinder saves plan to `plans/20260401-143022-redis-migration.md`
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-redis-migration.md`
 - **Plan Review Gate:**
   - Invoke Ruinor (mandatory baseline review)
   - User flag present: --verify-facts → invoke Truthhammer
@@ -81,7 +81,7 @@ Action:
 - DM presents scope + options to user, user selects Option B (Redis + BullMQ)
 - DM re-invokes Pathfinder with `## Confirmed Scope` block (using re-invocation template above)
 - Pathfinder sees `## Confirmed Scope` block, skips Section 4, proceeds directly to plan generation
-- Pathfinder saves plan to `plans/20260401-143022-background-jobs.md`
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-background-jobs.md`
 - Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
 
 Example 6:
@@ -91,7 +91,8 @@ Action:
 - All subsequent Pathfinder, Bitsmith, and Quill delegation prompts include:
   `WORKING_DIRECTORY: {REPO_ROOT}/.worktrees/feat-add-oauth-login`
   `WORKTREE_BRANCH: feat/add-oauth-login`
-- Pathfinder writes plans to `{WORKING_DIRECTORY}/plans/`
+  `REPO_SLUG: {REPO_SLUG}`
+- Pathfinder writes plans to `~/.ai-tpk/plans/{REPO_SLUG}/`
 - Bitsmith operates in the worktree, commits land on `feat/add-oauth-login`
 - **Phase 5:** DM offers PR/merge/keep options, cleans up worktree based on user choice
 - Both sessions operate independently on separate branches without git conflicts
@@ -109,7 +110,7 @@ Action:
 - DM invokes Askmaw (round 3) with full context
 - Askmaw returns structured brief (objective clear: fix 3 specific pen test findings; scope bounded)
 - DM exits intake loop, passes brief to Pathfinder
-- Pathfinder saves plan to `plans/20260401-143022-auth-security-hardening.md`
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-auth-security-hardening.md`
 - Continue with Phase 2 (Plan Review Gate) as normal
 
 Example 8:
@@ -144,7 +145,7 @@ Action:
   - Recommendation: Option B — payment events should be idempotent and retryable
 - DM surfaces scope + options to user; user confirms scope and selects Option B
 - DM re-invokes Pathfinder with `## Confirmed Scope` block (Option B selected, Option A rejected because payment events require retry guarantees)
-- Pathfinder skips Section 4, generates full plan, saves to `plans/20260401-143022-webhook-support.md`
+- Pathfinder skips Section 4, generates full plan, saves to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-webhook-support.md`
 - Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
 
 Example 10:
@@ -158,3 +159,17 @@ Action:
 - Tracebloom returns findings: Phase 0 creates an isolated git worktree per session at `.worktrees/{branch-slug}`, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5d
 - **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 section), `claude/references/worktree-protocol.md`
 - Session complete — no review, no plan, no PR prompt
+
+Example 11:
+User asks (via /ops): "What authentication patterns are used in this codebase?"
+Action:
+- **Intent override fires:** `INTENT: advisory --save-report`. Log: "Intent override: advisory. Heuristic classification skipped." Capture `--save-report` as active workflow flag. Strip `INTENT: advisory --save-report` from message.
+- **Session variables captured:** `SESSION_TS` = `20260413-110000`, `SESSION_SLUG` = `auth-patterns-codebase`
+- **Phase 0 worktree creation skipped** — advisory sessions do not create worktrees or plans
+- **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
+- **Phase B:** Invoke Tracebloom with advisory research request: "What authentication patterns are used in this codebase?"
+- Tracebloom returns findings on auth patterns used in the codebase
+- **Phase C:** DM synthesises Tracebloom's findings into a direct answer. Delivers answer inline to user.
+- **`--save-report` post-synthesis:** DM runs `git rev-parse --show-toplevel` → succeeds, returns `/home/user/my-project`. Delegates to Bitsmith: write report to `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`. Bitsmith creates directory and writes file. DM logs: "Report saved to `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`"
+- Session complete — no review, no plan, no PR prompt
+- Output contract: Question, Agents consulted (Tracebloom), Answer summary, Sources, Report saved: `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`

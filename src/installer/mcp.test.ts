@@ -29,8 +29,9 @@ after(() => {
 
 function writeMcpFile(servers: unknown[]): string {
   const repoRoot = fs.mkdtempSync(path.join(tmpDir, "repo-"));
+  fs.mkdirSync(path.join(repoRoot, "src/mcp"), { recursive: true });
   fs.writeFileSync(
-    path.join(repoRoot, "mcp-servers.json"),
+    path.join(repoRoot, "src/mcp/mcp-servers.json"),
     JSON.stringify({ servers }),
     "utf8",
   );

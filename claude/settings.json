@@ -65,7 +65,18 @@
     "mcp__kubernetes__kubectl_logs",
     "mcp__kubernetes__explain_resource",
     "mcp__kubernetes__list_api_resources",
-    "mcp__kubernetes__ping"
+    "mcp__kubernetes__ping",
+    "mcp__cloudwatch__describe_log_groups",
+    "mcp__cloudwatch__analyze_log_group",
+    "mcp__cloudwatch__execute_log_insights_query",
+    "mcp__cloudwatch__get_logs_insight_query_results",
+    "mcp__cloudwatch__cancel_logs_insight_query",
+    "mcp__cloudwatch__get_active_alarms",
+    "mcp__cloudwatch__get_alarm_history",
+    "mcp__cloudwatch__get_metric_data",
+    "mcp__cloudwatch__get_metric_metadata",
+    "mcp__cloudwatch__analyze_metric",
+    "mcp__cloudwatch__get_recommended_metric_alarms"
   ],
   "hooks": {
     "PermissionRequest": [

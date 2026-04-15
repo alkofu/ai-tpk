@@ -2,6 +2,10 @@ import { intro, outro, log } from "@clack/prompts";
 import { loadConfig, saveConfig } from "./config.js";
 import { loadGrafanaClusters, configureGrafana } from "./mcp/grafana.js";
 import { loadAwsProfiles, configureCloudWatch } from "./mcp/cloudwatch.js";
+import {
+  checkAdcCredentials,
+  configureGcpObservability,
+} from "./mcp/gcp-observability.js";
 import { selectMcps } from "./prompts.js";
 import { buildEnvVars } from "./env.js";
 import { launchClaude } from "./launch.js";
@@ -66,6 +70,25 @@ async function main(): Promise<void> {
     };
   }
 
+  // GCP Observability configuration
+  if (selectedMcps.includes("gcp-observability")) {
+    try {
+      checkAdcCredentials();
+    } catch (err) {
+      log.error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+
+    const gcpConfig = await configureGcpObservability(
+      savedConfig.gcpObservability?.project,
+    );
+
+    resolved.gcpObservability = gcpConfig;
+    updatedConfig.gcpObservability = {
+      project: gcpConfig.project,
+    };
+  }
+
   // Persist updated selections
   saveConfig(updatedConfig);
 
@@ -79,6 +102,9 @@ async function main(): Promise<void> {
   }
   if (resolved.cloudwatch) {
     lines.push(`CloudWatch: ${resolved.cloudwatch.profile}`);
+  }
+  if (resolved.gcpObservability) {
+    lines.push(`GCP Observability: ${resolved.gcpObservability.project}`);
   }
   if (lines.length === 0) {
     lines.push("No MCPs configured — launching Claude with current env.");

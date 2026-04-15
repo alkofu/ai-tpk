@@ -37,8 +37,8 @@
       "name": "gcp-observability",
       "scope": "user",
       "transport": "stdio",
-      "command": "npx",
-      "args": ["--yes", "@google-cloud/observability-mcp@0.2.3"]
+      "prereq": "$HOME/.config/gcloud/application_default_credentials.json",
+      "wrapper": "wrappers/mcp-gcp-observability.sh"
     }
   ]
 }

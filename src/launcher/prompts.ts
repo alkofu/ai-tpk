@@ -9,6 +9,11 @@ export async function selectMcps(
     options: [
       { value: "grafana", label: "Grafana", hint: "cluster + role" },
       { value: "cloudwatch", label: "CloudWatch", hint: "AWS profile" },
+      {
+        value: "gcp-observability",
+        label: "GCP Observability",
+        hint: "GCP project",
+      },
     ],
     initialValues: previousSelections,
     required: false,

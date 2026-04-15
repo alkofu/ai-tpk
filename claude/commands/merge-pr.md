@@ -127,6 +127,16 @@ its Step 0 shortcut (session-context path) instead of running the full discovery
 (Steps 1–5). If no worktree session context is available (e.g., bare branch checkout without
 a worktree), do not synthesize these values — let `/merged` run its normal discovery flow.
 
+**PR metadata propagation for Template D:** Before executing `/merged`, record the following
+values in session memory so that `/merged` can populate Template D's conditional fields:
+- `MERGED_PR_NUMBER` — the PR number from Step 4
+- `MERGED_PR_TITLE` — the PR title from Step 4
+- `MERGE_METHOD: squash`
+
+When `/merged` runs, it checks for `MERGED_PR_NUMBER` in session memory. If present, it
+includes the `PR` and `Merge method` lines in Template D using these values. If absent
+(standalone `/merged` run), those lines are omitted entirely.
+
 Execute `/merged`. The `/merged` command handles: worktree removal, local branch deletion,
 checkout of main, pull latest, and session plan file cleanup. No additional cleanup is needed
 in this command.

@@ -31,5 +31,8 @@ dist/
 # Legacy local plans directory (migrated to ~/.ai-tpk/plans/)
 plans/
 
+# Local lessons directory (migrated to ~/.ai-tpk/lessons/)
+lessons/
+
 # Lefthook local overrides (machine-specific, not for version control)
 lefthook-local.yml

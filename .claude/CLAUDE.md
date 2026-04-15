@@ -35,9 +35,9 @@ This repository is a **clone → run → forget** tool.
 The workflow is:
 1. User clones the repo
 2. User runs `install.sh`
-3. `install.sh` copies the contents of `claude/` (agents, skills, commands, hooks, references, settings, CLAUDE.md) to `~/.claude/`, and `wrappers/` to `~/.claude/wrappers/`. It also registers MCP servers. Additional harnesses may be supported in future.
+3. `install.sh` copies the contents of `claude/` (agents, skills, commands, hooks, references, settings, CLAUDE.md) to `~/.claude/`, and `src/wrappers/` to `~/.claude/wrappers/`. It also registers MCP servers. Additional harnesses may be supported in future.
 4. The installed artifacts are fully self-contained — they carry no references back to the repo. The repo may be retained for future updates (re-run `install.sh` after `git pull`), but this is optional.
 
 **Critical implication for all changes:** The installed artifacts carry **no back-references to this repository**. Once copied, they are standalone files at their destination. Any change you make must therefore be complete and self-contained within the artifact itself — do not add relative paths, symlinks, or runtime references that assume the repo still exists on disk.
 
-This self-containment constraint applies to everything `install.sh` installs — the contents of `claude/` and `wrappers/`. It does **not** apply to repo-scope artifacts in `.claude/`, which are only active when the repo is checked out. When reviewing or authoring any artifact in `claude/` or `wrappers/`, always ask: *"Will this work correctly after being copied to its destination with no repo present?"*
+This self-containment constraint applies to everything `install.sh` installs — the contents of `claude/` and `src/wrappers/`. It does **not** apply to repo-scope artifacts in `.claude/`, which are only active when the repo is checked out. When reviewing or authoring any artifact in `claude/` or `src/wrappers/`, always ask: *"Will this work correctly after being copied to its destination with no repo present?"*

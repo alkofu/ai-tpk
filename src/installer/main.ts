@@ -26,7 +26,7 @@ try {
 
   installClaudeWhitelist(scriptDir, os.homedir());
   installDir(scriptDir, "cursor", ".cursor", os.homedir());
-  installDir(scriptDir, "wrappers", ".claude/wrappers", os.homedir());
+  installDir(scriptDir, "src/wrappers", ".claude/wrappers", os.homedir());
 
   // Create ~/.ai-tpk artifact directories
   const aiTpkDir = path.join(os.homedir(), ".ai-tpk");

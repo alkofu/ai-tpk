@@ -113,7 +113,10 @@ export async function configureCloudWatch(
   const profileValue = await select({
     message: "Select AWS profile for CloudWatch:",
     options: profiles.map((p) => ({ value: p, label: p })),
-    initialValue: previousProfile ?? profiles[0],
+    initialValue:
+      previousProfile && profiles.includes(previousProfile)
+        ? previousProfile
+        : profiles[0],
   });
   handleCancel(profileValue);
 

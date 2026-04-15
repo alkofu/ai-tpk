@@ -85,7 +85,10 @@ export async function configureKubernetes(
   contexts: string[],
   previousContext?: string,
 ): Promise<KubernetesConfig> {
-  const initialValue = previousContext || getCurrentContext() || contexts[0];
+  const initialValue =
+    previousContext && contexts.includes(previousContext)
+      ? previousContext
+      : getCurrentContext() || contexts[0];
 
   const options = contexts.map((ctx) => ({ value: ctx, label: ctx }));
 

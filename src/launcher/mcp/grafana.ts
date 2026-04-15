@@ -101,7 +101,10 @@ export async function configureGrafana(
       label: c.name,
       hint: c.url,
     })),
-    initialValue: previousClusterId ?? clusters[0]?.id,
+    initialValue:
+      previousClusterId && clusters.some((c) => c.id === previousClusterId)
+        ? previousClusterId
+        : clusters[0]?.id,
   });
   handleCancel(clusterValue);
 

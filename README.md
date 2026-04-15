@@ -592,6 +592,7 @@ Agent definitions can reference shared behavioral vocabulary defined in `claude/
 - **`claude/references/verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales. Agents load this reference when issuing verdicts to ensure consistent evaluation vocabulary.
 - **`claude/references/worktree-protocol.md`** — Shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. Agents load this reference when operating in isolated worktrees to ensure consistent path handling.
 - **`claude/references/dm-routing-examples.md`** — 11 worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports. The DM loads this reference at runtime rather than embedding the examples inline in its system prompt.
+- **`claude/references/completion-templates.md`** — Four rigid per-command completion report templates (A: Constructive, B: Investigative, C: Operational PR, D: Post-Merge) and a shared Common Fields block. The DM output contract and `/open-pr`, `/merged`, `/merge-pr` commands all reference this file to ensure consistent, parseable completion output across sessions.
 
 When modifying these reference files, changes apply automatically to all agents that load them, eliminating the need to update redundant constraints across multiple agent definitions.
 

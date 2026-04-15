@@ -527,14 +527,14 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes, that work must re-enter Phase 4 (Implementation Review) before the session can be declared complete — do not treat post-documentation Bitsmith invocations as pre-reviewed work.
 
     **5c — Completion summary:**
-    - confirm the requested outcome was actually achieved
-    - summarize completed work (plan, reviews, execution, validation)
-    - note any unfinished items or follow-ups
-    - Reservations logged: yes/no -- [file path or "N/A if no ACCEPT-WITH-RESERVATIONS verdicts"]
-    - if Quill was invoked in 5b, include a line noting that documentation was updated; otherwise note that documentation update was skipped (no planning session)
-    - Worktree status (path, branch, cleanup action taken, or 'skipped' if no worktree)
-    - Token usage: read the session's enriched chronicle file — glob `logs/talekeeper-*.jsonl` in the worktree root (or repo root if no worktree is active) and select the file most recently modified during this session. Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` across all entries using `jq`. Report as: "Tokens: {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read" (divide raw counts by 1000, round to 1 decimal). If the chronicle file is not found, unreadable, or contains no token data, report "Token usage: unavailable".
-    - if notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
+    Format the completion summary using the appropriate template from `claude/references/completion-templates.md`: Template A (Constructive) for constructive sessions, Template B (Investigative) for investigative sessions.
+
+    To obtain the values for the template:
+    - **Token usage:** read the session's enriched chronicle file — glob `logs/talekeeper-*.jsonl` in the worktree root (or repo root if no worktree is active) and select the file most recently modified during this session. Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` across all entries using `jq`. Report as: "{input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read" (divide raw counts by 1000, round to 1 decimal). If the chronicle file is not found, unreadable, or contains no token data, report "unavailable".
+    - **Reservations logged:** populate from Phase 5a — "yes — {file path}" if ACCEPT-WITH-RESERVATIONS was issued and the file was written; "no" otherwise.
+    - **Documentation:** "updated by Quill" if Quill was invoked in 5b; "skipped (no planning session)" otherwise.
+
+    If notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
     **5d — Worktree log:**
     Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Run `/open-pr` to create a pull request, or handle cleanup manually."
@@ -640,23 +640,16 @@ Write the advisory report to disk. This is a single file write — no code chang
 
 ## Output contract
 
-When responding back to the main thread, structure your result as:
+Completion reports must use the rigid per-command templates defined in `claude/references/completion-templates.md`. Each template is a verbatim format — reproduce the template exactly, substituting only `{placeholder}` values. Do not rearrange, rename, or omit fields unless the template explicitly marks a field as conditional.
 
-- Goal
-- Plan status (created, reviewed, approved/revised)
-- Plan review summary:
-  - Ruinor verdict (always included)
-  - Specialist reviews invoked (if any): Riskmancer / Windwarden / Knotcutter / Truthhammer verdicts
-  - Reason specialists were invoked (Ruinor recommendation, user flag, or keyword detection)
-- Execution status (tasks completed, artifacts changed)
-- Implementation review summary:
-  - Ruinor verdict (always included)
-  - Specialist reviews invoked (if any): Riskmancer / Windwarden / Knotcutter / Truthhammer verdicts
-- Final validation
-- Documentation: updated by Quill / skipped (no planning session)
-- Worktree: `{path}` on branch `{branch}` — {cleanup action taken} / skipped (no worktree)
-- Token usage: {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read (or "unavailable")
-- Risks / follow-ups
+Template assignments by pipeline:
+
+| Pipeline | Template |
+|----------|----------|
+| Constructive (`/feature` and similar) | Template A — Constructive |
+| Investigative (`/bug` and similar) | Template B — Investigative |
+| PR creation (`/open-pr`) | Template C — Operational PR |
+| Post-merge cleanup (`/merged`, `/merge-pr`) | Template D — Post-Merge |
 
 For advisory sessions (`INTENT: advisory`), use this simplified structure instead:
 

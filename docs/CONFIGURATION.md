@@ -211,6 +211,8 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 - **`worktree-protocol.md`** — Shared rules for interpreting the `WORKING_DIRECTORY:` context block. Agents that operate in isolated git worktrees load this reference to ensure consistent path handling across all file operations and bash commands.
 
+- **`completion-templates.md`** — Four rigid per-command completion report templates and a shared Common Fields block. Defines what the DM must emit at the end of each pipeline: Template A (Constructive, `/feature`), Template B (Investigative, `/bug`), Template C (Operational PR, `/open-pr`), and Template D (Post-Merge, `/merged` and `/merge-pr`). The DM output contract references this file; templates are verbatim formats with no formatting discretion left to the model.
+
 When updating a reference file, changes apply automatically to all agents that load it — no individual agent files need modification.
 
 ## Skills (`claude/skills/`)

@@ -186,8 +186,12 @@ Store the list of deleted file names for use in Step 11's summary.
 
 ## Step 11 — Report final summary
 
-Print a summary:
-- **Worktree removed:** `<worktree-path>`
-- **Branch deleted:** `<branch>` (or "skipped — detached HEAD" or "skipped — see warning above" if Step 8 was skipped or failed)
+Format the summary using Template D (Post-Merge Cleanup) from `claude/references/completion-templates.md`.
+
+Populate the fields as follows:
+- **PR** and **Merge method:** Include these lines only when `MERGED_PR_NUMBER` is present in session context (i.e., `/merged` was chained from `/merge-pr`). Omit both lines when `/merged` is run standalone.
+- **Worktree removed:** `<worktree-path>`, or "N/A" if no worktree was found.
+- **Branch deleted:** `<branch>`, or "skipped (detached HEAD)" if Step 8 was skipped, or "skipped (see warning)" if Step 8 failed.
 - **Current branch:** main (up to date)
-- **Plan files cleaned:** `<list of deleted session plan files, or "none" if Step 10a was skipped>`
+- **Plan files cleaned:** the list of deleted file names from Step 10a, or "none" if Step 10a found no files, or "skipped (no SESSION_TS)" if Step 10a was skipped entirely.
+- **Token usage:** read the session's enriched chronicle file (glob `logs/talekeeper-*.jsonl` in the repo root, select most recently modified). Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` using `jq`. Report as "{input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read". If unavailable, report "unavailable".

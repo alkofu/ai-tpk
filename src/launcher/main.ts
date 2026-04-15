@@ -7,6 +7,11 @@ import {
   configureGcpObservability,
   loadGcpProjects,
 } from "./mcp/gcp-observability.js";
+import {
+  loadKubectxContexts,
+  configureKubernetes,
+  switchContext,
+} from "./mcp/kubernetes.js";
 import { selectMcps } from "./prompts.js";
 import { buildEnvVars } from "./env.js";
 import { launchClaude } from "./launch.js";
@@ -99,8 +104,40 @@ async function main(): Promise<void> {
     };
   }
 
+  // Kubernetes configuration
+  if (selectedMcps.includes("kubernetes")) {
+    let contexts;
+    try {
+      contexts = loadKubectxContexts();
+    } catch (err) {
+      log.error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+
+    const k8sConfig = await configureKubernetes(
+      contexts,
+      savedConfig.kubernetes?.context,
+    );
+
+    resolved.kubernetes = k8sConfig;
+    updatedConfig.kubernetes = { context: k8sConfig.context };
+  }
+
   // Persist updated selections
   saveConfig(updatedConfig);
+
+  // Switch Kubernetes context AFTER config is persisted (avoids inconsistency if switchContext fails)
+  if (resolved.kubernetes !== undefined) {
+    try {
+      switchContext(
+        resolved.kubernetes.context,
+        savedConfig.kubernetes?.context,
+      );
+    } catch (err) {
+      log.error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  }
 
   // Build env vars summary for outro
   const envVars = buildEnvVars(resolved);
@@ -115,6 +152,9 @@ async function main(): Promise<void> {
   }
   if (resolved.gcpObservability) {
     lines.push(`GCP Observability: ${resolved.gcpObservability.project}`);
+  }
+  if (resolved.kubernetes) {
+    lines.push(`Kubernetes: ${resolved.kubernetes.context}`);
   }
   if (lines.length === 0) {
     lines.push("No MCPs configured — launching Claude with current env.");

@@ -18,9 +18,11 @@ import type { ResolvedConfig, GrafanaCluster } from "./types.js";
 const dotfileDir = path.join(os.homedir(), ".claude");
 const dotfilePath = path.join(dotfileDir, ".current-aws-profile");
 const gcpDotfilePath = path.join(dotfileDir, ".current-gcp-project");
+const kubeDotfilePath = path.join(dotfileDir, ".current-kube-context");
 
 let priorDotfileContent: string | null = null;
 let priorGcpDotfileContent: string | null = null;
+let priorKubeDotfileContent: string | null = null;
 
 before(() => {
   if (fs.existsSync(dotfilePath)) {
@@ -28,6 +30,9 @@ before(() => {
   }
   if (fs.existsSync(gcpDotfilePath)) {
     priorGcpDotfileContent = fs.readFileSync(gcpDotfilePath, "utf8");
+  }
+  if (fs.existsSync(kubeDotfilePath)) {
+    priorKubeDotfileContent = fs.readFileSync(kubeDotfilePath, "utf8");
   }
 });
 
@@ -50,6 +55,16 @@ after(() => {
     });
   } else if (fs.existsSync(gcpDotfilePath)) {
     fs.rmSync(gcpDotfilePath);
+  }
+
+  if (priorKubeDotfileContent !== null) {
+    fs.mkdirSync(dotfileDir, { recursive: true });
+    fs.writeFileSync(kubeDotfilePath, priorKubeDotfileContent, {
+      mode: 0o600,
+      encoding: "utf8",
+    });
+  } else if (fs.existsSync(kubeDotfilePath)) {
+    fs.rmSync(kubeDotfilePath);
   }
 });
 
@@ -162,5 +177,46 @@ describe("buildEnvVars", () => {
     const env = buildEnvVars(config);
     assert.strictEqual(env["GRAFANA_URL"], fakeCluster.url);
     assert.strictEqual(env["GOOGLE_CLOUD_PROJECT"], "my-gcp-project");
+  });
+
+  it("Kubernetes only: returns K8S_CONTEXT", () => {
+    const config: ResolvedConfig = {
+      kubernetes: { context: "my-cluster" },
+    };
+    const env = buildEnvVars(config);
+    assert.strictEqual(env["K8S_CONTEXT"], "my-cluster");
+    assert.ok(
+      !Object.prototype.hasOwnProperty.call(env, "AWS_PROFILE"),
+      "AWS_PROFILE must not be present when no CloudWatch config",
+    );
+    assert.ok(
+      !Object.prototype.hasOwnProperty.call(env, "GOOGLE_CLOUD_PROJECT"),
+      "GOOGLE_CLOUD_PROJECT must not be present when no GCP config",
+    );
+    // Verify the dotfile was written with the correct content
+    assert.strictEqual(
+      fs.readFileSync(kubeDotfilePath, "utf8"),
+      "my-cluster\n",
+    );
+  });
+
+  it("Kubernetes + CloudWatch combined: both keys present", () => {
+    const config: ResolvedConfig = {
+      cloudwatch: { profile: "prod" },
+      kubernetes: { context: "production-cluster" },
+    };
+    const env = buildEnvVars(config);
+    assert.strictEqual(env["AWS_PROFILE"], "prod");
+    assert.strictEqual(env["K8S_CONTEXT"], "production-cluster");
+  });
+
+  it("Kubernetes + GCP Observability combined: both keys present", () => {
+    const config: ResolvedConfig = {
+      gcpObservability: { project: "my-gcp-project" },
+      kubernetes: { context: "staging-cluster" },
+    };
+    const env = buildEnvVars(config);
+    assert.strictEqual(env["GOOGLE_CLOUD_PROJECT"], "my-gcp-project");
+    assert.strictEqual(env["K8S_CONTEXT"], "staging-cluster");
   });
 });

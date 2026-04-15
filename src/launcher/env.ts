@@ -62,5 +62,28 @@ export function buildEnvVars(config: ResolvedConfig): Record<string, string> {
     });
   }
 
+  if (config.kubernetes) {
+    const context = config.kubernetes.context;
+    // K8S_CONTEXT: explicit context override for mcp-server-kubernetes.
+    // Takes higher priority than ~/.kube/config active context, ensuring the
+    // selected context is respected even when other kubeconfig env vars
+    // (KUBECONFIG, K8S_SERVER, etc.) are present in the environment.
+    envVars["K8S_CONTEXT"] = context;
+
+    // Write dotfile for symmetry with cloudwatch/gcp patterns and potential
+    // future use by wrapper scripts or slash commands.
+    const kubeDotfile = path.join(
+      os.homedir(),
+      ".claude",
+      ".current-kube-context",
+    );
+    const kubeDotfileDir = path.dirname(kubeDotfile);
+    fs.mkdirSync(kubeDotfileDir, { recursive: true });
+    fs.writeFileSync(kubeDotfile, context + "\n", {
+      mode: 0o600,
+      encoding: "utf8",
+    });
+  }
+
   return envVars;
 }

@@ -32,6 +32,13 @@
       "command": "npx",
       "args": ["--yes", "@modelcontextprotocol/server-github"],
       "_note": "Package archived 2025-05-29. Successor: ghcr.io/github/github-mcp-server (requires Docker). Using npm package for zero-dependency install."
+    },
+    {
+      "name": "gcp-observability",
+      "scope": "user",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["--yes", "@google-cloud/observability-mcp@0.2.3"]
     }
   ]
 }

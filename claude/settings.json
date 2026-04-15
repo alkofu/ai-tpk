@@ -76,7 +76,19 @@
     "mcp__cloudwatch__get_metric_data",
     "mcp__cloudwatch__get_metric_metadata",
     "mcp__cloudwatch__analyze_metric",
-    "mcp__cloudwatch__get_recommended_metric_alarms"
+    "mcp__cloudwatch__get_recommended_metric_alarms",
+    "mcp__gcp-observability__list_log_entries",
+    "mcp__gcp-observability__list_log_names",
+    "mcp__gcp-observability__list_buckets",
+    "mcp__gcp-observability__list_views",
+    "mcp__gcp-observability__list_sinks",
+    "mcp__gcp-observability__list_log_scopes",
+    "mcp__gcp-observability__list_metric_descriptors",
+    "mcp__gcp-observability__list_time_series",
+    "mcp__gcp-observability__list_alert_policies",
+    "mcp__gcp-observability__list_traces",
+    "mcp__gcp-observability__get_trace",
+    "mcp__gcp-observability__list_group_stats"
   ],
   "hooks": {
     "PermissionRequest": [

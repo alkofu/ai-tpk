@@ -21,10 +21,15 @@ export interface GcpObservabilityConfig {
   project: string;
 }
 
+export interface KubernetesConfig {
+  context: string;
+}
+
 export interface ResolvedConfig {
   grafana?: GrafanaConfig;
   cloudwatch?: CloudWatchConfig;
   gcpObservability?: GcpObservabilityConfig;
+  kubernetes?: KubernetesConfig;
 }
 
 export interface LauncherConfig {
@@ -38,5 +43,8 @@ export interface LauncherConfig {
   };
   gcpObservability?: {
     project: string;
+  };
+  kubernetes?: {
+    context: string;
   };
 }

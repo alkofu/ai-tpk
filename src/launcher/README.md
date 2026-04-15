@@ -59,6 +59,7 @@ The launcher constructs environment variables based on user selections:
 - **Grafana Editor:** Does not set `GRAFANA_DISABLE_WRITE` (read-write mode).
 - **CloudWatch:** Writes the selected AWS profile to `~/.claude/.current-aws-profile` (shared with the CloudWatch MCP wrapper).
 - **GCP Observability:** Sets `GOOGLE_CLOUD_PROJECT` in the environment for `google-auth-library` project ID resolution, and writes the project ID to `~/.claude/.current-gcp-project` (shared with `src/mcp/wrappers/mcp-gcp-observability.sh`). Note: `GOOGLE_CLOUD_PROJECT` is read by the auth library's `getProjectId()` but does **not** auto-populate tool call parameters — users still need to specify `resourceNames`, `parent`, `name`, or `projectId` in each tool call.
+- **Kubernetes:** Sets `K8S_CONTEXT` to the selected context name, which takes priority over the active context in `~/.kube/config` when other kubeconfig env vars are present. Also writes `~/.claude/.current-kube-context`.
 
 ## Persistence Format
 
@@ -70,7 +71,8 @@ The wizard orchestration lives in `main.ts`. Type definitions are in `types.ts`.
 
 - `mcp/grafana.ts` — Cluster YAML parsing and cluster/role selection
 - `mcp/cloudwatch.ts` — AWS profile parsing and profile selection
-- `mcp/gcp-observability.ts` — GCP project list fetching (`loadGcpProjects`), ADC credential check, project ID validation utility, and project selection prompt
+- `mcp/gcp-observability.ts` — ADC credential check, project ID validation, and project prompt
+- `mcp/kubernetes.ts` — `kubectx` context listing, selection prompt, and context switching
 
 Shared utilities (cancellation, prompts) are in `utils.ts` and `prompts.ts`. The `env.ts` module builds environment variables; `config.ts` handles persistence; `launch.ts` executes the final Claude command.
 
@@ -122,8 +124,31 @@ The selected project ID is written to `~/.claude/.current-gcp-project` (mode 060
 
 If the dotfile is absent or empty, and no project was set another way, the wrapper exits with a helpful error pointing the user back to the `myclaude` launcher.
 
+## Kubernetes Configuration
+
+### Prerequisites
+
+`kubectx` must be installed and on `PATH`. A valid `~/.kube/config` with at least one context must exist. The launcher does not install `kubectx` — if it is absent, the launcher exits with a descriptive error pointing to the install instructions.
+
+### Context selection and switching
+
+When "Kubernetes" is selected in the MCP multiselect, the launcher runs `kubectx` (no arguments) to list available contexts and presents a `select` prompt. The previously saved context is offered as the default; if none is saved, the current active context from `kubectl config current-context` is used as the fallback, then the first context in the list.
+
+If the selected context differs from the saved previous context, the launcher runs `kubectx <selected>` to switch the active context in `~/.kube/config` before launching Claude. Re-selecting the same context skips the switch. The switch happens in `main.ts` immediately after the prompt, before `buildEnvVars` is called — see `mcp/kubernetes.ts` (`switchContext`) for the exact behavior.
+
+### What env var and dotfile are written
+
+`buildEnvVars` in `env.ts` sets `K8S_CONTEXT` to the selected context name. The Kubernetes MCP server (`mcp-server-kubernetes`) reads this to determine which context to use, overriding whatever context is currently active in `~/.kube/config`. This override matters when `KUBECONFIG` or other kubeconfig env vars are present in the environment.
+
+`~/.claude/.current-kube-context` is also written (mode 0600) for symmetry with the CloudWatch and GCP patterns, and to support potential future wrapper scripts or slash commands that need the selected context at runtime.
+
+### Persistence
+
+The selected context is saved under `kubernetes.context` in `~/.config/myclaude/config.json` and offered as the default on the next run.
+
 ## See Also
 
 - **`src/mcp/wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
 - **`src/mcp/wrappers/mcp-gcp-observability.sh`** — Bash wrapper that resolves the GCP project from the dotfile and launches the Observability MCP server
+- **`src/launcher/mcp/kubernetes.ts`** — `kubectx` context listing, selection prompt, and context switching logic
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

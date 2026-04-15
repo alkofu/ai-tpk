@@ -14,6 +14,7 @@ export async function selectMcps(
         label: "GCP Observability",
         hint: "GCP project",
       },
+      { value: "kubernetes", label: "Kubernetes", hint: "cluster context" },
     ],
     initialValues: previousSelections,
     required: false,

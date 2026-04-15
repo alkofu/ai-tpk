@@ -323,25 +323,7 @@ Agent-produced artifacts (plans, open-questions files, lessons) are now stored i
 - **Plans** → `~/.ai-tpk/plans/{repo-slug}/` — One subdirectory per repository, containing plan files and associated open-questions files
 - **Lessons** → `~/.ai-tpk/lessons/` — Flat structure for Everwise Scout analysis recommendations (cross-repo)
 
-These directories are created automatically when you run `install.sh`. Existing session data in repo-relative `plans/` and `lessons/` directories is not automatically migrated; you can manually copy them if needed.
-
-**Migrating from repo-relative locations:**
-
-If you have existing plans or lessons in repo-relative directories (e.g., `my-repo/plans/`, `my-repo/lessons/`), you can preserve them by copying them to the new global location:
-
-```bash
-# For plans (in your repo directory)
-mkdir -p ~/.ai-tpk/plans/$(basename $(git rev-parse --show-toplevel))
-cp plans/*.md ~/.ai-tpk/plans/$(basename $(git rev-parse --show-toplevel))/
-
-# For lessons (in your repo directory)
-mkdir -p ~/.ai-tpk/lessons
-cp lessons/*.jsonl ~/.ai-tpk/lessons/
-```
-
-After copying, you can safely delete the old `plans/` and `lessons/` directories from your repositories.
-
-**Trade-off:** Everwise loses access to historical lesson data that was stored in the repo root (`lessons/candidates.jsonl`, `lessons/recurring.jsonl`, and `lessons/validated.jsonl`). If you have important historical lesson data, manually copy it to `~/.ai-tpk/lessons/` using the commands above before using Everwise after upgrading.
+These directories are created automatically when you run `install.sh`.
 
 ### Parallel Sessions via Git Worktrees
 

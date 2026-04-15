@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { select } from "@clack/prompts";
 import type { KubernetesConfig } from "../types.js";
-import { handleCancel } from "../utils.js";
+import { handleCancel } from "../prompts.js";
 
 /**
  * Parses stdout from `kubectx` (no args) into a list of context names.

@@ -1,5 +1,13 @@
-import { multiselect } from "@clack/prompts";
-import { handleCancel } from "./utils.js";
+import { multiselect, isCancel, cancel } from "@clack/prompts";
+
+export function handleCancel(
+  value: unknown,
+): asserts value is NonNullable<unknown> {
+  if (isCancel(value)) {
+    cancel("Operation cancelled.");
+    process.exit(0);
+  }
+}
 
 export async function selectMcps(
   previousSelections: string[],

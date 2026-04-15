@@ -1,13 +1,4 @@
-import { isCancel, cancel, log } from "@clack/prompts";
-
-export function handleCancel(
-  value: unknown,
-): asserts value is NonNullable<unknown> {
-  if (isCancel(value)) {
-    cancel("Operation cancelled.");
-    process.exit(0);
-  }
-}
+import { log } from "@clack/prompts";
 
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);

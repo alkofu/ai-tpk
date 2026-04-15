@@ -4,7 +4,7 @@ import * as os from "node:os";
 import { spawnSync } from "node:child_process";
 import { select } from "@clack/prompts";
 import type { GcpObservabilityConfig } from "../types.js";
-import { handleCancel } from "../utils.js";
+import { handleCancel } from "../prompts.js";
 
 export interface GcloudResult {
   status: number | null;

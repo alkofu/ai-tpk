@@ -3,7 +3,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { select } from "@clack/prompts";
 import type { CloudWatchConfig } from "../types.js";
-import { handleCancel } from "../utils.js";
+import { handleCancel } from "../prompts.js";
 
 const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".aws", "config");
 const DEFAULT_CREDENTIALS_PATH = path.join(os.homedir(), ".aws", "credentials");

@@ -53,8 +53,9 @@ or stash your changes before syncing."
 
 ## Step 7 — Rebase onto refs/remotes/origin/main [write operation — delegate to Bitsmith]
 
-Delegate Steps 7.1 through 7.4 to Bitsmith as a single task. Bitsmith owns the conflict
-resolution loop and reports back only the final outcome (success or abort).
+Delegate Steps 7.1 and 7.2 to Bitsmith as a single task. Bitsmith runs the rebase and, if
+conflicts occur, inline-executes `/resolve-conflicts`. Bitsmith reports back only the final
+outcome (success or abort).
 
 (`refs/remotes/origin/main` is used instead of the `origin/main` shorthand to avoid resolution ambiguity when a local branch named `main` exists.)
 
@@ -65,68 +66,17 @@ resolution loop and reports back only the final outcome (success or abort).
 - If the rebase exits with **zero** → proceed directly to Step 8.
 - If the rebase exits **non-zero** → continue to Step 7.2.
 
-**Step 7.2** — Run: `git diff --name-only --diff-filter=U`
+**Step 7.2** — Inline-execute the `/resolve-conflicts` protocol within the current session.
+Do not spawn a separate slash command session — inline execution preserves session context
+and keeps error handling within `/sync-pr`'s flow.
+(This follows the same inline-execution pattern used in `/merge-pr` Step 5, which
+inline-executes `/sync-pr`.)
 
-- If the output is **empty** (no conflicted files — this is a different rebase error), run
-  `git rebase --abort` as a separate standalone call and abort the entire command, telling the
-  user: "Rebase failed for a reason other than merge conflicts. The rebase has been aborted.
-  Check `git status` for details."
-- If the output lists **more than 10 conflicted files**, run `git rebase --abort` as a separate
-  standalone call and abort the entire command, telling the user: "Too many conflicted files ({N})
-  for automated resolution. The rebase has been aborted. Resolve conflicts manually."
-- If the output lists between 1 and 10 conflicted files (inclusive) → continue to Step 7.3.
+If `/resolve-conflicts` aborts (any abort condition within its protocol), `/sync-pr` also
+aborts — propagate the error message to the user without modification. Do not proceed to
+Step 8.
 
-**Step 7.3 — Resolve conflicts**
-
-A "round" is defined as one attempt to resolve conflicts for the **current commit** being rebased.
-The 3-round limit is **per-commit**: each time `git rebase --continue` succeeds and moves on to
-the next commit (which then stops again with new conflicts), the round counter resets to 0. A
-round only increments when the same commit fails to be resolved and `git rebase --continue` exits
-non-zero again.
-
-For each conflicted file listed:
-
-1. Read the file contents and understand the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
-2. Write a resolved version that **preserves the PR's original changes as the primary intent**.
-   In a rebase, the PR's commits are being replayed onto main — so the PR's logic, behaviour,
-   and scope must be kept intact. The resolution should do the minimum necessary to make the
-   PR's changes apply cleanly against what has changed in main. Do not expand the PR's scope,
-   introduce new behaviour, or favour main's version of a line unless the PR's version is
-   genuinely incompatible. If in doubt, keep the PR's change and adjust only what is
-   structurally required by the conflict.
-3. After writing the resolved file, scan it for remaining conflict markers (`<<<<<<<`, `=======`,
-   `>>>>>>>`). If any remain, re-read and re-resolve.
-   - If markers still persist in the same file after a second attempt, run `git rebase --abort`
-     as a separate standalone call and abort the entire command, telling the user: "Bitsmith was
-     unable to resolve all conflict markers in `<file>`. The rebase has been aborted. Resolve
-     conflicts manually."
-4. Stage each resolved file (confirmed marker-free) with a separate standalone call:
-   `git add <file>`
-
-**Step 7.4** — After all conflicted files are staged, run:
-`GIT_EDITOR=true git rebase --continue`
-
-(The `GIT_EDITOR=true` env var skips the editor prompt for the commit message.)
-
-- If `git rebase --continue` reports that the resulting commit is **empty**, run `git rebase --skip`
-  as a separate standalone call (to skip the now-empty commit) and treat this as a successful
-  continue — proceed to Step 8.
-- If `git rebase --continue` exits with **zero** → print "Conflicts resolved by Bitsmith. Rebase
-  completed successfully." and proceed to Step 8.
-- If `git rebase --continue` exits **non-zero** → run `git diff --name-only --diff-filter=U` as
-  a separate standalone call.
-  - If the output is **empty** (no conflicted files), run `git rebase --abort` as a separate
-    standalone call and abort the entire command, telling the user: "Rebase failed during
-    `--continue` for a reason other than merge conflicts. The rebase has been aborted. Check
-    `git status` for details."
-  - If there are still conflicted files and fewer than 3 rounds have been attempted for this
-    commit → return to Step 7.3 for another resolution round (incrementing the per-commit
-    round counter).
-  - If 3 rounds have been attempted for this commit without success → run `git rebase --abort`
-    as a separate standalone call and abort the entire command, telling the user: "Bitsmith was
-    unable to fully resolve the rebase conflicts after 3 attempts on the same commit. The rebase
-    has been aborted. Resolve conflicts manually by running `git rebase refs/remotes/origin/main`,
-    fixing each conflict, and running `git rebase --continue`."
+If `/resolve-conflicts` completes successfully, proceed to Step 8.
 
 ## Step 8 — Force-push and report success [write operation — delegate to Bitsmith]
 

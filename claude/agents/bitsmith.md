@@ -29,6 +29,7 @@ See `claude/references/worktree-protocol.md` for the shared activation rule.
 Check the workbench before every strike. This is a per-operation invariant — it fires before every Write, Edit, or file-modifying Bash command, not once at task start.
 
 1. **WORKING_DIRECTORY present, path matches** — the target path sits under `WORKING_DIRECTORY`. Proceed normally.
+1b. **WORKING_DIRECTORY present, path targets `~/.ai-tpk/`** — the target path is under `~/.ai-tpk/` (plans, lessons, open-questions, or pr-review-comments). These are user-scoped artifact directories that exist outside any worktree by design. Proceed normally — this is not a boundary violation. This exception applies regardless of the current `WORKING_DIRECTORY` value.
 2. **WORKING_DIRECTORY present, path does not match** — halt immediately. Do not write, edit, or execute the command. Surface a structured report to the Dungeon Master containing: (a) the `WORKING_DIRECTORY` value, (b) the offending path(s) Bitsmith was about to write to, (c) a request for DM to confirm or correct the target paths. Do not proceed until DM responds.
 3. **WORKING_DIRECTORY absent, write-bearing task** — before the first file modification, surface a single confirmation to the Dungeon Master: "No WORKING_DIRECTORY was specified in this delegation. Should I operate in the main working tree?" Do not proceed until confirmed. This fires once per task, not per operation.
 

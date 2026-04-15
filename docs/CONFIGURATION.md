@@ -17,20 +17,23 @@ Pre-configured marketplaces for plugin discovery:
 
 Hooks allow you to run automated checks or tasks at specific points in your Claude workflow.
 
-#### PermissionRequest Hook - Bash Style Enforcement and Request Logging
+#### PermissionRequest Hook - Bash Style Enforcement, Write/Edit Auto-Approve, and Request Logging
 
-Runs when a Bash command falls outside the `allowedTools` list and requires permission.
+Runs when a tool call falls outside the `allowedTools` list and requires permission. Handles both Bash commands and Write/Edit tool calls.
 
 **Behavior:**
 1. Reads the permission request event from stdin
-2. Extracts the Bash command and strips quoted strings to avoid false positives
-3. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`) — denies if found
-4. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands — denies if found
-5. For commands that pass the deny checks: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. If it matches, runs five safety guards; auto-approves if all pass
-6. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
-7. Fails open (no output, exit 0) if `jq` is unavailable
+2. For `Write` and `Edit` tool calls: extracts the `file_path`, normalizes `~` and `$HOME` to the actual home directory, checks for path traversal (`..` as a path component), and auto-approves if the path targets `~/.ai-tpk/`. Falls through to the normal permission dialog for all other paths.
+3. Extracts the Bash command and strips quoted strings to avoid false positives
+4. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`) — denies if found
+5. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands — denies if found
+6. For commands that pass the deny checks: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. If it matches, runs five safety guards; auto-approves if all pass
+7. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
+8. Fails open (no output, exit 0) if `jq` is unavailable
 
-**Why auto-approve?** Claude Code classifies commands containing `$VAR`, `${VAR}`, or `~` as "too-complex" and bypasses `allowedTools` pattern matching in `settings.json`, triggering a permission dialog even when the base command (e.g., `git log`, `mkdir`) is already trusted. The hook closes that gap by performing its own pattern match after neutralizing the expansions.
+**Why auto-approve?** Two distinct gaps are closed by this hook:
+- **Bash with variable expansions:** Claude Code classifies commands containing `$VAR`, `${VAR}`, or `~` as "too-complex" and bypasses `allowedTools` pattern matching in `settings.json`, triggering a permission dialog even when the base command (e.g., `git log`, `mkdir`) is already trusted. The hook closes that gap by performing its own pattern match after neutralizing the expansions.
+- **Write/Edit to `~/.ai-tpk/`:** Claude Code's internal permission matcher does not reliably expand `~` before comparing the requested path against the `Write(~/.ai-tpk/**)` / `Edit(~/.ai-tpk/**)` patterns in `settings.json`, triggering a permission dialog on every write to plan, lesson, and open-questions files. The hook closes that gap by performing its own path normalization and matching at runtime.
 
 **Safety guards (auto-approve path only):**
 
@@ -56,9 +59,10 @@ All guards operate on single-quote-stripped input so that dangerous constructs i
 ```
 2026-04-09T14:27:44Z | agent_type=Bitsmith | agent_id=abc123 | [auto-approved] command=git log --format=$FORMAT
 2026-04-09T14:27:50Z | agent_type=Bitsmith | agent_id=abc123 | command=docker ps
+2026-04-09T14:27:55Z | agent_type=Bitsmith | agent_id=abc123 | [auto-approved] write_path=/home/alice/.ai-tpk/plans/repo/plan.md
 ```
 
-Auto-approved entries include the `[auto-approved]` marker; commands falling through to the permission dialog have no marker.
+Auto-approved entries include the `[auto-approved]` marker; commands and file writes falling through to the permission dialog have no marker. Write/Edit auto-approvals use `write_path=` instead of `command=`.
 
 **Examples:**
 - Denied: `git status && git diff` (contains `&&` — agent is told to split into separate calls)
@@ -71,6 +75,8 @@ Auto-approved entries include the `[auto-approved]` marker; commands falling thr
 - Auto-approved: `mkdir -p $HOME/.config` (matches `mkdir *`)
 - Auto-approved: `ls ~/projects` (matches `ls *`, tilde is a simple expansion)
 - Auto-approved: `gh pr list --repo $REPO` (matches `gh pr *`)
+- Auto-approved: `Write to ~/.ai-tpk/plans/repo/plan.md` (matches user-scoped artifact path; `~` expanded at runtime)
+- Auto-approved: `Edit to $HOME/.ai-tpk/lessons/candidates.jsonl` (matches user-scoped artifact path; `$HOME` expanded at runtime)
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
 - Logged + normal dialog: `grep "a && b" file.txt` (compound operator inside a quoted string — no false positive on deny; no allowedTools pattern match — falls through)
 - Logged + normal dialog: `gh extension install $PKG` (no matching allowedTools pattern for `gh extension`)
@@ -78,6 +84,7 @@ Auto-approved entries include the `[auto-approved]` marker; commands falling thr
 - Logged + normal dialog: `git -c core.editor="vi" diff` (safety guard: `git -c` config injection)
 - Logged + normal dialog: `python3 -c "code"` (safety guard: `python3 -c`)
 - Logged + normal dialog: `sudo rm -rf $DIR` (safety guard: dangerous keyword `sudo`)
+- Logged + normal dialog: `Write to /tmp/output.txt` (path not in allowed set — falls through to normal dialog)
 - Allowed: `echo -n hello`, `git log -n 5` (context-aware: `-n` only blocked in `git commit` context)
 
 #### SessionStart Hook - Terminal Tab Title Restore

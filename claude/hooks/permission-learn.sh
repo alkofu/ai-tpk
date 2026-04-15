@@ -19,6 +19,51 @@ fi
 TOOL_NAME=$(echo "$STDIN_DATA" | jq -r '.tool_name // ""' 2>/dev/null)
 COMMAND=$(echo "$STDIN_DATA" | jq -r '.tool_input.command // ""' 2>/dev/null)
 
+# --- Write/Edit auto-approve: ~/.ai-tpk/ paths ---
+# Write and Edit tool calls carry a plain file_path string, not a shell command.
+# The Bash safety guards (dangerous keywords, git -c injection, etc.) do NOT apply here
+# because file_path is never executed as a shell command.
+# Symlink escapes are not a threat: Write/Edit cannot create symlinks — only
+# `bash ln -s` can, which requires its own separate permission approval.
+if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
+  FILE_PATH=$(echo "$STDIN_DATA" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
+  if [ -n "$FILE_PATH" ]; then
+    # Expand ~ and $HOME to the actual home directory value (no realpath — it fails
+    # on files that don't exist yet, and realpath -m is GNU-only, not available on macOS)
+    NORMALIZED=$(printf '%s' "$FILE_PATH" | sed "s|^\$HOME|$HOME|")
+    NORMALIZED=$(printf '%s' "$NORMALIZED" | sed "s|^~|$HOME|")
+
+    # Path traversal guard: check for .. as a path component (NOT a raw substring match
+    # to avoid false positives on filenames like "file..backup.md").
+    # Matches: /.., /../, ../, and lone ..  but NOT "file..backup"
+    if printf '%s' "$NORMALIZED" | grep -qE '(^|/)\.\.(\/|$)'; then
+      # Traversal detected — fall through to normal permission dialog
+      exit 0
+    fi
+
+    # Auto-approve if path targets ~/.ai-tpk/
+    if printf '%s' "$NORMALIZED" | grep -q "^$HOME/.ai-tpk/"; then
+      TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      LOG_FILE="$HOME/.claude/permission-requests.log"
+      AGENT_ID=$(echo "$STDIN_DATA" | jq -r '.agent_id // "none"' 2>/dev/null)
+      AGENT_TYPE=$(echo "$STDIN_DATA" | jq -r '.agent_type // "none"' 2>/dev/null)
+      printf '%s | agent_type=%s | agent_id=%s | [auto-approved] write_path=%s\n' \
+        "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$NORMALIZED" >> "$LOG_FILE"
+      jq -n '{
+        hookSpecificOutput: {
+          hookEventName: "PermissionRequest",
+          decision: {
+            behavior: "allow"
+          }
+        }
+      }'
+      exit 0
+    fi
+  fi
+  # FILE_PATH empty or path not matched — fall through to normal permission dialog
+  exit 0
+fi
+
 if [ "$TOOL_NAME" != "Bash" ] || [ -z "$COMMAND" ]; then
   exit 0
 fi

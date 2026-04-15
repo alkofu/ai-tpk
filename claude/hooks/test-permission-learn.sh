@@ -51,6 +51,13 @@ make_payload() {
   jq -cn --arg cmd "$command" '{tool_name:"Bash",tool_input:{command:$cmd},agent_id:"test-agent",agent_type:"subagent"}'
 }
 
+# Helper: build a JSON payload for a Write or Edit tool call.
+make_write_payload() {
+  local tool_name="$1"
+  local file_path="$2"
+  jq -cn --arg tn "$tool_name" --arg fp "$file_path" '{tool_name:$tn,tool_input:{file_path:$fp},agent_id:"test-agent",agent_type:"subagent"}'
+}
+
 printf '%s\n\n' '=== permission-learn.sh test harness ==='
 
 # --- AUTO-APPROVE cases ---
@@ -184,6 +191,52 @@ test_case \
   "TC-23: git log --source BRANCH — source flag should not trigger keyword guard" \
   "$(make_payload 'git log --source $BRANCH')" \
   "allow"
+
+# --- Write/Edit AUTO-APPROVE cases ---
+printf '\n%s\n' '-- Write/Edit AUTO-APPROVE cases --'
+
+test_case \
+  "TC-W01: Write to ~/.ai-tpk/plans/repo/plan.md — should auto-approve" \
+  "$(make_write_payload 'Write' "~/.ai-tpk/plans/repo/plan.md")" \
+  "allow"
+
+test_case \
+  "TC-W02: Edit to ~/.ai-tpk/lessons/candidates.jsonl — should auto-approve" \
+  "$(make_write_payload 'Edit' "~/.ai-tpk/lessons/candidates.jsonl")" \
+  "allow"
+
+test_case \
+  "TC-W03: Write with \$HOME expansion to ~/.ai-tpk/plans/repo/plan.md — should auto-approve" \
+  "$(make_write_payload 'Write' "\$HOME/.ai-tpk/plans/repo/plan.md")" \
+  "allow"
+
+test_case \
+  "TC-W04: Write with already-expanded absolute path to ~/.ai-tpk/ — should auto-approve" \
+  "$(make_write_payload 'Write' "$HOME/.ai-tpk/plans/repo/plan.md")" \
+  "allow"
+
+# --- Write/Edit FALLTHROUGH cases ---
+printf '\n%s\n' '-- Write/Edit FALLTHROUGH cases --'
+
+test_case \
+  "TC-W05: Write to /tmp/evil.txt — should NOT auto-approve (fallthrough)" \
+  "$(make_write_payload 'Write' '/tmp/evil.txt')" \
+  "fallthrough"
+
+test_case \
+  "TC-W06: Write with path traversal ~/.ai-tpk/../../etc/passwd — should NOT auto-approve (fallthrough)" \
+  "$(make_write_payload 'Write' '~/.ai-tpk/../../etc/passwd')" \
+  "fallthrough"
+
+test_case \
+  "TC-W07: Edit to ~/.claude/settings.json — should NOT auto-approve (fallthrough)" \
+  "$(make_write_payload 'Edit' '~/.claude/settings.json')" \
+  "fallthrough"
+
+test_case \
+  "TC-W08: Write with empty file_path — should NOT auto-approve (fallthrough)" \
+  "$(make_write_payload 'Write' '')" \
+  "fallthrough"
 
 # --- Summary ---
 printf '\n=== Results: %d passed, %d failed ===\n' "$PASS" "$FAIL"

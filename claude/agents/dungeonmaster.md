@@ -500,6 +500,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login.md` → `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login-open-questions.md`. No worktree prefix is needed — plan files are now at a fixed user-scoped path.
     - **If Pathfinder was NOT invoked this session:** use `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-rename-env-var-open-questions.md`). No worktree prefix is needed.
 
+    **Delegation note:** When delegating this write to Bitsmith while a worktree is active, include in the delegation prompt: "The target path `~/.ai-tpk/plans/...` is a user-scoped artifact directory outside `WORKING_DIRECTORY`. This is an authorized exception to the Path Mismatch Guard per scenario 1b in Bitsmith's definition."
+
     Instruct Bitsmith to append the reservations under a section titled `## Review Reservations - [session date]` with the specific issues noted. If the target file does not exist, Bitsmith should create it first with the following header (substituting the plan name where applicable):
 
       ```

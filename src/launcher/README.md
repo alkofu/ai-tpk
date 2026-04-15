@@ -70,7 +70,7 @@ The wizard orchestration lives in `main.ts`. Type definitions are in `types.ts`.
 
 - `mcp/grafana.ts` — Cluster YAML parsing and cluster/role selection
 - `mcp/cloudwatch.ts` — AWS profile parsing and profile selection
-- `mcp/gcp-observability.ts` — ADC credential check, project ID validation, and project prompt
+- `mcp/gcp-observability.ts` — GCP project list fetching (`loadGcpProjects`), ADC credential check, project ID validation utility, and project selection prompt
 
 Shared utilities (cancellation, prompts) are in `utils.ts` and `prompts.ts`. The `env.ts` module builds environment variables; `config.ts` handles persistence; `launch.ts` executes the final Claude command.
 
@@ -100,17 +100,13 @@ The launcher checks for ADC at startup in this order:
 
 If neither source provides a valid credential file, the launcher exits with a descriptive error before prompting for a project ID.
 
-### Project ID prompt
+### Project selection
 
-When "GCP Observability" is selected in the MCP multiselect, the launcher prompts for a GCP project ID. The previous project is offered as the default. The ID is validated before being accepted:
+When "GCP Observability" is selected in the MCP multiselect, the launcher first runs `gcloud projects list --format=value(projectId) --sort-by=projectId` to fetch the set of accessible projects, then checks ADC credentials, then presents a `select()` prompt listing the available project IDs. If the previously used project is still in the list it is pre-selected; otherwise the first project in the list is selected.
 
-- 6–30 characters
-- Lowercase letters, digits, and hyphens only
-- Must start with a lowercase letter
-- Must not end with a hyphen
-- Must not contain consecutive hyphens
+If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, a descriptive error is logged and the launcher exits before showing the ADC check or the prompt.
 
-The validated project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/myclaude/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
+The selected project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/myclaude/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
 
 ### What GOOGLE_CLOUD_PROJECT does and does not do
 

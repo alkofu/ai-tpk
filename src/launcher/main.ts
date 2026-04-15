@@ -5,6 +5,7 @@ import { loadAwsProfiles, configureCloudWatch } from "./mcp/cloudwatch.js";
 import {
   checkAdcCredentials,
   configureGcpObservability,
+  loadGcpProjects,
 } from "./mcp/gcp-observability.js";
 import { selectMcps } from "./prompts.js";
 import { buildEnvVars } from "./env.js";
@@ -72,6 +73,14 @@ async function main(): Promise<void> {
 
   // GCP Observability configuration
   if (selectedMcps.includes("gcp-observability")) {
+    let projects;
+    try {
+      projects = loadGcpProjects();
+    } catch (err) {
+      log.error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+
     try {
       checkAdcCredentials();
     } catch (err) {
@@ -80,6 +89,7 @@ async function main(): Promise<void> {
     }
 
     const gcpConfig = await configureGcpObservability(
+      projects,
       savedConfig.gcpObservability?.project,
     );
 

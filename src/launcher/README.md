@@ -55,7 +55,7 @@ clusters:
 
 The launcher constructs environment variables based on user selections:
 
-- **Grafana Viewer:** Sets `GRAFANA_DISABLE_WRITE=true`, which `wrappers/mcp-grafana.sh` translates to `--disable-write` for the Grafana MCP server.
+- **Grafana Viewer:** Sets `GRAFANA_DISABLE_WRITE=true`, which `src/wrappers/mcp-grafana.sh` translates to `--disable-write` for the Grafana MCP server.
 - **Grafana Editor:** Does not set `GRAFANA_DISABLE_WRITE` (read-write mode).
 - **CloudWatch:** Writes the selected AWS profile to `~/.claude/.current-aws-profile` (shared with the CloudWatch MCP wrapper).
 
@@ -82,5 +82,5 @@ Users with the legacy `~/bin/grafana-mcp` script can continue using it or switch
 
 ## See Also
 
-- **`wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
+- **`src/wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

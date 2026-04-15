@@ -3,11 +3,15 @@ import * as path from "node:path";
 import * as os from "node:os";
 import type { ResolvedConfig } from "./types.js";
 
-const AWS_PROFILE_DOTFILE = path.join(
-  os.homedir(),
-  ".claude",
-  ".current-aws-profile",
-);
+function writeDotfile(name: string, value: string): void {
+  const dotfilePath = path.join(os.homedir(), ".claude", "." + name);
+  const dotfileDir = path.dirname(dotfilePath);
+  fs.mkdirSync(dotfileDir, { recursive: true });
+  fs.writeFileSync(dotfilePath, value + "\n", {
+    mode: 0o600,
+    encoding: "utf8",
+  });
+}
 
 export function buildEnvVars(config: ResolvedConfig): Record<string, string> {
   const envVars: Record<string, string> = {};
@@ -31,12 +35,7 @@ export function buildEnvVars(config: ResolvedConfig): Record<string, string> {
 
     // mcp-cloudwatch.sh reads ~/.claude/.current-aws-profile and overrides AWS_PROFILE.
     // Write the dotfile so both paths agree — same behaviour as /set-aws-profile command.
-    const dotfileDir = path.dirname(AWS_PROFILE_DOTFILE);
-    fs.mkdirSync(dotfileDir, { recursive: true });
-    fs.writeFileSync(AWS_PROFILE_DOTFILE, profile + "\n", {
-      mode: 0o600,
-      encoding: "utf8",
-    });
+    writeDotfile("current-aws-profile", profile);
   }
 
   if (config.gcpObservability) {
@@ -49,17 +48,7 @@ export function buildEnvVars(config: ResolvedConfig): Record<string, string> {
     // getProjectId() checks the GCLOUD_PROJECT / GOOGLE_CLOUD_PROJECT env var group (GCLOUD_PROJECT first,
     // then GOOGLE_CLOUD_PROJECT), before credential files or the metadata server.
     // It does NOT auto-populate tool call parameters.
-    const gcpDotfile = path.join(
-      os.homedir(),
-      ".claude",
-      ".current-gcp-project",
-    );
-    const gcpDotfileDir = path.dirname(gcpDotfile);
-    fs.mkdirSync(gcpDotfileDir, { recursive: true });
-    fs.writeFileSync(gcpDotfile, project + "\n", {
-      mode: 0o600,
-      encoding: "utf8",
-    });
+    writeDotfile("current-gcp-project", project);
   }
 
   if (config.kubernetes) {
@@ -72,17 +61,7 @@ export function buildEnvVars(config: ResolvedConfig): Record<string, string> {
 
     // Write dotfile for symmetry with cloudwatch/gcp patterns and potential
     // future use by wrapper scripts or slash commands.
-    const kubeDotfile = path.join(
-      os.homedir(),
-      ".claude",
-      ".current-kube-context",
-    );
-    const kubeDotfileDir = path.dirname(kubeDotfile);
-    fs.mkdirSync(kubeDotfileDir, { recursive: true });
-    fs.writeFileSync(kubeDotfile, context + "\n", {
-      mode: 0o600,
-      encoding: "utf8",
-    });
+    writeDotfile("current-kube-context", context);
   }
 
   return envVars;

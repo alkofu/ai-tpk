@@ -19,13 +19,39 @@ fi
 TOOL_NAME=$(echo "$STDIN_DATA" | jq -r '.tool_name // ""' 2>/dev/null)
 COMMAND=$(echo "$STDIN_DATA" | jq -r '.tool_input.command // ""' 2>/dev/null)
 
-# --- Write/Edit auto-approve: ~/.ai-tpk/ paths ---
+# SYNC: Keep this allowlist in sync with the Read(~/.claude/...) entries
+# in allowedTools in claude/settings.json. Update both when adding or
+# removing allowed Read paths.
+# is_allowed_claude_read_path NORMALIZED_PATH
+# Returns 0 (true) if the path is within an explicitly allowed ~/.claude/ subdirectory.
+# Uses a narrow allowlist (not ~/.claude/**) to protect runtime state files from auto-read.
+is_allowed_claude_read_path() {
+  local p="$1"
+  case "$p" in
+    "$HOME/.claude/agents/"*)   return 0 ;;
+    "$HOME/.claude/skills/"*)   return 0 ;;
+    "$HOME/.claude/references/"*) return 0 ;;
+    "$HOME/.claude/commands/"*) return 0 ;;
+    "$HOME/.claude/hooks/"*)    return 0 ;;
+    "$HOME/.claude/wrappers/"*) return 0 ;;
+    "$HOME/.claude/settings.json") return 0 ;;
+    "$HOME/.claude/CLAUDE.md")  return 0 ;;
+    *)                          return 1 ;;
+  esac
+}
+
+# --- Write/Edit/Read auto-approve: file path-based checks ---
+# Write and Edit: auto-approve paths under ~/.ai-tpk/
+# Read: auto-approve paths under allowed ~/.claude/ config subdirectories (see is_allowed_claude_read_path)
+# Symlink escapes: Write/Edit cannot create symlinks; Read follows symlinks, so a
+# symlink guard (readlink -f) is applied to Read's ~/.claude/ auto-approve path only.
 # Write and Edit tool calls carry a plain file_path string, not a shell command.
 # The Bash safety guards (dangerous keywords, git -c injection, etc.) do NOT apply here
 # because file_path is never executed as a shell command.
-# Symlink escapes are not a threat: Write/Edit cannot create symlinks — only
-# `bash ln -s` can, which requires its own separate permission approval.
-if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
+# Symlink note: Write/Edit cannot create or follow symlinks — symlink escapes are
+# not a threat for those tools. Read CAN follow symlinks, so the ~/.claude/ Read
+# auto-approve block includes a dedicated symlink guard (see below).
+if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "Read" ]; then
   FILE_PATH=$(echo "$STDIN_DATA" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
   if [ -n "$FILE_PATH" ]; then
     # Expand ~ and $HOME to the actual home directory value (no realpath — it fails
@@ -47,7 +73,43 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
       LOG_FILE="$HOME/.claude/permission-requests.log"
       AGENT_ID=$(echo "$STDIN_DATA" | jq -r '.agent_id // "none"' 2>/dev/null)
       AGENT_TYPE=$(echo "$STDIN_DATA" | jq -r '.agent_type // "none"' 2>/dev/null)
-      printf '%s | agent_type=%s | agent_id=%s | [auto-approved] write_path=%s\n' \
+      LOG_LABEL="write_path"
+      if [ "$TOOL_NAME" = "Read" ]; then LOG_LABEL="read_path"; fi
+      printf '%s | agent_type=%s | agent_id=%s | [auto-approved] %s=%s\n' \
+        "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$LOG_LABEL" "$NORMALIZED" >> "$LOG_FILE"
+      jq -n '{
+        hookSpecificOutput: {
+          hookEventName: "PermissionRequest",
+          decision: {
+            behavior: "allow"
+          }
+        }
+      }'
+      exit 0
+    fi
+
+    # Auto-approve Read if path targets an allowed ~/.claude/ config subdirectory.
+    # Symlink guard: resolve the symlink chain fully (readlink -f) and re-validate
+    # the canonical target against the allowlist. This prevents symlinks planted under
+    # ~/.claude/ from pointing outside the allowed prefixes.
+    # Note: Write/Edit do not need this guard — they create new files and cannot follow
+    # symlinks to exfiltrate data. Read follows symlinks, so the guard is Read-specific.
+    if [ "$TOOL_NAME" = "Read" ] && is_allowed_claude_read_path "$NORMALIZED"; then
+      # Symlink guard (Read only)
+      if [ -L "$NORMALIZED" ]; then
+        RESOLVED=$(readlink -f "$NORMALIZED" 2>/dev/null)
+        if [ -z "$RESOLVED" ]; then
+          exit 0  # readlink failed — fall through to manual approval
+        fi
+        if ! is_allowed_claude_read_path "$RESOLVED"; then
+          exit 0  # Symlink target is outside allowed prefixes — fall through
+        fi
+      fi
+      TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      LOG_FILE="$HOME/.claude/permission-requests.log"
+      AGENT_ID=$(echo "$STDIN_DATA" | jq -r '.agent_id // "none"' 2>/dev/null)
+      AGENT_TYPE=$(echo "$STDIN_DATA" | jq -r '.agent_type // "none"' 2>/dev/null)
+      printf '%s | agent_type=%s | agent_id=%s | [auto-approved] read_path=%s\n' \
         "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$NORMALIZED" >> "$LOG_FILE"
       jq -n '{
         hookSpecificOutput: {

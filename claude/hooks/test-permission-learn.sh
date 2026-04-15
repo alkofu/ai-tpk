@@ -58,6 +58,13 @@ make_write_payload() {
   jq -cn --arg tn "$tool_name" --arg fp "$file_path" '{tool_name:$tn,tool_input:{file_path:$fp},agent_id:"test-agent",agent_type:"subagent"}'
 }
 
+# Helper: build a JSON payload for a Read tool call.
+make_read_payload() {
+  local file_path="$1"
+  jq -cn --arg fp "$file_path" \
+    '{tool_name:"Read",tool_input:{file_path:$fp},agent_id:"test-agent",agent_type:"subagent"}'
+}
+
 printf '%s\n\n' '=== permission-learn.sh test harness ==='
 
 # --- AUTO-APPROVE cases ---
@@ -236,6 +243,92 @@ test_case \
 test_case \
   "TC-W08: Write with empty file_path — should NOT auto-approve (fallthrough)" \
   "$(make_write_payload 'Write' '')" \
+  "fallthrough"
+
+# --- Read AUTO-APPROVE cases ---
+printf '\n%s\n' '-- Read AUTO-APPROVE cases --'
+
+test_case \
+  "TC-R01: Read ~/.claude/skills/my-skill.md — should auto-approve" \
+  "$(make_read_payload '~/.claude/skills/my-skill.md')" \
+  "allow"
+
+test_case \
+  "TC-R02: Read ~/.claude/agents/some-agent.md with \$HOME prefix — should auto-approve" \
+  "$(make_read_payload "$HOME/.claude/agents/some-agent.md")" \
+  "allow"
+
+test_case \
+  "TC-R03: Read ~/.claude/references/worktree-protocol.md — should auto-approve" \
+  "$(make_read_payload '~/.claude/references/worktree-protocol.md')" \
+  "allow"
+
+test_case \
+  "TC-R04: Read ~/.claude/hooks/permission-learn.sh — should auto-approve" \
+  "$(make_read_payload '~/.claude/hooks/permission-learn.sh')" \
+  "allow"
+
+test_case \
+  "TC-R05: Read ~/.claude/settings.json — should auto-approve" \
+  "$(make_read_payload '~/.claude/settings.json')" \
+  "allow"
+
+test_case \
+  "TC-R06: Read ~/.claude/CLAUDE.md — should auto-approve" \
+  "$(make_read_payload '~/.claude/CLAUDE.md')" \
+  "allow"
+
+test_case \
+  "TC-R07: Read ~/.claude/commands/feature.md — should auto-approve" \
+  "$(make_read_payload '~/.claude/commands/feature.md')" \
+  "allow"
+
+test_case \
+  "TC-R08: Read ~/.claude/wrappers/some-wrapper.sh — should auto-approve" \
+  "$(make_read_payload '~/.claude/wrappers/some-wrapper.sh')" \
+  "allow"
+
+test_case \
+  "TC-R09: Read ~/.ai-tpk/plans/repo/plan.md — should auto-approve (Read enters Write/Edit/Read branch)" \
+  "$(make_read_payload '~/.ai-tpk/plans/repo/plan.md')" \
+  "allow"
+
+# --- Read FALLTHROUGH cases ---
+printf '\n%s\n' '-- Read FALLTHROUGH cases --'
+
+test_case \
+  "TC-R10: Read ~/.ssh/id_rsa — should fall through (not under allowed paths)" \
+  "$(make_read_payload '~/.ssh/id_rsa')" \
+  "fallthrough"
+
+test_case \
+  "TC-R11: Read ~/.claude/../../.ssh/id_rsa — should fall through (path traversal)" \
+  "$(make_read_payload '~/.claude/../../.ssh/id_rsa')" \
+  "fallthrough"
+
+test_case \
+  "TC-R12: Read with empty file_path — should fall through" \
+  "$(make_read_payload '')" \
+  "fallthrough"
+
+test_case \
+  "TC-R13: Read ~/.claude/projects/some-session.jsonl — should fall through (sensitive runtime data)" \
+  "$(make_read_payload '~/.claude/projects/some-session.jsonl')" \
+  "fallthrough"
+
+test_case \
+  "TC-R14: Read ~/.claude/history.jsonl — should fall through (sensitive runtime data)" \
+  "$(make_read_payload '~/.claude/history.jsonl')" \
+  "fallthrough"
+
+test_case \
+  "TC-R15: Read ~/.claude/sessions/abc123.json — should fall through (sensitive runtime data)" \
+  "$(make_read_payload '~/.claude/sessions/abc123.json')" \
+  "fallthrough"
+
+test_case \
+  "TC-R16: Read ~/.claude/paste-cache/item.txt — should fall through (sensitive runtime data)" \
+  "$(make_read_payload '~/.claude/paste-cache/item.txt')" \
   "fallthrough"
 
 # --- Summary ---

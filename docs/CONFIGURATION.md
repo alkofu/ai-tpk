@@ -17,13 +17,16 @@ Pre-configured marketplaces for plugin discovery:
 
 Hooks allow you to run automated checks or tasks at specific points in your Claude workflow.
 
-#### PermissionRequest Hook - Bash Style Enforcement, Write/Edit Auto-Approve, and Request Logging
+#### PermissionRequest Hook - Bash Style Enforcement, Write/Edit/Read Auto-Approve, and Request Logging
 
-Runs when a tool call falls outside the `allowedTools` list and requires permission. Handles both Bash commands and Write/Edit tool calls.
+Runs when a tool call falls outside the `allowedTools` list and requires permission. Handles Bash commands and Write/Edit/Read tool calls.
 
 **Behavior:**
 1. Reads the permission request event from stdin
-2. For `Write` and `Edit` tool calls: extracts the `file_path`, normalizes `~` and `$HOME` to the actual home directory, checks for path traversal (`..` as a path component), and auto-approves if the path targets `~/.ai-tpk/`. Falls through to the normal permission dialog for all other paths.
+2. For `Write`, `Edit`, and `Read` tool calls: extracts the `file_path`, normalizes `~` and `$HOME` to the actual home directory, and checks for path traversal (`..` as a path component). Then:
+   - Auto-approves `Write` and `Edit` calls whose path targets `~/.ai-tpk/`. `Read` calls to `~/.ai-tpk/` are also auto-approved here.
+   - Auto-approves `Read` calls whose path targets an allowed `~/.claude/` config subdirectory or file (agents/, skills/, references/, commands/, hooks/, wrappers/, settings.json, CLAUDE.md). A symlink guard (`readlink -f`) is applied: if the resolved symlink target falls outside the allowlist, the call falls through to the normal dialog instead.
+   - Falls through to the normal permission dialog for all other paths.
 3. Extracts the Bash command and strips quoted strings to avoid false positives
 4. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`) — denies if found
 5. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands — denies if found
@@ -31,9 +34,10 @@ Runs when a tool call falls outside the `allowedTools` list and requires permiss
 7. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
 8. Fails open (no output, exit 0) if `jq` is unavailable
 
-**Why auto-approve?** Two distinct gaps are closed by this hook:
+**Why auto-approve?** Three distinct gaps are closed by this hook:
 - **Bash with variable expansions:** Claude Code classifies commands containing `$VAR`, `${VAR}`, or `~` as "too-complex" and bypasses `allowedTools` pattern matching in `settings.json`, triggering a permission dialog even when the base command (e.g., `git log`, `mkdir`) is already trusted. The hook closes that gap by performing its own pattern match after neutralizing the expansions.
 - **Write/Edit to `~/.ai-tpk/`:** Claude Code's internal permission matcher does not reliably expand `~` before comparing the requested path against the `Write(~/.ai-tpk/**)` / `Edit(~/.ai-tpk/**)` patterns in `settings.json`, triggering a permission dialog on every write to plan, lesson, and open-questions files. The hook closes that gap by performing its own path normalization and matching at runtime.
+- **Read of `~/.claude/` config files:** Agents frequently need to read their own installed configuration (skills, agent definitions, references) from `~/.claude/`. Without hook-level approval, these reads trigger a permission dialog despite being listed in `allowedTools`, because `~` expansion is not reliably applied by Claude Code's internal matcher. The hook closes that gap using an explicit allowlist (`is_allowed_claude_read_path`) that covers only configuration subdirectories — runtime state directories (`projects/`, `sessions/`, `history.jsonl`, etc.) are intentionally excluded and continue to require explicit user approval.
 
 **Safety guards (auto-approve path only):**
 
@@ -60,9 +64,10 @@ All guards operate on single-quote-stripped input so that dangerous constructs i
 2026-04-09T14:27:44Z | agent_type=Bitsmith | agent_id=abc123 | [auto-approved] command=git log --format=$FORMAT
 2026-04-09T14:27:50Z | agent_type=Bitsmith | agent_id=abc123 | command=docker ps
 2026-04-09T14:27:55Z | agent_type=Bitsmith | agent_id=abc123 | [auto-approved] write_path=/home/alice/.ai-tpk/plans/repo/plan.md
+2026-04-09T14:28:02Z | agent_type=Quill | agent_id=def456 | [auto-approved] read_path=/home/alice/.claude/skills/commit-message-guide/SKILL.md
 ```
 
-Auto-approved entries include the `[auto-approved]` marker; commands and file writes falling through to the permission dialog have no marker. Write/Edit auto-approvals use `write_path=` instead of `command=`.
+Auto-approved entries include the `[auto-approved]` marker; calls falling through to the permission dialog have no marker. Write/Edit auto-approvals use `write_path=`; Read auto-approvals use `read_path=`.
 
 **Examples:**
 - Denied: `git status && git diff` (contains `&&` — agent is told to split into separate calls)
@@ -77,6 +82,12 @@ Auto-approved entries include the `[auto-approved]` marker; commands and file wr
 - Auto-approved: `gh pr list --repo $REPO` (matches `gh pr *`)
 - Auto-approved: `Write to ~/.ai-tpk/plans/repo/plan.md` (matches user-scoped artifact path; `~` expanded at runtime)
 - Auto-approved: `Edit to $HOME/.ai-tpk/lessons/candidates.jsonl` (matches user-scoped artifact path; `$HOME` expanded at runtime)
+- Auto-approved: `Read ~/.claude/skills/commit-message-guide/SKILL.md` (allowed config subdirectory)
+- Auto-approved: `Read ~/.claude/agents/bitsmith.md` (allowed config subdirectory)
+- Auto-approved: `Read ~/.claude/CLAUDE.md` (allowed exact-match file)
+- Logged + normal dialog: `Read ~/.claude/projects/proj/conversation.jsonl` (sensitive runtime data — not in allowlist)
+- Logged + normal dialog: `Read ~/.claude/history.jsonl` (sensitive runtime data — not in allowlist)
+- Logged + normal dialog: `Read ~/.ssh/id_rsa` (outside all allowed paths)
 - Logged + normal dialog: `docker ps` (single command not in allowedTools)
 - Logged + normal dialog: `grep "a && b" file.txt` (compound operator inside a quoted string — no false positive on deny; no allowedTools pattern match — falls through)
 - Logged + normal dialog: `gh extension install $PKG` (no matching allowedTools pattern for `gh extension`)

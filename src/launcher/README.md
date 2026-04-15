@@ -55,10 +55,10 @@ clusters:
 
 The launcher constructs environment variables based on user selections:
 
-- **Grafana Viewer:** Sets `GRAFANA_DISABLE_WRITE=true`, which `src/wrappers/mcp-grafana.sh` translates to `--disable-write` for the Grafana MCP server.
+- **Grafana Viewer:** Sets `GRAFANA_DISABLE_WRITE=true`, which `src/mcp/wrappers/mcp-grafana.sh` translates to `--disable-write` for the Grafana MCP server.
 - **Grafana Editor:** Does not set `GRAFANA_DISABLE_WRITE` (read-write mode).
 - **CloudWatch:** Writes the selected AWS profile to `~/.claude/.current-aws-profile` (shared with the CloudWatch MCP wrapper).
-- **GCP Observability:** Sets `GOOGLE_CLOUD_PROJECT` in the environment for `google-auth-library` project ID resolution, and writes the project ID to `~/.claude/.current-gcp-project` (shared with `src/wrappers/mcp-gcp-observability.sh`). Note: `GOOGLE_CLOUD_PROJECT` is read by the auth library's `getProjectId()` but does **not** auto-populate tool call parameters — users still need to specify `resourceNames`, `parent`, `name`, or `projectId` in each tool call.
+- **GCP Observability:** Sets `GOOGLE_CLOUD_PROJECT` in the environment for `google-auth-library` project ID resolution, and writes the project ID to `~/.claude/.current-gcp-project` (shared with `src/mcp/wrappers/mcp-gcp-observability.sh`). Note: `GOOGLE_CLOUD_PROJECT` is read by the auth library's `getProjectId()` but does **not** auto-populate tool call parameters — users still need to specify `resourceNames`, `parent`, `name`, or `projectId` in each tool call.
 
 ## Persistence Format
 
@@ -118,7 +118,7 @@ The validated project ID is written to `~/.claude/.current-gcp-project` (mode 06
 
 ### Wrapper behavior
 
-`src/wrappers/mcp-gcp-observability.sh` resolves the active project at MCP startup:
+`src/mcp/wrappers/mcp-gcp-observability.sh` resolves the active project at MCP startup:
 
 1. Reads `~/.claude/.current-gcp-project` (dotfile takes priority over any env var already set)
 2. Validates the project ID against the same rules as the launcher
@@ -128,6 +128,6 @@ If the dotfile is absent or empty, and no project was set another way, the wrapp
 
 ## See Also
 
-- **`src/wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
-- **`src/wrappers/mcp-gcp-observability.sh`** — Bash wrapper that resolves the GCP project from the dotfile and launches the Observability MCP server
+- **`src/mcp/wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
+- **`src/mcp/wrappers/mcp-gcp-observability.sh`** — Bash wrapper that resolves the GCP project from the dotfile and launches the Observability MCP server
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

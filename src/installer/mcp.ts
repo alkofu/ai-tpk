@@ -38,7 +38,7 @@ export function expandVars(value: string): string {
  * - Throws on malformed JSON or schema violations.
  */
 export function loadMcpServers(repoRoot: string): McpServerConfig[] {
-  const filePath = path.join(repoRoot, "mcp-servers.json");
+  const filePath = path.join(repoRoot, "src/mcp/mcp-servers.json");
 
   let raw: string;
   try {

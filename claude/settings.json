@@ -1,5 +1,7 @@
 {
   "allowedTools": [
+    "Write(~/.ai-tpk/**)",
+    "Edit(~/.ai-tpk/**)",
     "Bash(git *)",
     "Bash(gh pr *)",
     "Bash(gh issue *)",

@@ -6,7 +6,9 @@ import * as os from "node:os";
 import {
   validateGcpProjectId,
   checkAdcCredentials,
+  loadGcpProjects,
 } from "./mcp/gcp-observability.js";
+import type { GcloudRunner } from "./mcp/gcp-observability.js";
 
 // ---------------------------------------------------------------------------
 // Shared temp directory — cleaned up after all tests complete
@@ -175,6 +177,97 @@ describe("checkAdcCredentials", () => {
     assert.ok(
       caughtError!.message.includes("gcloud auth application-default login"),
       "Error message must mention gcloud auth application-default login",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadGcpProjects
+// ---------------------------------------------------------------------------
+
+const runnerNotFound: GcloudRunner = () => {
+  const err = new Error("spawnSync gcloud ENOENT") as NodeJS.ErrnoException;
+  err.code = "ENOENT";
+  return { status: null, stdout: "", stderr: "", error: err };
+};
+
+const runnerNonZeroExit: GcloudRunner = () => ({
+  status: 1,
+  stdout: "",
+  stderr: "ERROR: (gcloud.projects.list) not authenticated",
+});
+
+const runnerEmptyOutput: GcloudRunner = () => ({
+  status: 0,
+  stdout: "   \n  \n  ",
+  stderr: "",
+});
+
+const runnerValidOutput: GcloudRunner = () => ({
+  status: 0,
+  stdout: "alpha-project\ncharlie-project\nbravo-project\n",
+  stderr: "",
+});
+
+const runnerWhitespaceOutput: GcloudRunner = () => ({
+  status: 0,
+  stdout: "\nmy-project\n\nanother-project\n\n",
+  stderr: "",
+});
+
+const runnerTimeout: GcloudRunner = () => ({
+  status: null,
+  stdout: "",
+  stderr: "",
+  signal: "SIGTERM",
+});
+
+describe("loadGcpProjects", () => {
+  it("throws when gcloud is not found on PATH", () => {
+    assert.throws(
+      () => loadGcpProjects(runnerNotFound),
+      (err: unknown) =>
+        err instanceof Error && err.message.includes("gcloud CLI not found"),
+    );
+  });
+
+  it("throws with stderr when gcloud exits non-zero", () => {
+    assert.throws(
+      () => loadGcpProjects(runnerNonZeroExit),
+      (err: unknown) =>
+        err instanceof Error &&
+        err.message.includes("gcloud projects list failed") &&
+        err.message.includes("not authenticated"),
+    );
+  });
+
+  it("throws when gcloud returns empty output", () => {
+    assert.throws(
+      () => loadGcpProjects(runnerEmptyOutput),
+      (err: unknown) =>
+        err instanceof Error && err.message.includes("No GCP projects found"),
+    );
+  });
+
+  it("returns project IDs in the order provided by gcloud", () => {
+    const projects = loadGcpProjects(runnerValidOutput);
+    assert.deepStrictEqual(projects, [
+      "alpha-project",
+      "charlie-project",
+      "bravo-project",
+    ]);
+  });
+
+  it("handles trailing newlines and filters empty lines", () => {
+    const projects = loadGcpProjects(runnerWhitespaceOutput);
+    assert.deepStrictEqual(projects, ["my-project", "another-project"]);
+  });
+
+  it("throws when gcloud times out", () => {
+    assert.throws(
+      () => loadGcpProjects(runnerTimeout),
+      (err: unknown) =>
+        err instanceof Error && err.message.includes("timed out after 15s"),
     );
   });
 });

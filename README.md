@@ -213,7 +213,7 @@ gcloud auth application-default login
 gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 ```
 
-When "GCP Observability" is selected, the launcher checks for valid ADC credentials at startup (checking `GOOGLE_APPLICATION_CREDENTIALS` first, then `~/.config/gcloud/application_default_credentials.json`), then prompts for a GCP project ID. The project ID is validated (6-30 chars, lowercase letters/digits/hyphens, starts with a letter, no trailing hyphen, no consecutive hyphens) and stored in `~/.claude/.current-gcp-project` for the MCP wrapper. The previous project is offered as the default on the next run.
+When "GCP Observability" is selected, the launcher runs `gcloud projects list` to fetch accessible projects, checks for valid ADC credentials (checking `GOOGLE_APPLICATION_CREDENTIALS` first, then `~/.config/gcloud/application_default_credentials.json`), then shows a `select()` prompt with the available project IDs. The previously used project is pre-selected when it is still present in the list. The selected project ID is stored in `~/.claude/.current-gcp-project` for the MCP wrapper and persisted for the next run. If `gcloud` is not installed, not authenticated, or returns no projects, a descriptive error is shown and the launcher exits.
 
 **Note:** `GOOGLE_CLOUD_PROJECT` is used by the auth library for project ID resolution only — it does not auto-populate tool call parameters. Specify `resourceNames`, `parent`, `name`, or `projectId` explicitly in each tool call. The wrapper prints the active project to stderr as a context hint for Claude.
 

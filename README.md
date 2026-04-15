@@ -375,6 +375,10 @@ Reusable capabilities including skill creation, commit message generation, and p
 - **`validate-before-pr`** — Runs lint and format checks (via stack detection: npm, Make, Python, Go, Rust) before opening a PR; gates PR creation on passing checks
 - **`open-pull-request`** — Creates pull requests with conventional naming, draft mode, and pre-flight validation
 
+Additional skills (non-mandatory):
+
+- **`write-reliable-tests`** — Guides authorship and review of deterministic, isolated, and idempotent automated tests across unit, integration, and e2e levels; applied automatically whenever test code is being written or evaluated
+
 ### Slash Commands
 
 Claude Code slash commands provide quick workflow shortcuts. Commands are installed alongside skills and agents into `~/.claude/commands/`.

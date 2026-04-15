@@ -76,20 +76,6 @@ const DEFAULT_ADC_PATH = path.join(
 );
 
 /**
- * Validates a GCP project ID against Google Cloud naming rules:
- * - 6-30 characters
- * - Lowercase letters, digits, and hyphens only
- * - Must start with a lowercase letter
- * - Must not end with a hyphen
- * - Must not contain consecutive hyphens (conservative safety measure --
- *   not explicitly prohibited in GCP documentation, but likely rejected
- *   by GCP's API in practice)
- */
-export function validateGcpProjectId(projectId: string): boolean {
-  return /^[a-z](?!.*--)[a-z0-9-]{4,28}[a-z0-9]$/.test(projectId);
-}
-
-/**
  * Checks that GCP Application Default Credentials (ADC) exist on disk.
  *
  * Resolution order:

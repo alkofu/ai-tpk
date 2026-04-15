@@ -4,7 +4,6 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import {
-  validateGcpProjectId,
   checkAdcCredentials,
   loadGcpProjects,
 } from "./mcp/gcp-observability.js";
@@ -31,68 +30,6 @@ function writeTempFile(name: string, content: string): string {
   fs.writeFileSync(filePath, content, "utf8");
   return filePath;
 }
-
-// ---------------------------------------------------------------------------
-// validateGcpProjectId
-// ---------------------------------------------------------------------------
-
-describe("validateGcpProjectId", () => {
-  describe("valid inputs", () => {
-    it('accepts "my-project-123"', () => {
-      assert.ok(validateGcpProjectId("my-project-123"));
-    });
-
-    it('accepts "a12345" (6 chars, minimum length)', () => {
-      assert.ok(validateGcpProjectId("a12345"));
-    });
-
-    it('accepts "abcdef-ghijkl-mnopqr-stuvwx-yz" (30 chars, maximum length)', () => {
-      assert.ok(validateGcpProjectId("abcdef-ghijkl-mnopqr-stuvwx-yz"));
-    });
-  });
-
-  describe("invalid inputs", () => {
-    it('rejects "short" (5 chars, below minimum)', () => {
-      assert.ok(!validateGcpProjectId("short"));
-    });
-
-    it('rejects "My-Project" (uppercase letters)', () => {
-      assert.ok(!validateGcpProjectId("My-Project"));
-    });
-
-    it('rejects "1-starts-with-digit" (must start with a letter)', () => {
-      assert.ok(!validateGcpProjectId("1-starts-with-digit"));
-    });
-
-    it('rejects "ends-with-hyphen-" (must not end with a hyphen)', () => {
-      assert.ok(!validateGcpProjectId("ends-with-hyphen-"));
-    });
-
-    it('rejects "has spaces" (spaces not allowed)', () => {
-      assert.ok(!validateGcpProjectId("has spaces"));
-    });
-
-    it('rejects "has_underscores" (underscores not allowed)', () => {
-      assert.ok(!validateGcpProjectId("has_underscores"));
-    });
-
-    it('rejects "" (empty string)', () => {
-      assert.ok(!validateGcpProjectId(""));
-    });
-
-    it("rejects a 31-character string (above maximum length)", () => {
-      assert.ok(!validateGcpProjectId("a".repeat(31)));
-    });
-
-    it('rejects "a--bcdef" (consecutive hyphens)', () => {
-      assert.ok(!validateGcpProjectId("a--bcdef"));
-    });
-
-    it('rejects "abc--def-ghijk" (consecutive hyphens in middle of valid-length string)', () => {
-      assert.ok(!validateGcpProjectId("abc--def-ghijk"));
-    });
-  });
-});
 
 // ---------------------------------------------------------------------------
 // checkAdcCredentials

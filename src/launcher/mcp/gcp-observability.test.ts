@@ -3,11 +3,8 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import {
-  checkAdcCredentials,
-  loadGcpProjects,
-} from "./mcp/gcp-observability.js";
-import type { GcloudRunner } from "./mcp/gcp-observability.js";
+import { checkAdcCredentials, loadGcpProjects } from "./gcp-observability.js";
+import type { GcloudRunner } from "./gcp-observability.js";
 
 // ---------------------------------------------------------------------------
 // Shared temp directory — cleaned up after all tests complete

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { loadAwsProfiles, parseProfileSections } from "./mcp/cloudwatch.js";
+import { loadAwsProfiles, parseProfileSections } from "./cloudwatch.js";
 
 // ---------------------------------------------------------------------------
 // Shared temp directory — cleaned up after all tests complete

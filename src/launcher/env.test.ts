@@ -17,12 +17,17 @@ import type { ResolvedConfig, GrafanaCluster } from "./types.js";
 
 const dotfileDir = path.join(os.homedir(), ".claude");
 const dotfilePath = path.join(dotfileDir, ".current-aws-profile");
+const gcpDotfilePath = path.join(dotfileDir, ".current-gcp-project");
 
 let priorDotfileContent: string | null = null;
+let priorGcpDotfileContent: string | null = null;
 
 before(() => {
   if (fs.existsSync(dotfilePath)) {
     priorDotfileContent = fs.readFileSync(dotfilePath, "utf8");
+  }
+  if (fs.existsSync(gcpDotfilePath)) {
+    priorGcpDotfileContent = fs.readFileSync(gcpDotfilePath, "utf8");
   }
 });
 
@@ -35,6 +40,16 @@ after(() => {
     });
   } else if (fs.existsSync(dotfilePath)) {
     fs.rmSync(dotfilePath);
+  }
+
+  if (priorGcpDotfileContent !== null) {
+    fs.mkdirSync(dotfileDir, { recursive: true });
+    fs.writeFileSync(gcpDotfilePath, priorGcpDotfileContent, {
+      mode: 0o600,
+      encoding: "utf8",
+    });
+  } else if (fs.existsSync(gcpDotfilePath)) {
+    fs.rmSync(gcpDotfilePath);
   }
 });
 
@@ -115,5 +130,37 @@ describe("buildEnvVars", () => {
     const config: ResolvedConfig = {};
     const env = buildEnvVars(config);
     assert.deepStrictEqual(env, {});
+  });
+
+  it("GCP Observability only: returns GOOGLE_CLOUD_PROJECT", () => {
+    const config: ResolvedConfig = {
+      gcpObservability: { project: "my-gcp-project" },
+    };
+    const env = buildEnvVars(config);
+    assert.strictEqual(env["GOOGLE_CLOUD_PROJECT"], "my-gcp-project");
+    assert.ok(
+      !Object.prototype.hasOwnProperty.call(env, "AWS_PROFILE"),
+      "AWS_PROFILE must not be present when no CloudWatch config",
+    );
+  });
+
+  it("GCP Observability + CloudWatch combined: both keys present", () => {
+    const config: ResolvedConfig = {
+      cloudwatch: { profile: "prod" },
+      gcpObservability: { project: "my-gcp-project" },
+    };
+    const env = buildEnvVars(config);
+    assert.strictEqual(env["AWS_PROFILE"], "prod");
+    assert.strictEqual(env["GOOGLE_CLOUD_PROJECT"], "my-gcp-project");
+  });
+
+  it("GCP Observability + Grafana combined: all keys merged", () => {
+    const config: ResolvedConfig = {
+      grafana: { cluster: fakeCluster, role: "viewer" },
+      gcpObservability: { project: "my-gcp-project" },
+    };
+    const env = buildEnvVars(config);
+    assert.strictEqual(env["GRAFANA_URL"], fakeCluster.url);
+    assert.strictEqual(env["GOOGLE_CLOUD_PROJECT"], "my-gcp-project");
   });
 });

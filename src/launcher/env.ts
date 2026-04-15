@@ -39,5 +39,28 @@ export function buildEnvVars(config: ResolvedConfig): Record<string, string> {
     });
   }
 
+  if (config.gcpObservability) {
+    const project = config.gcpObservability.project;
+    envVars["GOOGLE_CLOUD_PROJECT"] = project;
+
+    // mcp-gcp-observability.sh reads ~/.claude/.current-gcp-project and overrides GOOGLE_CLOUD_PROJECT.
+    // Write the dotfile so both paths agree.
+    // Note: GOOGLE_CLOUD_PROJECT is used by google-auth-library's getProjectId() for project ID resolution.
+    // getProjectId() checks the GCLOUD_PROJECT / GOOGLE_CLOUD_PROJECT env var group (GCLOUD_PROJECT first,
+    // then GOOGLE_CLOUD_PROJECT), before credential files or the metadata server.
+    // It does NOT auto-populate tool call parameters.
+    const gcpDotfile = path.join(
+      os.homedir(),
+      ".claude",
+      ".current-gcp-project",
+    );
+    const gcpDotfileDir = path.dirname(gcpDotfile);
+    fs.mkdirSync(gcpDotfileDir, { recursive: true });
+    fs.writeFileSync(gcpDotfile, project + "\n", {
+      mode: 0o600,
+      encoding: "utf8",
+    });
+  }
+
   return envVars;
 }

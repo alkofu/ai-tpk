@@ -17,9 +17,14 @@ export interface CloudWatchConfig {
   profile: string;
 }
 
+export interface GcpObservabilityConfig {
+  project: string;
+}
+
 export interface ResolvedConfig {
   grafana?: GrafanaConfig;
   cloudwatch?: CloudWatchConfig;
+  gcpObservability?: GcpObservabilityConfig;
 }
 
 export interface LauncherConfig {
@@ -30,5 +35,8 @@ export interface LauncherConfig {
   };
   cloudwatch?: {
     profile: string;
+  };
+  gcpObservability?: {
+    project: string;
   };
 }

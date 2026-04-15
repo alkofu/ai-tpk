@@ -150,7 +150,7 @@ MCP servers are available in all repositories once configured. For detailed info
 
 ### myclaude — Session Launcher
 
-The `myclaude` command is an interactive wizard that configures MCP environment variables and launches Claude with the Dungeon Master agent. Instead of manually exporting environment variables before each session, you run `myclaude` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile), then launch a pre-configured Claude session.
+The `myclaude` command is an interactive wizard that configures MCP environment variables and launches Claude with the Dungeon Master agent. Instead of manually exporting environment variables before each session, you run `myclaude` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
 
 **Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/myclaude`.
 
@@ -162,8 +162,8 @@ myclaude
 
 The wizard will present a multi-step flow:
 
-1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana and/or CloudWatch)
-2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch)
+1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, and/or GCP Observability)
+2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability)
 3. **Launch** — Claude opens with `--agent dungeonmaster` and the correct environment variables set
 
 **Persistence:** Your last-used selections are saved to `~/.config/myclaude/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
@@ -204,6 +204,19 @@ The launcher reads AWS profiles from `~/.aws/config` (preferred) or `~/.aws/cred
 
 **Note:** This is equivalent to running `/set-aws-profile` in Claude — the launcher and the slash command write to the same dotfile, so they stay in sync.
 
+#### GCP Observability Configuration
+
+Before using GCP Observability, authenticate with Application Default Credentials (ADC):
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+```
+
+When "GCP Observability" is selected, the launcher checks for valid ADC credentials at startup (checking `GOOGLE_APPLICATION_CREDENTIALS` first, then `~/.config/gcloud/application_default_credentials.json`), then prompts for a GCP project ID. The project ID is validated (6-30 chars, lowercase letters/digits/hyphens, starts with a letter, no trailing hyphen, no consecutive hyphens) and stored in `~/.claude/.current-gcp-project` for the MCP wrapper. The previous project is offered as the default on the next run.
+
+**Note:** `GOOGLE_CLOUD_PROJECT` is used by the auth library for project ID resolution only — it does not auto-populate tool call parameters. Specify `resourceNames`, `parent`, `name`, or `projectId` explicitly in each tool call. The wrapper prints the active project to stderr as a context hint for Claude.
+
 #### Environment Variables Set by myclaude
 
 When you select Grafana with Viewer role, the launcher sets:
@@ -222,6 +235,11 @@ GRAFANA_SERVICE_ACCOUNT_TOKEN={editor_token}
 When you select CloudWatch:
 ```
 AWS_PROFILE={profile}
+```
+
+When you select GCP Observability:
+```
+GOOGLE_CLOUD_PROJECT={project_id}
 ```
 
 These variables are passed to `claude --agent dungeonmaster`, and they flow through to all MCP server subprocesses.

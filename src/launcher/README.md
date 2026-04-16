@@ -26,6 +26,32 @@ After installation via `./install.sh`, the launcher is available as:
 myclaude
 ```
 
+## Startup Behavior
+
+**First run** (no saved config): the wizard goes straight to MCP selection. Choices are saved to `~/.config/myclaude/config.json` after you complete the flow.
+
+**Subsequent runs** (saved config exists): a summary screen is shown before any prompts.
+
+```
+┌  myclaude — Session Launcher
+│
+◆  Current Configuration
+│  Grafana: cluster prod-us-east, role viewer
+│  CloudWatch: profile my-aws-profile
+└
+◆  What would you like to do?
+│  ● Launch  (start Claude with current config)
+│  ○ Configure  (change MCP settings)
+└
+```
+
+| Action    | Key                | Effect                                                                     |
+| --------- | ------------------ | -------------------------------------------------------------------------- |
+| Launch    | Enter              | Launches Claude immediately with the saved config. Config is not re-saved. |
+| Configure | Arrow-down + Enter | Enters the full MCP selection flow. Config is re-saved on completion.      |
+
+If the saved Grafana cluster ID no longer exists in `~/.config/grafana-clusters.yaml`, the launch path is skipped and the configure flow starts automatically with a warning.
+
 ## Testing
 
 Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`env.test.ts`, `config.test.ts`, `utils.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
@@ -67,7 +93,7 @@ User selections are saved to `~/.config/myclaude/config.json` with mode 0600. If
 
 ## Architecture
 
-The wizard orchestration lives in `main.ts`. Type definitions are in `types.ts`. MCP-specific logic is split across:
+The wizard orchestration lives in `main.ts`. The summary screen gate (`promptSummaryAction`) is in `summary.ts`; the logic that reconstructs a `ResolvedConfig` from persisted data without re-prompting is in `resolve.ts`. Type definitions are in `types.ts`. MCP-specific logic is split across:
 
 - `mcp/grafana.ts` — Cluster YAML parsing and cluster/role selection
 - `mcp/cloudwatch.ts` — AWS profile parsing and profile selection

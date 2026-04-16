@@ -3,7 +3,8 @@
 # Invoked as a command hook -- no LLM, millisecond latency
 # Reads event JSON from stdin, appends timestamped entry to raw log
 
-LOG_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/logs"
+REPO_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+LOG_DIR="$HOME/.ai-tpk/logs/$REPO_SLUG"
 LOG_FILE="$LOG_DIR/talekeeper-raw.jsonl"
 
 mkdir -p "$LOG_DIR"

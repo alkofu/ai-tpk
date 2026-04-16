@@ -122,7 +122,7 @@ Runs at the start of every Claude Code session to restore a previously stored te
 
 Runs after every sub-agent completion to capture raw session event data.
 
-**Purpose:** Appends raw sub-agent completion events to `logs/talekeeper-raw.jsonl` for later enrichment. Script: `claude/hooks/talekeeper-capture.sh`.
+**Purpose:** Appends raw sub-agent completion events to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw.jsonl` for later enrichment. Script: `claude/hooks/talekeeper-capture.sh`.
 
 **Non-obvious behavior:** Filters out `hook-agent-*` events — Stop hook agents are not real sub-agents and must not pollute the log. Always exits 0; logging must never block the session.
 
@@ -140,7 +140,7 @@ Processes the raw sub-agent event log captured during the session into a structu
 
 **Enriched Chronicle Schema:**
 
-Each JSONL line in `logs/talekeeper-{session_id}.jsonl` contains:
+Each JSONL line in `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-{session_id}.jsonl` contains:
 
 | Field | Type | Description |
 |-------|------|-------------|

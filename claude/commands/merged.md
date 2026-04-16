@@ -194,4 +194,4 @@ Populate the fields as follows:
 - **Branch deleted:** `<branch>`, or "skipped (detached HEAD)" if Step 8 was skipped, or "skipped (see warning)" if Step 8 failed.
 - **Current branch:** main (up to date)
 - **Plan files cleaned:** the list of deleted file names from Step 10a, or "none" if Step 10a found no files, or "skipped (no SESSION_TS)" if Step 10a was skipped entirely.
-- **Token usage:** read the session's enriched chronicle file (glob `logs/talekeeper-*.jsonl` in the repo root, select most recently modified). Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` using `jq`. Report as "{input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read". If unavailable, report "unavailable".
+- **Token usage:** read the session's enriched chronicle file (glob `~/.ai-tpk/logs/<repo-slug>/talekeeper-*.jsonl`, select most recently modified). Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` using `jq`. Report as "{input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read". If unavailable, report "unavailable".

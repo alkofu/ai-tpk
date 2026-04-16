@@ -4,7 +4,7 @@ import * as os from "node:os";
 import { parse as parseYaml } from "yaml";
 import { log, select, cancel } from "@clack/prompts";
 import type { GrafanaCluster, GrafanaConfig, GrafanaRole } from "../types.js";
-import { handleCancel } from "../utils.js";
+import { handleCancel } from "../prompts.js";
 
 const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
@@ -101,7 +101,10 @@ export async function configureGrafana(
       label: c.name,
       hint: c.url,
     })),
-    initialValue: previousClusterId ?? clusters[0]?.id,
+    initialValue:
+      previousClusterId && clusters.some((c) => c.id === previousClusterId)
+        ? previousClusterId
+        : clusters[0]?.id,
   });
   handleCancel(clusterValue);
 

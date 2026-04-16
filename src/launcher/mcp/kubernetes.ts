@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { select } from "@clack/prompts";
 import type { KubernetesConfig } from "../types.js";
-import { handleCancel } from "../utils.js";
+import { handleCancel } from "../prompts.js";
 
 /**
  * Parses stdout from `kubectx` (no args) into a list of context names.
@@ -85,7 +85,10 @@ export async function configureKubernetes(
   contexts: string[],
   previousContext?: string,
 ): Promise<KubernetesConfig> {
-  const initialValue = previousContext || getCurrentContext() || contexts[0];
+  const initialValue =
+    previousContext && contexts.includes(previousContext)
+      ? previousContext
+      : getCurrentContext() || contexts[0];
 
   const options = contexts.map((ctx) => ({ value: ctx, label: ctx }));
 

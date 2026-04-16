@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parseKubectxOutput } from "./mcp/kubernetes.js";
+import { parseKubectxOutput } from "./kubernetes.js";
 
 // Note: loadKubectxContexts() and switchContext() invoke spawnSync("kubectx", ...)
 // which requires kubectx on PATH. Their error paths (ENOENT, non-zero exit, empty

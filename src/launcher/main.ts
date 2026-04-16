@@ -1,4 +1,5 @@
-import { intro, outro, log } from "@clack/prompts";
+import { spawnSync } from "node:child_process";
+import { intro, outro } from "@clack/prompts";
 import { loadConfig, saveConfig } from "./config.js";
 import { loadGrafanaClusters, configureGrafana } from "./mcp/grafana.js";
 import { loadAwsProfiles, configureCloudWatch } from "./mcp/cloudwatch.js";
@@ -14,7 +15,7 @@ import {
 } from "./mcp/kubernetes.js";
 import { selectMcps } from "./prompts.js";
 import { buildEnvVars } from "./env.js";
-import { launchClaude } from "./launch.js";
+import { tryLoad } from "./utils.js";
 import type { ResolvedConfig, LauncherConfig } from "./types.js";
 
 async function main(): Promise<void> {
@@ -34,13 +35,7 @@ async function main(): Promise<void> {
 
   // Grafana configuration
   if (selectedMcps.includes("grafana")) {
-    let clusters;
-    try {
-      clusters = loadGrafanaClusters();
-    } catch (err) {
-      log.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
+    const clusters = tryLoad(() => loadGrafanaClusters(), "grafana");
 
     const grafanaConfig = await configureGrafana(
       clusters,
@@ -57,13 +52,7 @@ async function main(): Promise<void> {
 
   // CloudWatch configuration
   if (selectedMcps.includes("cloudwatch")) {
-    let profiles;
-    try {
-      profiles = loadAwsProfiles();
-    } catch (err) {
-      log.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
+    const profiles = tryLoad(() => loadAwsProfiles(), "cloudwatch");
 
     const cwConfig = await configureCloudWatch(
       profiles,
@@ -78,20 +67,8 @@ async function main(): Promise<void> {
 
   // GCP Observability configuration
   if (selectedMcps.includes("gcp-observability")) {
-    let projects;
-    try {
-      projects = loadGcpProjects();
-    } catch (err) {
-      log.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
-
-    try {
-      checkAdcCredentials();
-    } catch (err) {
-      log.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
+    const projects = tryLoad(() => loadGcpProjects(), "gcp");
+    tryLoad(() => checkAdcCredentials(), "gcp-adc");
 
     const gcpConfig = await configureGcpObservability(
       projects,
@@ -106,13 +83,7 @@ async function main(): Promise<void> {
 
   // Kubernetes configuration
   if (selectedMcps.includes("kubernetes")) {
-    let contexts;
-    try {
-      contexts = loadKubectxContexts();
-    } catch (err) {
-      log.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
+    const contexts = tryLoad(() => loadKubectxContexts(), "kubernetes");
 
     const k8sConfig = await configureKubernetes(
       contexts,
@@ -128,41 +99,62 @@ async function main(): Promise<void> {
 
   // Switch Kubernetes context AFTER config is persisted (avoids inconsistency if switchContext fails)
   if (resolved.kubernetes !== undefined) {
-    try {
-      switchContext(
-        resolved.kubernetes.context,
-        savedConfig.kubernetes?.context,
-      );
-    } catch (err) {
-      log.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
+    tryLoad(
+      () =>
+        switchContext(
+          resolved.kubernetes!.context,
+          savedConfig.kubernetes?.context,
+        ),
+      "kubernetes-switch",
+    );
   }
 
   // Build env vars summary for outro
   const envVars = buildEnvVars(resolved);
-  const lines: string[] = [];
-  if (resolved.grafana) {
-    lines.push(
-      `Grafana: ${resolved.grafana.cluster.name} (${resolved.grafana.role})`,
-    );
-  }
-  if (resolved.cloudwatch) {
-    lines.push(`CloudWatch: ${resolved.cloudwatch.profile}`);
-  }
-  if (resolved.gcpObservability) {
-    lines.push(`GCP Observability: ${resolved.gcpObservability.project}`);
-  }
-  if (resolved.kubernetes) {
-    lines.push(`Kubernetes: ${resolved.kubernetes.context}`);
-  }
+  const summaryParts: Array<{
+    config: unknown;
+    label: string;
+    detail: string;
+  }> = [
+    {
+      config: resolved.grafana,
+      label: "Grafana",
+      detail: resolved.grafana
+        ? `${resolved.grafana.cluster.name} (${resolved.grafana.role})`
+        : "",
+    },
+    {
+      config: resolved.cloudwatch,
+      label: "CloudWatch",
+      detail: resolved.cloudwatch?.profile ?? "",
+    },
+    {
+      config: resolved.gcpObservability,
+      label: "GCP Observability",
+      detail: resolved.gcpObservability?.project ?? "",
+    },
+    {
+      config: resolved.kubernetes,
+      label: "Kubernetes",
+      detail: resolved.kubernetes?.context ?? "",
+    },
+  ];
+  const lines = summaryParts
+    .filter((p) => p.config)
+    .map((p) => `${p.label}: ${p.detail}`);
   if (lines.length === 0) {
     lines.push("No MCPs configured — launching Claude with current env.");
   }
 
   outro(`Launching: ${lines.join(" · ")}`);
 
-  launchClaude(envVars);
+  // Launch Claude with merged env vars
+  const env = { ...process.env, ...envVars };
+  const result = spawnSync("claude", ["--agent", "dungeonmaster"], {
+    stdio: "inherit",
+    env,
+  });
+  process.exit(result.status ?? 1);
 }
 
 main().catch((err: unknown) => {

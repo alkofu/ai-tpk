@@ -28,7 +28,7 @@ myclaude
 
 ## Testing
 
-Tests are colocated with source as `*.test.ts` files in `src/launcher/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`env.test.ts`, `config.test.ts`, `utils.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -71,10 +71,10 @@ The wizard orchestration lives in `main.ts`. Type definitions are in `types.ts`.
 
 - `mcp/grafana.ts` — Cluster YAML parsing and cluster/role selection
 - `mcp/cloudwatch.ts` — AWS profile parsing and profile selection
-- `mcp/gcp-observability.ts` — ADC credential check, project ID validation, and project prompt
+- `mcp/gcp-observability.ts` — ADC credential check and project prompt
 - `mcp/kubernetes.ts` — `kubectx` context listing, selection prompt, and context switching
 
-Shared utilities (cancellation, prompts) are in `utils.ts` and `prompts.ts`. The `env.ts` module builds environment variables; `config.ts` handles persistence; `launch.ts` executes the final Claude command.
+Shared utilities are split across `utils.ts` (exports `errorMessage` and `tryLoad`) and `prompts.ts` (exports `handleCancel` and `selectMcps`). The `env.ts` module builds environment variables (using a private `writeDotfile` helper); `config.ts` handles persistence. Claude is launched inline in `main.ts` via `spawnSync`.
 
 ## Integration with install.sh
 
@@ -119,7 +119,7 @@ The selected project ID is written to `~/.claude/.current-gcp-project` (mode 060
 `src/mcp/wrappers/mcp-gcp-observability.sh` resolves the active project at MCP startup:
 
 1. Reads `~/.claude/.current-gcp-project` (dotfile takes priority over any env var already set)
-2. Validates the project ID against the same rules as the launcher
+2. Validates the project ID format (lowercase letters, digits, hyphens; 6-30 characters; must start with a letter and not end with a hyphen)
 3. Exports `GOOGLE_CLOUD_PROJECT` and launches `@google-cloud/observability-mcp@0.2.3` via `npx`
 
 If the dotfile is absent or empty, and no project was set another way, the wrapper exits with a helpful error pointing the user back to the `myclaude` launcher.

@@ -3,7 +3,7 @@ name: knotcutter
 color: yellow
 description: "Radical simplification specialist for complexity elimination reviews."
 tools: "Read, Grep, Glob, Bash"
-model: claude-opus-4-6
+model: claude-opus-4-7
 permissionMode: auto
 level: 3
 mandatory: false

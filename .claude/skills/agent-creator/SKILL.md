@@ -27,7 +27,7 @@ Start by understanding what the agent should do:
 2. **When should this agent be invoked?** (what user requests or scenarios)
 3. **What should it produce?** (output format, deliverables)
 4. **What tools does it need?** (Read, Write, Edit, Bash, Grep, Glob, Task, etc.)
-5. **What model should power it?** (claude-sonnet-4-6, claude-opus-4-6, claude-haiku-4-5)
+5. **What model should power it?** (claude-sonnet-4-6, claude-opus-4-7, claude-haiku-4-5)
 
 ### 2. Research Existing Agents
 
@@ -216,7 +216,7 @@ description: "Security vulnerability detection specialist (OWASP Top 10, secrets
 
 Select based on the agent's needs:
 
-- **claude-opus-4-6**: Complex reasoning, planning, security analysis
+- **claude-opus-4-7**: Complex reasoning, planning, security analysis
 - **claude-sonnet-4-6**: General-purpose work, orchestration, balanced tasks
 - **claude-haiku-4-5**: Fast, simple, straightforward tasks
 
@@ -277,7 +277,7 @@ For agents that analyze but never modify code:
 ---
 name: riskmancer
 description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
-model: claude-opus-4-6
+model: claude-opus-4-7
 level: 3
 disallowedTools: Write, Edit
 ---
@@ -349,7 +349,7 @@ For agents that research and plan but don't execute:
 ---
 name: pathfinder
 description: "Strategic planning consultant with interview workflow"
-model: claude-opus-4-6
+model: claude-opus-4-7
 level: 4
 tools: "Read, Write, Grep, Glob, Bash, Agent"
 ---

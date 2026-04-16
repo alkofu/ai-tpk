@@ -191,7 +191,7 @@ Claude Code loads instructions at two levels:
 
 **Behavioral constraints** — directives that govern how Claude Code behaves before and during execution:
 
-- **Bash Command Style** — prohibits command chaining (`&&`, `;`) and process substitution; each command must be issued as a standalone Bash call
+- **Bash Command Style** — prohibits command chaining (`&&`, `;`), process substitution, and command substitution (`$(...)`) or heredoc patterns in git commit commands; each command must be issued as a standalone Bash call; git commits must use multiple `-m` flags instead of shell constructs
 - **Think Before Coding** — requires surfacing ambiguous interpretations before acting, disclosing non-obvious assumptions, proposing simpler alternatives when they exist, and stopping to ask rather than guessing when context is insufficient
 
 ### Project-Level Instructions (.claude/CLAUDE.md)
@@ -221,7 +221,7 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 ### Available References
 
-- **`bash-style.md`** — Required Bash command style for all agents with Bash tool access. Defines three enforced rules: no compound commands (`&&`, `;`), no process substitution (`<(`, `>(`), and no `--no-verify` on git commands. The PermissionRequest hook enforces all three rules automatically.
+- **`bash-style.md`** — Required Bash command style for all agents with Bash tool access. Defines four enforced rules: no compound commands (`&&`, `;`), no process substitution (`<(`, `>(`), no `--no-verify` on git commands, and no command substitution (`$(...)`) or heredoc patterns in git commit commands (use multiple `-m` flags instead). The PermissionRequest hook enforces the first three rules automatically; the fourth is an instruction-level override of Claude Code's built-in commit pattern.
 
 - **`implementation-standards.md`** — Shared behavioral norms for implementation, planning, and review agents: Minimal Diff, YAGNI, and Test-First Protocol. Bitsmith, Pathfinder, Ruinor, and Knotcutter cite this as the canonical source. Each agent may elaborate with role-specific depth in its own definition file.
 

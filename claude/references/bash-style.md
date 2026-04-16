@@ -68,6 +68,53 @@ Do not use `git commit --no-verify`, `git commit -n`, or `git push --no-verify`.
 
 If a pre-commit or pre-push hook fails, investigate and fix the underlying issue rather than bypassing it.
 
+## Rule: No Command Substitution in Git Commits
+
+Never use command substitution (`$(...)`) or heredoc-based temp-file patterns in `git commit` commands. Both patterns trigger permission dialogs that break unattended agent operation.
+
+Use multiple `-m` flags on a single `git commit` command instead. Git allows `-m` to be repeated; each value becomes a separate paragraph (separated by a blank line in the resulting message).
+
+**Enforcement:** `permission-learn.sh` Guard 5 (`is_simple_expansion_only`) blocks auto-approval for any command containing `$(`. The command falls through to the interactive permission dialog instead of being auto-approved. (This is not a hard deny -- the dialog still allows manual approval, but it breaks unattended operation.)
+
+**Wrong -- command substitution in commit:**
+```bash
+git commit -m "$(cat <<'EOF'
+feat(api): add batch endpoint
+
+Implements batch processing for bulk operations.
+EOF
+)"
+```
+
+**Wrong -- heredoc temp-file pattern (also triggers permission dialogs):**
+```bash
+cat > /tmp/claude-commit-msg.txt <<'EOF'
+feat(api): add batch endpoint
+
+Implements batch processing for bulk operations.
+EOF
+```
+```bash
+git commit -F /tmp/claude-commit-msg.txt
+```
+
+The temp-file approach fails for three reasons: `cat` is not in the auto-approve allowlist, `>` redirection fails Guard 5, and the multi-line heredoc body triggers the compound-command hard deny (newline count > 0).
+
+**Right -- multiple `-m` flags (subject only):**
+```bash
+git commit -m "feat(api): add batch endpoint"
+```
+
+**Right -- multiple `-m` flags (subject + body):**
+```bash
+git commit -m "feat(api): add batch endpoint" -m "Implements batch processing for bulk operations."
+```
+
+**Right -- multiple `-m` flags (subject + body + footer):**
+```bash
+git commit -m "feat(api): add batch endpoint" -m "Implements batch processing for bulk operations." -m "BREAKING CHANGE: removes legacy single-item endpoint"
+```
+
 ## Rationale
 
 Compound commands:
@@ -82,6 +129,11 @@ Process substitution additionally:
 Skipping hooks (`--no-verify`):
 - Masks real issues such as lint failures, secrets in commits, or malformed messages
 - Leads to commits that violate project standards and are harder to audit or revert
+
+Command substitution in git commits:
+- The `$(cat <<'EOF'...)` pattern contains `$(` which blocks auto-approval in `permission-learn.sh`, triggering a manual permission dialog on every commit
+- The temp-file heredoc alternative (`cat > /tmp/... <<'EOF'` + `git commit -F`) fails multiple guards: `cat` is not in the allowlist, `>` fails Guard 5, and multi-line heredocs trigger the compound-command hard deny
+- Multiple `-m` flags on a single `git commit` command achieve the same result while passing all auto-approval guards
 
 ## Applies To
 

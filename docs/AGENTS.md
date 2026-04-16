@@ -186,7 +186,7 @@ She does not fight. She does not plan. She does not invent. She reads, she reaso
 
 > *"Every deed deserves its verse."*
 
-**Core Mission:** Talekeeper is a manually-triggered narrator. She reads enriched session chronicle files produced by the Stop hook pipeline, delivers a concise chat summary of all new sessions, and appends structured narrative sections with Mermaid diagrams to `logs/talekeeper-narrative.md`.
+**Core Mission:** Talekeeper is a manually-triggered narrator. She reads enriched session chronicle files produced by the Stop hook pipeline, delivers a concise chat summary of all new sessions, and appends structured narrative sections with Mermaid diagrams to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrative.md`.
 
 **Configuration File:** `/claude/agents/talekeeper.md`
 

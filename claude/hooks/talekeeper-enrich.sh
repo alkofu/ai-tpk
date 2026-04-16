@@ -3,7 +3,9 @@
 # Runs as an async Stop hook command — has full filesystem access (unlike agent hooks)
 # Never blocks the session; exits 0 in all cases
 
-LOG_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/logs"
+REPO_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+LOG_DIR="$HOME/.ai-tpk/logs/$REPO_SLUG"
+mkdir -p "$LOG_DIR"
 RAW_LOG="$LOG_DIR/talekeeper-raw.jsonl"
 
 # Exit immediately if raw log is missing or empty

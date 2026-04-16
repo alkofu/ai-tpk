@@ -156,7 +156,7 @@ Action:
 - **Phase 0 worktree creation skipped** — advisory sessions do not create worktrees or plans
 - **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
 - **Phase B:** Invoke Tracebloom with advisory research request: "How does the session isolation work with worktrees?"
-- Tracebloom returns findings: Phase 0 creates an isolated git worktree per session at `.worktrees/{branch-slug}`, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5d
+- Tracebloom returns findings: Phase 0 creates an isolated git worktree per session at `.worktrees/{branch-slug}`, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5e
 - **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 section), `claude/references/worktree-protocol.md`
 - Session complete — no review, no plan, no PR prompt
 

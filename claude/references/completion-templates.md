@@ -32,7 +32,7 @@ Used for constructive pipeline sessions (e.g., sessions driven by `/feature`).
 **Execution:** {N}/{M} steps completed | Files changed: {count}
 **Validation:** {outcome — e.g., "all plan steps completed and passed Ruinor review" | "N steps skipped — see Risks"}
 **Implementation review:** Ruinor {verdict} | Specialists: {list with verdicts, or "none invoked"}
-**Reservations logged:** {yes — file path | no}
+**Reservations logged:** {no | yes — file path — resolved | yes — file path — unresolved}
 **Documentation:** {updated by Quill | skipped (no planning session)}
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
@@ -62,7 +62,7 @@ Used for investigative pipeline sessions (e.g., sessions driven by `/bug`). Exte
 **Execution:** {N}/{M} steps completed | Files changed: {count}
 **Validation:** {outcome — e.g., "all plan steps completed and passed Ruinor review" | "N steps skipped — see Risks"}
 **Implementation review:** Ruinor {verdict} | Specialists: {list with verdicts, or "none invoked"}
-**Reservations logged:** {yes — file path | no}
+**Reservations logged:** {no | yes — file path — resolved | yes — file path — unresolved}
 **Documentation:** {updated by Quill | skipped (no planning session)}
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)

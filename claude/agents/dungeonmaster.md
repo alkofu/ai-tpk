@@ -492,10 +492,10 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 ### Phase 5: Completion
 
-1. Before finishing, execute the following three sub-steps in order:
+1. Before finishing, execute the following five sub-steps in order:
 
     **5a — Reservations logging:**
-    This step is mandatory whenever any reviewer has issued ACCEPT-WITH-RESERVATIONS during the session. Skipping this step is a workflow violation -- the session must not proceed to step 5c until reservations are logged. After Phase 4 is complete and the final reviewer verdicts have been issued, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
+    This step is mandatory whenever any reviewer has issued ACCEPT-WITH-RESERVATIONS during the session. Skipping this step is a workflow violation -- the session must not proceed to step 5d until reservations are logged. After Phase 4 is complete and the final reviewer verdicts have been issued, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
 
     - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login.md` → `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login-open-questions.md`. No worktree prefix is needed — plan files are now at a fixed user-scoped path.
     - **If Pathfinder was NOT invoked this session:** use `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-rename-env-var-open-questions.md`). No worktree prefix is needed.
@@ -526,19 +526,52 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
     **Pre-Quill gate:** Before invoking Quill, cross-reference all steps in the approved plan against the list of completed Bitsmith delegations. If any plan step has not been executed and reviewed by Ruinor, defer Quill and complete those steps first. Do not invoke Quill based on self-assertion alone.
 
-    Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes, that work must re-enter Phase 4 (Implementation Review) before the session can be declared complete — do not treat post-documentation Bitsmith invocations as pre-reviewed work.
+    Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes — including work triggered by the Resolution Gate (step 5c) — that work must re-enter Phase 4 (Implementation Review) and Quill must be re-invoked afterward. Do not treat post-documentation Bitsmith invocations as pre-reviewed work, and do not skip the Quill re-invocation even if Quill already ran earlier in this session.
 
-    **5c — Completion summary:**
+    **5c — Resolution Gate:**
+    This step fires only when step 5a logged ACCEPT-WITH-RESERVATIONS items. If no reservations were logged, skip to step 5d.
+
+    Reservations logged after a post-gate Phase 4 re-review proceed directly to step 5d; they do not re-trigger the Resolution Gate.
+
+    Evaluate each reservation's severity:
+
+    **Auto-fix path** (fires when ALL reservations are MINOR severity):
+    - Delegate the fixes to Bitsmith
+    - After Bitsmith completes, re-enter Phase 4 (Implementation Review) for the changed files
+    - After Phase 4 completes, re-invoke Quill (step 5b) to update documentation for the new changes — do not skip Quill even if it already ran earlier in this session
+    - Return to step 5a to log any new reservations from the post-gate Phase 4 review (these are logged only — they do not re-trigger this gate per the loop protection rule above)
+    - Proceed to step 5d
+
+    Examples of auto-fixable MINOR reservations:
+    - Adding a missing null check in a function the plan already modified
+    - Fixing a typo in a log message within changed code
+    - Adding a missing `return` statement in a newly created function
+
+    **Prompt-user path** (fires when ANY reservation is MAJOR or CRITICAL severity):
+    Present the reservations to the user with these two options:
+    1. **Fix now** — delegate fixes to Bitsmith, re-enter Phase 4, re-invoke Quill (step 5b), then proceed to step 5d
+    2. **Proceed** — proceed to step 5d as-is; reservations remain logged in the open-questions file from step 5a
+
+    When "Fix now" is selected: after Bitsmith completes and Phase 4 re-review passes, re-invoke Quill (step 5b) before proceeding to step 5d. Do not skip Quill even if it already ran earlier in this session. Log any new post-gate reservations in 5a (logged only, no re-trigger).
+
+    Examples of reservations requiring user decision:
+    - Adding a new validation layer the plan did not anticipate (MAJOR — out of original scope)
+    - Restructuring error handling across multiple modules (MAJOR — architectural change)
+
+    **5d — Completion summary:**
     Format the completion summary using the appropriate template from `claude/references/completion-templates.md`: Template A (Constructive) for constructive sessions, Template B (Investigative) for investigative sessions.
 
     To obtain the values for the template:
     - **Token usage:** read the session's enriched chronicle file — glob `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-*.jsonl` and select the file most recently modified during this session. Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` across all entries using `jq`. Report as: "{input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read" (divide raw counts by 1000, round to 1 decimal). If the chronicle file is not found, unreadable, or contains no token data, report "unavailable".
-    - **Reservations logged:** populate from Phase 5a — "yes — {file path}" if ACCEPT-WITH-RESERVATIONS was issued and the file was written; "no" otherwise.
+    - **Reservations logged:** populate from Phase 5a and 5c. Values:
+      - "no" — no ACCEPT-WITH-RESERVATIONS verdicts were issued
+      - "yes — {file path} — resolved" — reservations were logged and resolved (via auto-fix or user-requested "Fix now")
+      - "yes — {file path} — unresolved" — reservations were logged and the user chose "Proceed" in the Resolution Gate, or the gate did not fire due to loop protection
     - **Documentation:** "updated by Quill" if Quill was invoked in 5b; "skipped (no planning session)" otherwise.
 
     If notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
-    **5d — Worktree log:**
+    **5e — Worktree log:**
     Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Run `/open-pr` to create a pull request, or handle cleanup manually."
 
     **Note:** Plan files are stored in `~/.ai-tpk/plans/{REPO_SLUG}/` and are not affected by worktree removal. To clean up plan files after a merge, use the `/merged` command (which offers plan file deletion) or the `/clean-ai-tpk-artifacts` command (age-based cleanup).
@@ -677,7 +710,7 @@ Keep it concise and operational. Prefer facts over narration.
 - Always run Ruinor first, then conditionally run specialists based on findings.
 - Run specialists in parallel when multiple are needed to maximize efficiency.
 - Do not say work is done unless execution results match the plan and pass all reviews.
-- Quill completion does not end the review obligation. If any Bitsmith invocation occurs after Quill, a Phase 4 Ruinor review of that work is mandatory before declaring the session complete.
+- Quill completion does not end the review obligation. If any Bitsmith invocation occurs after Quill — including Resolution Gate fixes (step 5c) — a Phase 4 Ruinor review of that work is mandatory before declaring the session complete. Quill must also be re-invoked after any post-Quill Phase 4 review.
 - If execution reveals that the plan is invalid — including via Bitsmith's structured escalation reports — follow the escalation handling procedure in Phase 3 before continuing.
 - Minimize unnecessary back-and-forth. Use delegation decisively.
 - Do not invoke Everwise directly, including as an escalation path after in-session review failures or stalled REVISE loops. Everwise is a user-facing meta-analysis tool — suggest it to the user when session patterns warrant it. If a review loop stalls after 3+ REVISE cycles on the same artifact, escalate to Pathfinder for plan revision.

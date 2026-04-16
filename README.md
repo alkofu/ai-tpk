@@ -602,4 +602,4 @@ When modifying these reference files, changes apply automatically to all agents 
 
 ## License
 
-Personal configuration files - use as needed.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

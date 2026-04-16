@@ -179,3 +179,7 @@ None of this information adds value.
 4. **Ensure the body adds value** - when in doubt, omit the body
 5. **Include only relevant context** in the body
 6. **NEVER add AI attribution** - no tool attribution of any kind
+7. **Use multiple `-m` flags for commits** -- never use `$(...)` or heredoc patterns in git commit commands:
+   - Subject only: `git commit -m "type(scope): subject"`
+   - Subject + body: `git commit -m "type(scope): subject" -m "Body paragraph."`
+   - Subject + body + footer: `git commit -m "type(scope): subject" -m "Body paragraph." -m "BREAKING CHANGE: description"`

@@ -25,49 +25,88 @@ Result: 3 out of 4 reviews provided no value, wasting time and tokens.
 
 ### Architecture
 
+#### High-Level Overview
+
+```mermaid
+flowchart LR
+    Start([User Request]) --> DM[Dungeon Master<br/>Orchestrator]
+    DM --> Phase1[📋 Planning Phase]
+    Phase1 --> Phase2[⚙️ Implementation Phase]
+    Phase2 --> Complete([✅ Complete])
+
+    style DM fill:#e1f5ff
+    style Phase1 fill:#fff4e6
+    style Phase2 fill:#e8f5e9
+    style Complete fill:#d4edda
 ```
-User Request
-    ↓
-Dungeon Master Orchestrator
-    ↓
-Planning Phase
-    ↓
-┌─────────────────────────────────┐
-│  PLAN REVIEW GATE               │
-│                                 │
-│  1. Ruinor (Mandatory)          │
-│     - Baseline quality          │
-│     - Basic security            │
-│     - Basic performance         │
-│     - Basic complexity          │
-│     - Flags specialists         │
-│                                 │
-│  2. Specialists (Conditional)   │
-│     [Only if triggered]         │
-│     - Riskmancer (security)     │
-│     - Windwarden (performance)  │
-│     - Knotcutter (complexity)   │
-│     - Truthhammer (factual)     │
-└─────────────────────────────────┘
-    ↓
-Implementation Phase
-    ↓
-┌─────────────────────────────────┐
-│  IMPLEMENTATION REVIEW GATE     │
-│                                 │
-│  1. Ruinor (Mandatory)          │
-│     - Same baseline coverage    │
-│     - Flags specialists         │
-│                                 │
-│  2. Specialists (Conditional)   │
-│     [Only if triggered]         │
-│     - Riskmancer (security)     │
-│     - Windwarden (performance)  │
-│     - Knotcutter (complexity)   │
-│     - Truthhammer (factual)     │
-└─────────────────────────────────┘
-    ↓
-Complete
+
+#### Planning Phase Detail
+
+```mermaid
+flowchart TD
+    Start([DM: Need Planning?]) --> DelegateP[DM Delegates to<br/>Pathfinder]
+    DelegateP --> PF[Pathfinder<br/>Creates Plan]
+    PF --> Checklist[Pre-Submission<br/>Checklist ×8]
+    Checklist --> SavePlan[Save to<br/>~/.ai-tpk/plans]
+    SavePlan --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
+
+    MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
+
+    Decision -->|No Flags| Assess1{Ruinor<br/>Pass?}
+    Decision -->|Flags Present| Specialists
+
+    subgraph Specialists["🎯 Specialist Reviews (Conditional)"]
+        RS1[Riskmancer<br/>Security Deep-Dive]
+        W1[Windwarden<br/>Performance Analysis]
+        K1[Knotcutter<br/>Complexity Review]
+        TH1[Truthhammer<br/>Factual Validation]
+    end
+
+    Specialists --> Assess2{All Reviews<br/>Pass?}
+
+    Assess1 -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Assess2 -->|REJECT/REVISE| Feedback
+    Feedback --> PF
+    Assess1 -->|ACCEPT| Next([To Implementation<br/>Phase])
+    Assess2 -->|ACCEPT| Next
+
+    style MandatoryR fill:#ffebcc
+    style Specialists fill:#e6f3ff
+    style Next fill:#e8f5e9
+```
+
+#### Implementation Phase Detail
+
+```mermaid
+flowchart TD
+    Start([Approved Plan]) --> DelegateE[DM Delegates to<br/>Bitsmith]
+    DelegateE --> Impl[Bitsmith<br/>Implements Code]
+    Impl --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
+
+    MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
+
+    Decision -->|No Flags| Assess1{Ruinor<br/>Pass?}
+    Decision -->|Flags Present| Specialists
+
+    subgraph Specialists["🎯 Specialist Reviews (Conditional)"]
+        RS2[Riskmancer<br/>Security Vulnerabilities]
+        W2[Windwarden<br/>Performance Optimization]
+        K2[Knotcutter<br/>Simplification]
+        TH2[Truthhammer<br/>Factual Validation]
+    end
+
+    Specialists --> Assess2{All Reviews<br/>Pass?}
+
+    Assess1 -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
+    Assess2 -->|REJECT/REVISE| Feedback
+    Feedback --> Fix[Bitsmith<br/>Fixes Issues]
+    Fix --> MandatoryR
+    Assess1 -->|ACCEPT| Complete([✅ Complete])
+    Assess2 -->|ACCEPT| Complete
+
+    style MandatoryR fill:#ffebcc
+    style Specialists fill:#e6f3ff
+    style Complete fill:#d4edda
 ```
 
 ### Review Agents
@@ -355,6 +394,18 @@ The new workflow is fully compatible with existing:
 - Orchestration logic (enhanced, not replaced)
 
 Existing workflows continue to work; they just run more efficiently now.
+
+## Key Principles
+
+- **Plans are artifacts** - Saved to `~/.ai-tpk/plans/{repo-slug}/` for visibility and persistence
+- **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files
+- **Quality gates enforce quality** - No execution without approved plan, no completion without approved implementation
+- **Intelligent triage** - Ruinor provides mandatory baseline, specialists handle deep expertise
+- **Revision loops** - Plans and code iterate until all reviewers accept
+- **DM never implements** - All work is delegated to specialized agents
+- **Hard intermediate review gates** - After 2 consecutive Bitsmith invocations, a review gate is mandatory before continuing
+- **REJECT verdicts require remediation** - When Ruinor issues REJECT, Bitsmith must provide a written remediation brief before re-review to prevent rubber-stamp approvals
+- **Documentation follows implementation** - Quill is invoked only after implementation review is fully complete; any post-documentation code changes must re-enter the implementation review gate
 
 ## Future Enhancements
 

@@ -6,6 +6,15 @@ The Dungeon Master orchestration agent now supports **parallel isolated sessions
 
 Each constructive or investigative DungeonMaster session automatically creates a dedicated git worktree on an isolated branch, ensuring clean separation of concerns and enabling truly parallel development workflows.
 
+## Agent Artifacts Storage
+
+Agent-produced artifacts (plans, open-questions files, lessons) are stored in user-global directories under `~/.ai-tpk/` to decouple them from worktree lifecycle and make them accessible across repositories:
+
+- **Plans** → `~/.ai-tpk/plans/{repo-slug}/` — One subdirectory per repository, containing plan files and associated open-questions files
+- **Lessons** → `~/.ai-tpk/lessons/` — Flat structure for Everwise Scout analysis recommendations (cross-repo)
+
+These directories are created automatically when you run `install.sh`.
+
 ## Quick Start
 
 ### Running Parallel DungeonMaster Sessions
@@ -302,5 +311,5 @@ Deferring worktree creation to Phase 1 (rather than Phase 0) means advisory sess
 ## Related Documentation
 
 - [Agent Reference: Dungeon Master](/docs/AGENTS.md#dungeon-master---orchestrator) - Orchestration workflow details
-- [Configuration Guide](/docs/CONFIGURATION.md) - Setup and installation
+- [Configuration Guide](/docs/CONFIGURATION.md) - Hooks, MCP servers, agents, skills, and slash commands
 - [Review Workflow](/docs/adrs/REVIEW_WORKFLOW.md) - Quality gate and review process

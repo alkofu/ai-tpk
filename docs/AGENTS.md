@@ -120,7 +120,7 @@ Quill has a single professional rival: documentation written by someone who clea
 
 <img src="avatars/pathfinder.png" alt="Pathfinder Avatar" width="300">
 
-**Core Mission:** Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/*.md`.
+**Core Mission:** Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `~/.ai-tpk/plans/{repo-slug}/`.
 
 **Configuration File:** `/claude/agents/pathfinder.md`
 
@@ -272,5 +272,9 @@ Agent definitions can reference shared behavioral vocabulary defined in `claude/
 - **`claude/references/worktree-protocol.md`** — Shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. Agents load this reference when operating in isolated worktrees to ensure consistent path handling.
 - **`claude/references/dm-routing-examples.md`** — 11 worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports. The DM loads this reference at runtime rather than embedding the examples inline in its system prompt.
 - **`claude/references/completion-templates.md`** — Four rigid per-command completion report templates (A: Constructive, B: Investigative, C: Operational PR, D: Post-Merge) and a shared Common Fields block. The DM output contract and `/open-pr`, `/merged`, `/merge-pr` commands all reference this file to ensure consistent, parseable completion output across sessions.
+
+- **`claude/references/bash-style.md`** — Required Bash command style guide for all agents with Bash tool access. Defines enforced rules: no compound commands, no process substitution, no `--no-verify` on git commands, and no command substitution in git commit commands.
+
+- **`claude/references/quill-documentation-style.md`** — Documentation style guide used by Quill when authoring and updating documentation.
 
 When modifying these reference files, changes apply automatically to all agents that load them, eliminating the need to update redundant constraints across multiple agent definitions.

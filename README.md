@@ -327,7 +327,7 @@ These directories are created automatically when you run `install.sh`.
 
 ### Parallel Sessions via Git Worktrees
 
-The Dungeon Master now supports true parallel development workflows using Git worktrees. Each session automatically creates an isolated worktree on a dedicated branch (e.g., `.worktrees/dm-add-oauth-login/` on `dm/add-oauth-login`), enabling multiple simultaneous `claude --agent dungeonmaster` terminals to work on unrelated issues without git conflicts or interference.
+The Dungeon Master now supports true parallel development workflows using Git worktrees. Each constructive or investigative session automatically creates an isolated worktree on a dedicated branch using conventional commit prefixes (e.g., `.worktrees/feat-add-oauth-login/` on `feat/add-oauth-login`), enabling multiple simultaneous `claude --agent dungeonmaster` terminals to work on unrelated issues without git conflicts or interference. Advisory sessions (`/ask`, `/ops`) never create a worktree.
 
 **Key benefits:**
 - Run multiple DungeonMaster sessions simultaneously on the same repository
@@ -337,7 +337,7 @@ The Dungeon Master now supports true parallel development workflows using Git wo
 - At completion, the branch is preserved and a log line points you to `/open-pr` for next steps
 - Manual cleanup with `git worktree remove` when you are done
 
-Use `--no-worktree` flag to suppress worktree creation and operate in the main working tree (backwards compatible). See [docs/WORKTREE_ISOLATION.md](/docs/WORKTREE_ISOLATION.md) for comprehensive guide with examples and troubleshooting.
+See [docs/WORKTREE_ISOLATION.md](/docs/WORKTREE_ISOLATION.md) for a comprehensive guide with examples and troubleshooting.
 
 ### Documentation Integration
 The Dungeon Master orchestration agent automatically invokes Quill (documentation specialist) in Phase 5 (Completion) when a planning session was conducted. Quill runs as step 5b — after reservations are logged (5a) but before the Resolution Gate (5c) and completion summary (5d). Quill receives the plan file, list of changed files, and feature summary, then updates documentation to reflect the implementation. If the Resolution Gate triggers post-gate Bitsmith work, Quill is re-invoked after the follow-up Phase 4 review. This ensures documentation stays synchronized with code without manual effort.

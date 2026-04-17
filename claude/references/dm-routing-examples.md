@@ -26,7 +26,7 @@ Action:
 Example 2:
 User asks: "Rename this variable in one file."
 Action:
-- **Phase 0:** DM delegates to Bitsmith to create worktree (always required — no exceptions)
+- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine, which delegates to Bitsmith to create the worktree (constructive intent inferred from the rename request)
 - Skip Pathfinder if clearly trivial (single-step, no ambiguity)
 - Delegate directly to Bitsmith
 - **Implementation Review:** For trivial changes, run Ruinor only (mandatory baseline still applies). Skip specialist reviewers.
@@ -87,7 +87,7 @@ Action:
 Example 6:
 User asks: "Add OAuth login" (while another DM session is already working on an unrelated issue)
 Action:
-- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/feat-add-oauth-login` on branch `feat/add-oauth-login`
+- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine, which delegates to Bitsmith to create the worktree at `.worktrees/feat-add-oauth-login` on branch `feat/add-oauth-login` (constructive intent)
 - All subsequent Pathfinder, Bitsmith, and Quill delegation prompts include:
   `WORKING_DIRECTORY: {REPO_ROOT}/.worktrees/feat-add-oauth-login`
   `WORKTREE_BRANCH: feat/add-oauth-login`
@@ -116,7 +116,7 @@ Action:
 Example 8:
 User asks: "Why is the background job queue dropping tasks silently?"
 Action:
-- **Phase 0:** DM delegates to Bitsmith to create worktree at `.worktrees/fix-job-queue-drops` on branch `fix/job-queue-drops`
+- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine (because `/bug` sets `INTENT: investigative`), which delegates to Bitsmith to create the worktree at `.worktrees/fix-job-queue-drops` on branch `fix/job-queue-drops`. The Investigative Gate then fires per the Intent Override
 - **Phase 1, step 1:** DM clarifies goal: "Determine why enqueued background jobs are silently dropped."
 - **Investigative Gate triggers** (investigative question: "why is X happening?", no known cause, no plan; Intake and Explore-Options gates do not fire)
 - Invoke Tracebloom with symptom: "background job queue dropping tasks silently"
@@ -132,7 +132,7 @@ Action:
 Example 9:
 User asks: "Add webhook support for payment events"
 Action:
-- **Phase 0:** DM delegates to Bitsmith to create worktree
+- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine, which delegates to Bitsmith to create the worktree (constructive intent)
 - **Phase 1:** Task is clear and well-specified — no Tracebloom, no Askmaw
 - DM invokes Pathfinder (first invocation)
 - Pathfinder researches codebase, reaches Section 4 (Scope Confirmation), returns scope output to DM:
@@ -153,11 +153,11 @@ User asks (via /ask): "How does the session isolation work with worktrees?"
 Action:
 - **Intent override fires:** `INTENT: advisory`. Log: "Intent override: advisory. Heuristic classification skipped."
 - **Session variables captured:** `SESSION_TS` = `20260401-143022`, `SESSION_SLUG` = `session-isolation-worktrees`
-- **Phase 0 worktree creation skipped** — advisory sessions do not create worktrees or plans
+- **Phase 1 Worktree Creation Subroutine not invoked** — advisory branches do not invoke the subroutine, so no worktree or plan is created
 - **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
 - **Phase B:** Invoke Tracebloom with advisory research request: "How does the session isolation work with worktrees?"
-- Tracebloom returns findings: Phase 0 creates an isolated git worktree per session at `.worktrees/{branch-slug}`, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5e
-- **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 section), `claude/references/worktree-protocol.md`
+- Tracebloom returns findings: the Phase 1 Worktree Creation Subroutine creates an isolated git worktree at `.worktrees/{branch-slug}` when invoked by a routing branch (advisory branches do not invoke it), Phase 0 captures session variables only, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5e
+- **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 and Phase 1 Worktree Creation Subroutine), `claude/references/worktree-protocol.md`
 - Session complete — no review, no plan, no PR prompt
 
 Example 11:
@@ -165,7 +165,7 @@ User asks (via /ops): "What authentication patterns are used in this codebase?"
 Action:
 - **Intent override fires:** `INTENT: advisory --save-report`. Log: "Intent override: advisory. Heuristic classification skipped." Capture `--save-report` as active workflow flag. Strip `INTENT: advisory --save-report` from message.
 - **Session variables captured:** `SESSION_TS` = `20260413-110000`, `SESSION_SLUG` = `auth-patterns-codebase`
-- **Phase 0 worktree creation skipped** — advisory sessions do not create worktrees or plans
+- **Phase 1 Worktree Creation Subroutine not invoked** — advisory branches do not invoke the subroutine, so no worktree or plan is created
 - **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
 - **Phase B:** Invoke Tracebloom with advisory research request: "What authentication patterns are used in this codebase?"
 - Tracebloom returns findings on auth patterns used in the codebase

@@ -231,6 +231,14 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 - **`completion-templates.md`** — Four rigid per-command completion report templates and a shared Common Fields block. Defines what the DM must emit at the end of each pipeline: Template A (Constructive, `/feature`), Template B (Investigative, `/bug`), Template C (Operational PR, `/open-pr`), and Template D (Post-Merge, `/merged` and `/merge-pr`). The DM output contract references this file; templates are verbatim formats with no formatting discretion left to the model.
 
+- **`dm-routing-examples.md`** — Worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports.
+
+- **`github-auth-probe.md`** — Canonical procedure for verifying GitHub account access before pushing or committing. Referenced by the `commit-message-guide` and `open-pull-request` skills.
+
+- **`review-gates.md`** — Shared two-gate review framework (Plan Review Gate and Implementation Review Gate) for all reviewer agents. Defines universal operational constraints and plan-file-scoping rules.
+
+- **`quill-documentation-style.md`** — Documentation style guide used by Quill when authoring and updating documentation.
+
 When updating a reference file, changes apply automatically to all agents that load it — no individual agent files need modification.
 
 ## MCP Servers
@@ -269,8 +277,8 @@ myclaude
 
 The wizard will present a multi-step flow:
 
-1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, and/or GCP Observability)
-2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability)
+1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, GCP Observability, and/or Kubernetes)
+2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
 3. **Launch** — Claude opens with `--agent dungeonmaster` and the correct environment variables set
 
 **Persistence:** Your last-used selections are saved to `~/.config/myclaude/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
@@ -324,6 +332,12 @@ When "GCP Observability" is selected, the launcher runs `gcloud projects list` t
 
 **Note:** `GOOGLE_CLOUD_PROJECT` is used by the auth library for project ID resolution only — it does not auto-populate tool call parameters. Specify `resourceNames`, `parent`, `name`, or `projectId` explicitly in each tool call. The wrapper prints the active project to stderr as a context hint for Claude.
 
+### Kubernetes Configuration
+
+**Prerequisite:** `kubectx` must be installed and on `PATH`; the launcher exits with an error if it is missing.
+
+When "Kubernetes" is selected, the launcher runs `kubectx` to list available contexts and prompts you to select one. The selected context name is stored in `~/.claude/.current-kube-context` and exported as `K8S_CONTEXT` for the Kubernetes MCP server. If the chosen context differs from the previously saved one, the launcher invokes `kubectx <context>` to switch the active context.
+
 ### Environment Variables Set by myclaude
 
 When you select Grafana with Viewer role, the launcher sets:
@@ -349,6 +363,11 @@ When you select GCP Observability:
 GOOGLE_CLOUD_PROJECT={project_id}
 ```
 
+When you select Kubernetes:
+```
+K8S_CONTEXT={context_name}
+```
+
 These variables are passed to `claude --agent dungeonmaster`, and they flow through to all MCP server subprocesses.
 
 ## Skills (`claude/skills/`)
@@ -362,6 +381,8 @@ Skills are reusable capabilities that enhance Claude's functionality. Three mand
 Additional skills (non-mandatory):
 
 - **`write-reliable-tests`** — Guides authorship and review of deterministic, isolated, and idempotent automated tests across unit, integration, and e2e levels; applied automatically whenever test code is being written or evaluated
+- **`file-organization`** — Guide for file and module organization decisions
+- **`skill-creator`** — Creates and improves skills in this repository
 
 ## Slash Commands
 

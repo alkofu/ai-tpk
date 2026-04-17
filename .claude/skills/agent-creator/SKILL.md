@@ -359,10 +359,10 @@ tools: "Read, Write, Grep, Glob, Bash, Agent"
 - Agent tool for delegating research
 - Explicitly states "You never implement. You plan."
 - Structured interview workflow
-- Saves plans to specific location (`plans/*.md`)
+- Saves plans to specific location (`~/.ai-tpk/plans/{repo-slug}/*.md`)
 
 **Real example from Pathfinder:**
-> "Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `plans/*.md`. You never implement code. You plan."
+> "Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `~/.ai-tpk/plans/{repo-slug}/*.md`. You never implement code. You plan."
 >
 > "When users request 'do X' or 'build X,' interpret this as 'create a work plan for X.'"
 

@@ -189,6 +189,26 @@ Follow this sequence:
 
 ### Phase 0: Session Isolation
 
+**Re-entry guard:** Before capturing session variables or doing any other Phase 0 work, evaluate whether the current user message is a continuation of an established session.
+
+**Bypass condition:** If the current user message begins with a slash-command invocation (`/feature`, `/bug`, `/ask`, `/ops`, or any other slash command that injects an `INTENT:` line), treat it as an implicit new-task signal and skip the guard entirely — proceed with full Phase 0 setup as a fresh session. Slash commands always start a new session boundary.
+
+**Continuation check (free-form messages only):** If the current user message is free-form text (no slash-command prefix), check whether `WORKTREE_PATH` is present in conversation memory from earlier in this session. If it is, run `git worktree list --porcelain` and confirm that the path appears in the output. When both conditions hold, the session is a continuation:
+- Skip the rest of Phase 0 entirely (including session-variable capture — the existing variables are still authoritative).
+- If `WORKTREE_BRANCH` was dropped from conversation memory but `WORKTREE_PATH` is present, recover `WORKTREE_BRANCH` from the `branch` field in the porcelain output for that worktree.
+- If `REPO_SLUG` was dropped, recover it via `basename $(git rev-parse --show-toplevel)`.
+- Log to the user: `"Continuing existing session: worktree {WORKTREE_PATH} on branch {WORKTREE_BRANCH}. Phase 0 skipped."`
+- Proceed to Phase 1 with the (possibly recovered) context.
+
+If `WORKTREE_PATH` is missing from conversation memory, OR `git worktree list --porcelain` does not show the path, proceed with full Phase 0 setup as a fresh session.
+
+**Session reset triggers:** A session is considered ended (so the re-entry guard does not fire on the next free-form message) only when one of the following has occurred:
+- The `/merged` command completed successfully (which already removes the worktree and clears `WORKTREE_PATH` / `WORKTREE_BRANCH`). Note that `/open-pr` does **not** end the session — the worktree remains until `/merged` or manual cleanup, but a subsequent slash-command invocation will still bypass the guard per the Bypass condition above.
+- The user explicitly indicates a new unrelated task in a free-form message (e.g., "Let's switch to a different feature", "New task: ...", or any clear topic change). When ambiguous, ask the user before resetting — do not silently treat a follow-up as a new session.
+- Any slash-command invocation (`/feature`, `/bug`, `/ask`, `/ops`) per the Bypass condition above.
+
+Adding scope to an in-flight feature, fixing a follow-up bug introduced by the in-flight implementation, or asking advisory questions about the work in progress — when raised as free-form follow-up messages — all count as continuations of the same session.
+
 At the very start of every session, before any other work, capture three session-scoped variables in conversation memory:
 - `SESSION_TS` — current local time formatted as `YYYYMMDD-HHmmss` (e.g., `20260401-143022`)
 - `SESSION_SLUG` — the task description slugified: lowercase, alphanumeric and hyphens only, max 40 characters (e.g., "Add OAuth login" → `add-oauth-login`, "Rename env var" → `rename-env-var`)
@@ -196,11 +216,17 @@ At the very start of every session, before any other work, capture three session
 
 These are carried in conversation memory alongside `WORKTREE_PATH`, `WORKTREE_BRANCH`, and `REPO_SLUG` for the entire session and are used for consistent file naming throughout.
 
-Before any planning begins, create an isolated git worktree for this session so it does not conflict with other parallel DM sessions.
+**Worktree creation is deferred to Phase 1**, after intent classification. Phase 0 only captures session variables; the worktree (if any) is created by the Worktree Creation Subroutine, invoked from whichever Phase 1 routing branch the task is classified into. Advisory branches do not invoke the subroutine, so advisory sessions never create a worktree.
 
-**Skip condition:** When `INTENT: advisory` is explicitly set (typically via the `/ask` or `/ops` command), skip worktree creation (steps 1-5 below) and `~/.ai-tpk/plans/` directory setup. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured at the top of Phase 0 — they are lightweight conversational memory, not file writes. For all other intents (investigative, constructive, or heuristically classified), worktree creation is mandatory with no exceptions. Note: if the DM heuristically classifies a message as advisory (branch (d) in the Mutual Exclusivity Note), a worktree will already have been created because Phase 0 runs before Phase 1 classification. This is acceptable — the explicit `/ask` command is the primary mechanism for advisory sessions, and the worktree will simply go unused.
+### Phase 1: Planning
 
-**When creating a worktree:**
+1. Clarify the user goal in one sentence.
+
+**Worktree Creation Subroutine:**
+
+This subroutine is **invoked explicitly** by routing branches in this section that require a worktree. It is **not** a checkpoint — it does not run automatically. Each routing branch below states whether it invokes the subroutine. Branches that do not invoke it (the advisory branches) produce sessions with no worktree.
+
+**When invoked, perform the following steps in order:**
 
 1. **Derive branch name:** Slugify the task description using a conventional commit prefix → `{type}/{slugified-task}` (e.g., "Add OAuth login" → `feat/add-oauth-login`, "Fix null pointer in auth" → `fix/null-pointer-auth`, "Refactor cache layer" → `refactor/cache-layer`). Infer the prefix from the nature of the request: use `feat/` for new features, `fix/` for bug fixes, `refactor/` for refactoring, `chore/` for maintenance/config/tooling, `docs/` for documentation-only changes, `test/` for test-only changes. If the request is ambiguous, use `chore/session-{YYYYMMDD-HHmmss}` (local time). Max 60 characters, lowercase, alphanumeric and hyphens only.
 
@@ -220,16 +246,14 @@ Before any planning begins, create an isolated git worktree for this session so 
 
 5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
-### Phase 1: Planning
-
-1. Clarify the user goal in one sentence.
+**After the subroutine completes, control returns to the routing branch that invoked it.**
 
 **Intent Override** (before classification):
 
 If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, or `INTENT: advisory`, skip heuristic classification and route directly:
-- `INTENT: investigative` → fire the Investigative Gate immediately (skip the Mutual Exclusivity classification below)
-- `INTENT: constructive` → skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly)
-- `INTENT: advisory` → enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report`), capture it as an active workflow flag for this session before stripping.
+- `INTENT: investigative` → **invoke the Worktree Creation Subroutine first** (so `WORKTREE_PATH` is populated before Tracebloom delegation), then fire the Investigative Gate immediately (skip the Mutual Exclusivity classification below).
+- `INTENT: constructive` → **invoke the Worktree Creation Subroutine first**, then skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly).
+- `INTENT: advisory` → **do not invoke the Worktree Creation Subroutine** — advisory sessions never create a worktree. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report`), capture it as an active workflow flag for this session before stripping.
 
 The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`, `/ask`, `/ops`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
 
@@ -240,14 +264,17 @@ Strip the `INTENT:` line (including any flags on it, such as `--save-report`) fr
 When not triggered: proceed to the Mutual Exclusivity Note below.
 
 **Mutual exclusivity note:** When no explicit `INTENT:` override is present, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:
-- **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → Investigative Gate → Tracebloom
-- **(b) Ambiguous or underspecified** (the task needs clarification before planning) → Intake Gate → Askmaw
-- **(c) Ready for planning** (clear, bounded, constructive task) → proceed to Pathfinder (which will internally handle scope confirmation and options discovery in its Section 4)
-- **(d) Advisory** (the task is a question — "how does X work?", "is this a good approach?", "what are my options?") → Advisory Workflow (Phases A-B-C)
+- **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → **invoke the Worktree Creation Subroutine** → Investigative Gate → Tracebloom
+- **(b) Ambiguous or underspecified** (the task needs clarification before planning) → **invoke the Worktree Creation Subroutine** → Intake Gate → Askmaw
+- **(c) Ready for planning** (clear, bounded, constructive task) → **invoke the Worktree Creation Subroutine** → proceed to Pathfinder (which will internally handle scope confirmation and options discovery in its Section 4)
+- **(d) Advisory** (the task is a question — "how does X work?", "is this a good approach?", "what are my options?") → **do not invoke the Worktree Creation Subroutine** → Advisory Workflow (Phases A-B-C)
 
 **Investigative Gate** (between step 1 and the Intake Gate):
 
 If the task was classified as investigative (see "When to call Tracebloom" routing rules):
+
+**Precondition:** The Worktree Creation Subroutine must have been invoked by the routing branch that selected the Investigative Gate (either `INTENT: investigative` per the Intent Override, or Mutual Exclusivity branch (a)). `WORKTREE_PATH` and `WORKTREE_BRANCH` must be populated in conversation memory before this gate runs, because the Tracebloom delegation template below requires them.
+
 1. Delegate to Tracebloom with the user's reported symptom and any error messages or context using the delegation template below
 2. When Tracebloom returns a Diagnostic Report, evaluate the "Recommended next action" field:
    - **"Route to Pathfinder for planning a fix"**: Proceed to step 2 (Planning), passing the Diagnostic Report to Pathfinder as context using the handoff template below
@@ -580,7 +607,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 This workflow fires when `INTENT: advisory` is detected (typically via the `/ask` or `/ops` command). It is a lightweight, read-only Q&A path that bypasses the entire constructive/investigative pipeline.
 
-**What is skipped:** Worktree creation (Phase 0 steps 1-5), Pathfinder, Bitsmith (unless `--save-report` is active), Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written — except when `--save-report` is active, in which case Bitsmith is invoked solely to write the report file after Phase C synthesis.
+**What is skipped:** Worktree creation (the Phase 1 Worktree Creation Subroutine is not invoked by the advisory branches), Pathfinder, Bitsmith (unless `--save-report` is active), Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written — except when `--save-report` is active, in which case Bitsmith is invoked solely to write the report file after Phase C synthesis.
 
 **What is NOT skipped:** Session variable capture (`SESSION_TS`, `SESSION_SLUG`) — these are lightweight conversational memory and are retained for logging and potential pipeline transitions.
 

@@ -265,7 +265,7 @@ After creating the agent file, update:
    - Compact profile section using the standard template (Core Mission, When to invoke, Key constraint, Best Practice, Configuration File)
    - Lore paragraph if the agent has a fantasy persona
 
-2. **README.md**: Mention in the Features section if noteworthy
+2. **README.md**: No changes needed — the README is now a concise landing page; agent details live in `docs/AGENTS.md`
 
 ## Agent Design Patterns (From Existing Agents)
 

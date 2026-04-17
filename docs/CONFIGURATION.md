@@ -233,8 +233,167 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 When updating a reference file, changes apply automatically to all agents that load it — no individual agent files need modification.
 
+## MCP Servers
+
+The installer automatically configures user-scoped MCP (Model Context Protocol) servers in `~/.claude.json` when the `claude` CLI is available. Server definitions are read from a declarative `src/mcp/mcp-servers.json` file, allowing you to add or modify servers without editing TypeScript code.
+
+Currently configured servers:
+
+- **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) — Read-only Kubernetes cluster access via `~/.kube/config`. Skips setup gracefully if that file does not exist.
+- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `src/mcp/wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist.
+- **Grafana MCP Server** (`mcp-grafana`) — Grafana dashboards, datasources, and incident access. Uses `src/mcp/wrappers/mcp-grafana.sh`, which requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in the shell environment.
+- **GitHub MCP Server** (`@modelcontextprotocol/server-github`) — GitHub repository, issue, PR, and code search access. Requires `GITHUB_PERSONAL_ACCESS_TOKEN` set in `src/mcp/mcp-servers.json` before running `install.sh`. Note: the npm package was archived 2025-05-29; the Docker-based successor (`ghcr.io/github/github-mcp-server`) is not used here to avoid a Docker dependency.
+- **GCP Observability MCP Server** (`@google-cloud/observability-mcp@0.2.3`) — Read-only access to GCP Cloud Logging, Monitoring, Trace, and Error Reporting. Requires Node.js 20+ and the gcloud CLI. Authenticate before running `install.sh`: `gcloud auth application-default login` then `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`.
+
+MCP servers are available in all repositories once configured.
+
+**Stamp-based skipping:** After a wrapper-based server is registered, the installer records a config signature in `~/.claude/.mcp-install-stamps.json`. On subsequent runs, if the signature matches and the registration is intact, the server is skipped. To force re-registration of all wrapper servers (e.g., after a broken install or to pick up manual `src/mcp/mcp-servers.json` edits that the installer did not detect), delete this file and re-run `./install.sh`.
+
+### MCP Server Configuration Format
+
+Server definitions live in `src/mcp/mcp-servers.json`. Each server uses either a `command` field (inline command array) or a `wrapper` field (path relative to `~/.claude/` pointing to an installed wrapper script) — the two are mutually exclusive. Wrapper scripts live in `src/mcp/wrappers/` in the repo and are installed to `~/.claude/wrappers/` by `install.sh`, so a `wrapper` value of `wrappers/mcp-cloudwatch.sh` resolves to `~/.claude/wrappers/mcp-cloudwatch.sh` at runtime. `$HOME` and `$USER` variable expansion is supported in string values.
+
+Two key operational behaviors: a missing `src/mcp/mcp-servers.json` produces a warning and skips MCP setup (installation continues); a malformed JSON file or schema violation stops installation with a non-zero exit code. See `src/mcp/mcp-servers.json` for the schema and `src/installer/mcp.ts` for the installation logic.
+
+## myclaude — Session Launcher
+
+The `myclaude` command is an interactive wizard that configures MCP environment variables and launches Claude with the Dungeon Master agent. Instead of manually exporting environment variables before each session, you run `myclaude` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
+
+**Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/myclaude`.
+
+**Usage:** From any directory, run:
+
+```bash
+myclaude
+```
+
+The wizard will present a multi-step flow:
+
+1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, and/or GCP Observability)
+2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability)
+3. **Launch** — Claude opens with `--agent dungeonmaster` and the correct environment variables set
+
+**Persistence:** Your last-used selections are saved to `~/.config/myclaude/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
+
+### Grafana Configuration
+
+Create `~/.config/grafana-clusters.yaml` with your cluster definitions. The file must use this YAML schema:
+
+```yaml
+clusters:
+  - id: prod-us-east
+    name: Production US-East
+    url: https://grafana.prod.us-east.example.com
+    viewer_token: glsa_xxxxxxxxxxxxxxxx_viewer
+    editor_token: glsa_xxxxxxxxxxxxxxxx_editor
+
+  - id: staging
+    name: Staging
+    url: https://grafana.staging.example.com
+    viewer_token: glsa_yyyyyyyyyyyyyyyy_viewer
+    editor_token: glsa_yyyyyyyyyyyyyyyy_editor
+```
+
+Each cluster requires:
+- `id` — Unique identifier for the cluster
+- `name` — Display name shown in the wizard
+- `url` — Grafana URL (must start with `http://` or `https://`)
+- `viewer_token` — Grafana service account token with read-only permissions
+- `editor_token` — Grafana service account token with read-write permissions
+
+The wizard lets you select a cluster and choose a role (Viewer or Editor). If you select Viewer, the launcher automatically sets `GRAFANA_DISABLE_WRITE=true`, which the Grafana MCP server wrapper translates into the `--disable-write` CLI flag.
+
+**Legacy token migration:** If your clusters use a single `token` field instead of separate `viewer_token`/`editor_token` fields, the launcher will fall back to using `token` as `viewer_token` with a warning. Update your YAML to add the new token fields to remove the warning.
+
+### CloudWatch Configuration
+
+The launcher reads AWS profiles from `~/.aws/config` (preferred) or `~/.aws/credentials` (fallback when config is absent). In the wizard, select your active profile for the current session. The launcher stores this choice in `~/.claude/.current-aws-profile` so the CloudWatch MCP server wrapper can resolve it at startup.
+
+**Note:** This is equivalent to running `/set-aws-profile` in Claude — the launcher and the slash command write to the same dotfile, so they stay in sync.
+
+### GCP Observability Configuration
+
+Before using GCP Observability, authenticate with Application Default Credentials (ADC):
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+```
+
+When "GCP Observability" is selected, the launcher runs `gcloud projects list` to fetch accessible projects, checks for valid ADC credentials (checking `GOOGLE_APPLICATION_CREDENTIALS` first, then `~/.config/gcloud/application_default_credentials.json`), then shows a `select()` prompt with the available project IDs. The previously used project is pre-selected when it is still present in the list. The selected project ID is stored in `~/.claude/.current-gcp-project` for the MCP wrapper and persisted for the next run. If `gcloud` is not installed, not authenticated, or returns no projects, a descriptive error is shown and the launcher exits.
+
+**Note:** `GOOGLE_CLOUD_PROJECT` is used by the auth library for project ID resolution only — it does not auto-populate tool call parameters. Specify `resourceNames`, `parent`, `name`, or `projectId` explicitly in each tool call. The wrapper prints the active project to stderr as a context hint for Claude.
+
+### Environment Variables Set by myclaude
+
+When you select Grafana with Viewer role, the launcher sets:
+```
+GRAFANA_URL={cluster_url}
+GRAFANA_SERVICE_ACCOUNT_TOKEN={viewer_token}
+GRAFANA_DISABLE_WRITE=true
+```
+
+When you select Grafana with Editor role:
+```
+GRAFANA_URL={cluster_url}
+GRAFANA_SERVICE_ACCOUNT_TOKEN={editor_token}
+```
+
+When you select CloudWatch:
+```
+AWS_PROFILE={profile}
+```
+
+When you select GCP Observability:
+```
+GOOGLE_CLOUD_PROJECT={project_id}
+```
+
+These variables are passed to `claude --agent dungeonmaster`, and they flow through to all MCP server subprocesses.
+
 ## Skills (`claude/skills/`)
 
-Skills are reusable capabilities that enhance Claude's functionality.
+Skills are reusable capabilities that enhance Claude's functionality. Three mandatory global skills are enforced via `CLAUDE.md`:
 
-See the project README for the current skills list.
+- **`commit-message-guide`** — Enforces conventional commit format for all git commits
+- **`validate-before-pr`** — Runs lint and format checks (via stack detection: npm, Make, Python, Go, Rust) before opening a PR; gates PR creation on passing checks
+- **`open-pull-request`** — Creates pull requests with conventional naming, draft mode, and pre-flight validation
+
+Additional skills (non-mandatory):
+
+- **`write-reliable-tests`** — Guides authorship and review of deterministic, isolated, and idempotent automated tests across unit, integration, and e2e levels; applied automatically whenever test code is being written or evaluated
+
+## Slash Commands
+
+Claude Code slash commands provide quick workflow shortcuts. Commands are installed alongside skills and agents into `~/.claude/commands/`.
+
+| Command | Purpose |
+|---------|---------|
+| `/bug` | Report a bug or investigate unexpected behavior — routes directly to Tracebloom (Investigative Gate), bypassing heuristic task classification. |
+| `/feature` | Request a new feature or enhancement — routes directly to the constructive planning pipeline, bypassing the Investigative Gate. |
+| `/ask` | Ask a question about the codebase, architecture, or approach — lightweight Q&A with no planning or implementation. Routes to the Advisory Workflow (Phases A-B-C) for read-only research and synthesis. |
+| `/ops` | Runs an advisory query and saves the synthesis output as a Markdown report to `reports/` in the current repo. Thin alias for `/ask --save-report`. |
+| `/open-pr` | Creates a pull request following the `open-pull-request` skill workflow: conventional branch naming, conventional title, draft mode, assigned to @me, and full pre-flight checklist. |
+| `/sync-pr` | Rebases the current PR branch onto `refs/remotes/origin/main` and force-pushes with `--force-with-lease`, keeping open PRs in sync with main's latest changes without manual git gymnastics. |
+| `/resolve-conflicts` | Resolves merge conflicts during an in-progress rebase — detects conflicted files, resolves them file-by-file, stages each result, and cycles `rebase --continue` until the rebase completes. Can be invoked standalone or inline from `/sync-pr`. |
+| `/clean-the-desk` | Cleans up stale local branches (whose upstream PRs have been merged) and removes their associated git worktrees. Prompts for confirmation before any destructive action. |
+| `/merged` | Cleans up after a merged PR: uses session context or remote-gone detection to auto-select the target branch, removes the worktree, deletes the local branch, checks out main, pulls the latest, and silently auto-deletes current-session plan files from `~/.ai-tpk/plans/{repo-slug}/`. Confirms all destructive actions with the user. |
+| `/clean-ai-tpk-artifacts` | Deletes plan and lesson files older than N days (default 14) from `~/.ai-tpk/`. By default scoped to the current repository's plans; use `--all` flag to clean across all repositories. Prompts for confirmation before deletion. |
+| `/merge-pr` | Syncs the current PR branch with main, waits for all required CI checks to pass, squash-merges the PR, deletes the remote branch, and automatically chains into `/merged` for post-merge cleanup. |
+| `/address-pr-comments` | Reviews and replies to unresolved inline GitHub PR review comments — fetches threads via GraphQL, reads current file state, categorizes each comment (FIX, COMPROMISE, PUSH-BACK, ALREADY-ADDRESSED, ACKNOWLEDGE), proposes a reply for user approval, and posts approved replies via the REST API. Saves a session summary to `~/.ai-tpk/pr-review-comments/` with resume support across sessions. |
+| `/set-aws-profile` | Selects an AWS profile for the CloudWatch MCP server by listing available profiles from `~/.aws/config` (preferred) or `~/.aws/credentials` (fallback), validating the user's selection, and storing it in `~/.claude/.current-aws-profile` (mode 0600). The profile is read at MCP startup. Requires Claude Code restart or MCP server reload to take effect. |
+
+## Continuous Integration
+
+Pull requests targeting `main` are validated by a GitHub Actions workflow at `.github/workflows/ci.yml`. See the workflow file for the specific checks that run. For formatting failures, run `pnpm run format` and commit the result.
+
+## Configuration Updates
+
+When updating Claude configurations (agents, skills, commands, hooks, references, or settings):
+
+1. Make changes in this repository
+2. Test the configurations
+3. Commit and push changes
+4. Pull on other machines to sync
+
+When adding new hooks, agents, or skills, update the relevant documentation in this file (`/docs/CONFIGURATION.md`).

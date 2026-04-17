@@ -40,6 +40,14 @@ Agentic design advisory (pre-deployment) → Reisannin
 
 > For detailed operational specs, tool lists, workflows, and output formats, see each agent's config file: `claude/agents/{name}.md`
 
+## Specialized Agents Overview
+
+The system supports two distinct entry points for tasks:
+- **Investigative tasks** ("Why is X broken?") → Tracebloom produces a Diagnostic Report → feeds to Pathfinder or Bitsmith
+- **Constructive tasks** ("Add/fix/refactor X") → Askmaw (if ambiguous) or direct to Pathfinder
+
+See sections below for per-agent operational specs, [docs/WORKFLOW_ENTRY_POINTS.md](/docs/WORKFLOW_ENTRY_POINTS.md) for task routing guidance, and [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the review workflow guide.
+
 ## Detailed Agent Profiles
 
 ### Dungeon Master - Orchestrator
@@ -214,6 +222,10 @@ When the data is insufficient, she says so plainly and records a candidate for f
 
 **Configuration File:** `/claude/agents/everwise.md`
 
+### Everwise Scout: Subagent Transcript Drill-Down
+
+Everwise now includes Scout, a selective transcript analysis capability. When chronicle analysis identifies specific anomalies—REJECT verdicts, repeated REVISE loops (3+), rapid re-invocations (<60 seconds), unresolved escalations, or anomalous agent routing—Everwise can dynamically discover and read raw Claude Code subagent JSONL transcripts to understand what actually happened beyond the chronicle's metadata. Scout uses a two-pass reading algorithm with a 20-line cap per transcript and a 3-transcript budget per session, keeping context consumption bounded while providing ground-truth behavioral evidence. This capability works in full graceful degradation mode when `~/.claude/` data is unavailable.
+
 ---
 
 ### Reisannin — 霊山人 · The Mountain Hermit
@@ -234,3 +246,31 @@ He wears the dark *koromo* of a Zen monk, bound at the waist with a rope cord. H
 **Core Mission:** Advise on agentic architecture before anything is built — agent scope, skill decomposition, harness design, workflow topology, and when a proposed design is simpler than it appears or more complex than it admits.
 
 **Configuration File:** `/claude/agents/reisannin.md`
+
+## Documentation Integration
+
+The Dungeon Master orchestration agent automatically invokes Quill (documentation specialist) in Phase 5 (Completion) when a planning session was conducted. Quill runs as step 5b — after reservations are logged (5a) but before the Resolution Gate (5c) and completion summary (5d). Quill receives the plan file, list of changed files, and feature summary, then updates documentation to reflect the implementation. If the Resolution Gate triggers post-gate Bitsmith work, Quill is re-invoked after the follow-up Phase 4 review. This ensures documentation stays synchronized with code without manual effort.
+
+## Session Logging
+
+Orchestration sessions are automatically chronicled by a two-stage shell pipeline. During each session, `talekeeper-capture.sh` runs as a SubagentStop command hook and appends raw sub-agent events to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw.jsonl`. At session end, `talekeeper-enrich.sh` runs as an async Stop hook and processes the raw log into a structured enriched JSONL chronicle (`~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-{session_id}.jsonl`). The enriched chronicle includes all agent metadata plus an `agent_transcript_path` field for SubagentStop events, enabling downstream tools like Everwise Scout to locate and analyze raw transcripts. Both scripts filter out internal hook-agent noise. Logs are gitignored and stay local to your machine.
+
+When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually. It reads the enriched chronicle files, delivers a concise chat digest, and appends structured narrative sections with Mermaid diagrams to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrative.md`.
+
+## Terminal Tab Rename
+
+Terminal tab titles are automatically managed via a SessionStart hook for resume and a Stop hook for first-turn AI title generation. Titles persist across terminal restarts. See [docs/CONFIGURATION.md — SessionStart Hook - Terminal Tab Title Restore](/docs/CONFIGURATION.md) and [Stop Hook - Terminal Tab Title Generation](/docs/CONFIGURATION.md) for full hook behavior, supported terminals, and dependencies.
+
+## Shared Agent References
+
+Agent definitions can reference shared behavioral vocabulary defined in `claude/references/`. This eliminates duplication across multiple agents:
+
+- **`claude/references/github-auth-probe.md`** — Canonical procedure for verifying GitHub account access before pushing or committing. Both `commit-message-guide` and `open-pull-request` skills reference this to ensure consistent GitHub authentication checks.
+- **`claude/references/implementation-standards.md`** — Shared behavioral norms (Minimal Diff, YAGNI, Test-First) for implementation, planning, and review agents. Bitsmith, Pathfinder, Ruinor, and Knotcutter all cite this as the canonical source; each may elaborate in its own definition file.
+- **`claude/references/review-gates.md`** — Shared two-gate review framework (Plan Review Gate and Implementation Review Gate) for all reviewer agents (Ruinor, Riskmancer, Windwarden, Knotcutter, Truthhammer). Defines universal operational constraints (read-only operation, in-memory returns) and plan-file-scoping rules. Each reviewer agent defines its own domain-specific criteria for each gate inline in its definition file.
+- **`claude/references/verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales. Agents load this reference when issuing verdicts to ensure consistent evaluation vocabulary.
+- **`claude/references/worktree-protocol.md`** — Shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. Agents load this reference when operating in isolated worktrees to ensure consistent path handling.
+- **`claude/references/dm-routing-examples.md`** — 11 worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports. The DM loads this reference at runtime rather than embedding the examples inline in its system prompt.
+- **`claude/references/completion-templates.md`** — Four rigid per-command completion report templates (A: Constructive, B: Investigative, C: Operational PR, D: Post-Merge) and a shared Common Fields block. The DM output contract and `/open-pr`, `/merged`, `/merge-pr` commands all reference this file to ensure consistent, parseable completion output across sessions.
+
+When modifying these reference files, changes apply automatically to all agents that load them, eliminating the need to update redundant constraints across multiple agent definitions.

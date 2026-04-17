@@ -198,14 +198,14 @@ Follow this sequence:
 - If `WORKTREE_BRANCH` was dropped from conversation memory but `WORKTREE_PATH` is present, recover `WORKTREE_BRANCH` from the `branch` field in the porcelain output for that worktree.
 - If `REPO_SLUG` was dropped, recover it via `basename $(git rev-parse --show-toplevel)`.
 - Log to the user: `"Continuing existing session: worktree {WORKTREE_PATH} on branch {WORKTREE_BRANCH}. Phase 0 skipped."`
-- Proceed to Phase 1 with the (possibly recovered) context.
+- Proceed to Phase 1 with the (possibly recovered) context. If a Phase 1 workflow was already in progress (e.g., the Askmaw interview loop, a scope confirmation prompt, or the Resolution Gate's user-prompt path), resume it at the point the prior message left off — do not restart Phase 1 from step 1.
 
 If `WORKTREE_PATH` is missing from conversation memory, OR `git worktree list --porcelain` does not show the path, proceed with full Phase 0 setup as a fresh session.
 
 **Session reset triggers:** A session is considered ended (so the re-entry guard does not fire on the next free-form message) only when one of the following has occurred:
 - The `/merged` command completed successfully (which already removes the worktree and clears `WORKTREE_PATH` / `WORKTREE_BRANCH`). Note that `/open-pr` does **not** end the session — the worktree remains until `/merged` or manual cleanup, but a subsequent slash-command invocation will still bypass the guard per the Bypass condition above.
 - The user explicitly indicates a new unrelated task in a free-form message (e.g., "Let's switch to a different feature", "New task: ...", or any clear topic change). When ambiguous, ask the user before resetting — do not silently treat a follow-up as a new session.
-- Any slash-command invocation (`/feature`, `/bug`, `/ask`, `/ops`) per the Bypass condition above.
+- Any slash-command invocation that injects an `INTENT:` line (`/feature`, `/bug`, `/ask`, `/ops`) per the Bypass condition above.
 
 Adding scope to an in-flight feature, fixing a follow-up bug introduced by the in-flight implementation, or asking advisory questions about the work in progress — when raised as free-form follow-up messages — all count as continuations of the same session.
 
@@ -242,7 +242,7 @@ This subroutine is **invoked explicitly** by routing branches in this section th
 
 3. **Handle branch collisions:** If `git worktree add` fails because the branch already exists, retry with a numeric suffix (`feat/add-oauth-login-2`, then `-3`). After 3 failures, fall back to main working tree and warn the user.
 
-4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, `SESSION_SLUG`, and `REPO_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used. If a session is interrupted and context is lost, run `git worktree list` to recover `WORKTREE_PATH` and `WORKTREE_BRANCH`. Inspect `~/.ai-tpk/plans/{REPO_SLUG}/` to recover `SESSION_TS` and `SESSION_SLUG` from the plan filename. Recover `REPO_SLUG` via `basename $(git rev-parse --show-toplevel)`.
+4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, `SESSION_SLUG`, and `REPO_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used. If a session is interrupted and context is lost, run `git worktree list` to recover `WORKTREE_PATH` and `WORKTREE_BRANCH`. Inspect `~/.ai-tpk/plans/{REPO_SLUG}/` to recover `SESSION_TS` and `SESSION_SLUG` from the plan filename. Recover `REPO_SLUG` via `basename $(git rev-parse --show-toplevel)`. If a prior worktree's variables are present in conversation memory (e.g., from a session that ended with `/open-pr` rather than `/merged`), overwrite them with the new values — the DM never tracks multiple active worktrees simultaneously.
 
 5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 

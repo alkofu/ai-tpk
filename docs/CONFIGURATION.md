@@ -100,11 +100,11 @@ Auto-approved entries include the `[auto-approved]` marker; calls falling throug
 
 #### SessionStart Hook - Terminal Tab Title Restore
 
-Runs at the start of every Claude Code session to restore a previously stored terminal tab title for resumed sessions. Title generation is handled by the Stop hook (`tab-rename-stop.sh`).
+Runs at the start of every Claude Code session. For resumed sessions, restores the previously stored tab title. For fresh sessions (e.g., after `/new`), resets the tab to the repo or directory name so the previous session's stale title does not persist until the Stop hook generates a new one. Title generation from conversation content is handled by the Stop hook (`tab-rename-stop.sh`).
 
-**Purpose:** Restores a previously stored terminal tab title when resuming a session. Script: `claude/hooks/session-start.sh`.
+**Purpose:** Ensures the tab title always reflects the current session on startup — either a stored title for resumed sessions or a neutral repo/directory default for fresh sessions. Script: `claude/hooks/session-start.sh`.
 
-**Non-obvious behaviors:** `--name` override is detected via process ancestry (walks up to 3 levels); `-n` is intentionally excluded to avoid false positives. New sessions exit silently — title generation is deferred to the Stop hook after the first exchange.
+**Non-obvious behaviors:** `--name` override is detected via process ancestry (walks up to 3 levels); `-n` is intentionally excluded to avoid false positives. Fresh-session neutral title is derived from the git repo basename when inside a repo, or the directory basename otherwise — matching the context used by the Stop hook. The neutral default is not persisted to `~/.claude/session-titles/`, so the Stop hook's single-fire guard is not tripped and the AI-generated title replaces it after the first exchange.
 
 **Supported terminals and detection:**
 

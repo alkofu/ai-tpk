@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# session-start.sh -- Restores a previously stored session title for resumed sessions.
-# Title generation is handled by the Stop hook (tab-rename-stop.sh).
+# session-start.sh -- On resume: restores previously stored session title. On fresh start: resets tab to neutral default.
 # Fires on: SessionStart (async)
 # Installed to: ~/.claude/hooks/session-start.sh
 
@@ -35,6 +34,18 @@ TITLE_DIR="$HOME/.claude/session-titles"
 TITLE_FILE="$TITLE_DIR/$SESSION_ID"
 
 if [ ! -f "$TITLE_FILE" ]; then
+  # No stored title for this session (fresh session, e.g. /new).
+  # Reset tab to a neutral default so the previous session's title does not persist.
+  # Note: consecutive /new invocations each produce a new SESSION_ID with no stored
+  # title, so this branch fires correctly for each fresh start in sequence.
+  _tab_rename_detect_terminal
+  if [ -z "$TERMINAL" ]; then
+    exit 0
+  fi
+  TITLE=$(_tab_rename_default_title "$CWD")
+  if [ -n "$TITLE" ]; then
+    _tab_rename_set_title "$TITLE"
+  fi
   exit 0
 fi
 

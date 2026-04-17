@@ -349,7 +349,7 @@ When you want a human-readable summary of past sessions, invoke the Talekeeper n
 
 ### Terminal Tab Rename
 Terminal tab titles are automatically managed via a two-hook system:
-- **SessionStart Hook** — Restores previously stored session titles for resumed sessions (instant, no AI call)
+- **SessionStart Hook** — Restores previously stored session titles for resumed sessions (instant, no AI call); resets the tab to the repo or directory name for fresh sessions (e.g., after `/new`) so the previous session's stale title does not persist
 - **Stop Hook** — Generates a contextual 2–5 word title from the first user prompt and assistant response after the first turn completes; stores it for future resume
 
 This provides immediate context recognition when resuming sessions and automatic title generation based on what you actually worked on, without manual naming. Titles are stored in `~/.claude/session-titles/` and persist across terminal restarts. Sessions started with `--name` flag preserve their explicit title without AI override.

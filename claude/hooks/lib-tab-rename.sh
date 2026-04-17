@@ -64,3 +64,17 @@ _tab_rename_set_title() {
     fi
   fi
 }
+
+# _tab_rename_default_title DIR
+# Derives a neutral session title from DIR: repo basename if in a git repo,
+# directory basename otherwise. Returns the title via stdout.
+# Note: uses empty _repo_name (not exit status) as failure signal, because
+# `local x=$(cmd)` always returns 0 from local — masking $? of the inner command.
+# The ${_repo_name:-$_dir_name} fallback is therefore driven by empty string, not $?.
+_tab_rename_default_title() {
+  local _dir_name
+  local _repo_name
+  _dir_name=$(basename "$1")
+  _repo_name=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null | xargs -I{} basename {} 2>/dev/null)
+  printf '%s' "${_repo_name:-$_dir_name}"
+}

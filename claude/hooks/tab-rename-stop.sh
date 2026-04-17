@@ -71,13 +71,13 @@ LAST_RESPONSE=$(echo "$STDIN_DATA" | jq -r '.last_assistant_message // ""' 2>/de
 LAST_RESPONSE="${LAST_RESPONSE:0:500}"
 
 # Gather lightweight project context
-DIR_NAME=$(basename "$CWD")
-REPO_NAME=$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null | xargs -I{} basename {} 2>/dev/null)
+# DRY: calls _tab_rename_default_title; behavior unchanged
+REPO_NAME=$(_tab_rename_default_title "$CWD")
 
 # Generate AI title via claude -p (pipe mode does not fire session hooks; --bare strips the default system prompt)
 TITLE=$(claude -p --bare --model haiku \
   --system-prompt "Respond with ONLY 2-5 words. No punctuation, no quotes, no explanation. Generate a short natural-language title summarizing this coding session based on the user's request and the assistant's work." \
-  "Project: ${REPO_NAME:-$DIR_NAME}, User asked: ${FIRST_PROMPT}, Assistant did: ${LAST_RESPONSE}" \
+  "Project: ${REPO_NAME}, User asked: ${FIRST_PROMPT}, Assistant did: ${LAST_RESPONSE}" \
   </dev/null 2>/dev/null)
 if [ $? -ne 0 ] || [ -z "$TITLE" ]; then
   exit 0

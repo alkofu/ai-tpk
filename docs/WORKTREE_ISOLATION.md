@@ -4,7 +4,7 @@
 
 The Dungeon Master orchestration agent now supports **parallel isolated sessions** via Git worktrees. This feature enables multiple simultaneous `claude --agent dungeonmaster` terminals to work on unrelated issues without git conflicts or interference.
 
-Each DungeonMaster session automatically creates a dedicated git worktree on an isolated branch, ensuring clean separation of concerns and enabling truly parallel development workflows.
+Each constructive or investigative DungeonMaster session automatically creates a dedicated git worktree on an isolated branch, ensuring clean separation of concerns and enabling truly parallel development workflows.
 
 ## Quick Start
 
@@ -18,10 +18,11 @@ claude --agent dungeonmaster
 ```
 
 The session automatically:
-1. Creates an isolated git worktree at `.worktrees/dm-add-oauth-login/`
-2. Creates a dedicated branch `dm/add-oauth-login`
-3. Executes all planning, implementation, and reviews within that worktree
-4. Logs the branch as ready at completion; run `/open-pr` to create a pull request or handle cleanup manually
+1. Captures session variables (Phase 0)
+2. Creates an isolated git worktree at `.worktrees/feat-add-oauth-login/` (Phase 1)
+3. Creates a dedicated branch `feat/add-oauth-login`
+4. Executes all planning, implementation, and reviews within that worktree
+5. Logs the branch as ready at completion; run `/open-pr` to create a pull request or handle cleanup manually
 
 In another terminal, start a second DungeonMaster session:
 
@@ -31,57 +32,63 @@ claude --agent dungeonmaster
 ```
 
 Both sessions operate independently:
-- Session 1 works on branch `dm/add-oauth-login` in `.worktrees/dm-add-oauth-login/`
-- Session 2 works on branch `dm/fix-db-perf-issue-42` in `.worktrees/dm-fix-db-perf-issue-42/`
+- Session 1 works on branch `feat/add-oauth-login` in `.worktrees/feat-add-oauth-login/`
+- Session 2 works on branch `fix/db-perf-issue-42` in `.worktrees/fix-db-perf-issue-42/`
 - No git conflicts, no interference, completely isolated development
 
 ## How It Works
 
-### Worktree Creation (Phase 0)
+### Phase 0: Session Variable Capture
 
-DM performs **Phase 0: Session Isolation** before any planning. Branch names follow the pattern `dm/{slugified-task}` (e.g., "Add OAuth login" → `dm/add-oauth-login`). See `claude/agents/dungeonmaster.md` for the full Phase 0 specification.
+DM performs **Phase 0: Session Isolation** before any other work. Phase 0 only captures three session-scoped variables in conversation memory — no worktree is created here:
 
-### Skip Conditions
+- `SESSION_TS` — current local time formatted as `YYYYMMDD-HHmmss`
+- `SESSION_SLUG` — the task description slugified (lowercase, alphanumeric and hyphens, max 40 characters)
+- `REPO_SLUG` — the repository directory name (used to namespace plan files)
 
-Phase 0 (worktree creation) is **skipped** if:
+Phase 0 also includes a **re-entry guard** that detects when a free-form follow-up message is continuing an existing session (e.g., adding scope to an in-flight feature). When a continuation is detected, Phase 0 is skipped entirely and the session proceeds directly to Phase 1 with the existing context. Slash-command invocations (`/feature`, `/bug`, `/ask`, `/ops`) always bypass the guard and start a fresh session boundary.
 
-- The `--no-worktree` flag is provided
-- The task is trivially single-file (identified early as not needing Pathfinder)
+### Phase 1: Worktree Creation Subroutine
 
-Examples:
+Worktree creation happens in **Phase 1**, not Phase 0. After intent classification, the routing branch invokes the **Worktree Creation Subroutine** when required. This subroutine:
 
-```bash
-# Explicitly skip worktree creation (operate in main working tree)
-claude --agent dungeonmaster --no-worktree
-# Prompt: "Fix typo in README.md"
+1. Derives a branch name using a conventional commit prefix: `{type}/{slugified-task}` — for example, "Add OAuth login" → `feat/add-oauth-login`, "Fix null pointer in auth" → `fix/null-pointer-auth`, "Refactor cache layer" → `refactor/cache-layer`. The prefix is inferred from the nature of the request (`feat/`, `fix/`, `refactor/`, `chore/`, `docs/`, `test/`).
+2. Delegates `git worktree add` to Bitsmith (the DM's Bash scope is read-only; write operations are always delegated).
+3. Sets `WORKTREE_PATH` and `WORKTREE_BRANCH` in conversation memory for the remainder of the session.
+4. Logs: "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
-# Trivial task: worktree skipped automatically
-claude --agent dungeonmaster
-# Prompt: "Rename AuthContext to AuthProvider in one file"
-```
+See `claude/agents/dungeonmaster.md` for the full subroutine specification.
 
-**Late initialization:** If DungeonMaster initially skips worktree creation but later determines the task is non-trivial (e.g., decides to invoke Pathfinder), it creates the worktree at that point before proceeding.
+### When a Worktree is Created vs. Not Created
+
+The subroutine is invoked **only by routing branches that require implementation work**. Advisory sessions never invoke it:
+
+| Session type | Worktree created? |
+|---|---|
+| Constructive (`/feature`, free-form feature request) | Yes — subroutine invoked in Phase 1 |
+| Investigative (`/bug`, free-form "why is X broken?") | Yes — subroutine invoked in Phase 1 |
+| Advisory (`/ask`, `/ops`, free-form questions) | No — advisory branches do not invoke the subroutine |
+
+Advisory sessions (`INTENT: advisory`) bypass the constructive/investigative pipeline entirely. They capture session variables in Phase 0 but never proceed to a routing branch that invokes the subroutine. No worktree, no plan file, no code changes.
 
 ### Worktree Structure
 
-After Phase 0 completes, your repository structure looks like:
+After the subroutine completes, your repository structure looks like:
 
 ```
 .
-├── .git/                    # Main repo git directory (shared across worktrees)
-├── .worktrees/              # Worktrees directory (gitignored)
-│   ├── dm-add-oauth-login/  # Session 1 worktree
-│   │   ├── .git            # Pointer to main .git (shared objects)
-│   │   ├── plans/           # Local plans (gitignored)
+├── .git/                        # Main repo git directory (shared across worktrees)
+├── .worktrees/                  # Worktrees directory (gitignored)
+│   ├── feat-add-oauth-login/    # Session 1 worktree
+│   │   ├── .git                 # Pointer to main .git (shared objects)
 │   │   ├── src/
 │   │   └── ...
-│   └── dm-fix-db-perf/      # Session 2 worktree
+│   └── fix-db-perf-issue-42/    # Session 2 worktree
 │       ├── .git
-│       ├── plans/
 │       └── ...
 ├── src/
-├── plans/                   # Main repo plans (gitignored)
-└── .gitignore               # Contains .worktrees/ and plans/
+├── ~/.ai-tpk/plans/{repo-slug}/ # Plans (user-scoped, outside repo)
+└── .gitignore                   # Contains .worktrees/
 ```
 
 ## Managing Worktrees
@@ -97,11 +104,11 @@ git worktree list
 Output example:
 
 ```
-/path/to/repo                 abc1234 [main]
-/path/to/repo/.worktrees/dm-add-oauth-login
-                              def5678 [dm/add-oauth-login]
-/path/to/repo/.worktrees/dm-fix-db-perf
-                              ghi9012 [dm/fix-db-perf]
+/path/to/repo                     abc1234 [main]
+/path/to/repo/.worktrees/feat-add-oauth-login
+                                  def5678 [feat/add-oauth-login]
+/path/to/repo/.worktrees/fix-db-perf-issue-42
+                                  ghi9012 [fix/db-perf-issue-42]
 ```
 
 ### Cleanup
@@ -113,40 +120,27 @@ Use standard git worktree commands to remove stale worktrees and branches:
 ```bash
 git worktree remove .worktrees/{slug}
 git worktree prune
-git branch -d dm/{slug}
+git branch -d feat/{slug}
 ```
 
-## Suppressing Worktree Creation
-
-If you want to suppress worktree creation and work directly in the main working tree, use the `--no-worktree` flag:
-
-```bash
-claude --agent dungeonmaster --no-worktree
-# Prompt: "Add OAuth login"
-```
-
-With `--no-worktree`:
-- DungeonMaster operates in the main working tree
-- Plans are saved to `plans/` (main repo)
-- No `.worktrees/` directory is used
-- Useful for analysis-only sessions or read-only work
-- Backwards compatible with pre-worktree workflow
+Or use the `/merged` command after a PR is merged — it removes the worktree and local branch automatically.
 
 ## Worktree Awareness in Sub-Agents
 
-When a DungeonMaster session has an active worktree, all sub-agents (Pathfinder, Bitsmith, Quill) automatically receive worktree context:
+When a DungeonMaster session has an active worktree, all sub-agents (Pathfinder, Bitsmith, Quill, Tracebloom) automatically receive worktree context:
 
 ```
-WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-add-oauth-login
-WORKTREE_BRANCH: dm/add-oauth-login
+WORKING_DIRECTORY: /absolute/path/to/.worktrees/feat-add-oauth-login
+WORKTREE_BRANCH: feat/add-oauth-login
 All file operations and Bash commands must use this directory as the working root.
 ```
 
 Sub-agents respect this context:
 
-- **Pathfinder:** Writes plans to `{WORKING_DIRECTORY}/plans/` instead of the main repo's `plans/`
-- **Bitsmith:** Performs all code changes within the worktree, commits land on the worktree's branch
+- **Pathfinder:** Writes plans to `~/.ai-tpk/plans/{REPO_SLUG}/` (user-scoped, not worktree-relative)
+- **Bitsmith:** Performs all code changes within the worktree; commits land on the worktree's branch
 - **Quill:** Writes documentation updates relative to the worktree
+- **Tracebloom:** Reads files from the worktree when investigating
 
 ### Bitsmith's Path Mismatch Guard
 
@@ -157,15 +151,15 @@ Bitsmith includes a safeguard that prevents silent writes to the main working tr
 At session completion (Phase 5), DungeonMaster logs a status line and leaves the worktree and branch intact:
 
 ```
-Branch `dm/add-oauth-login` is ready at `.worktrees/dm-add-oauth-login`.
+Branch `feat/add-oauth-login` is ready at `.worktrees/feat-add-oauth-login`.
 Run `/open-pr` to create a pull request, or handle cleanup manually.
 ```
 
 No interactive prompt is shown. The worktree is never removed automatically. When you are ready to create a PR, run `/open-pr` in the same session or a new session. When you are done with the worktree, clean up manually:
 
 ```bash
-git worktree remove .worktrees/dm-add-oauth-login
-git branch -d dm/add-oauth-login
+git worktree remove .worktrees/feat-add-oauth-login
+git branch -d feat/add-oauth-login
 ```
 
 ## Example: Two Parallel Sessions
@@ -178,13 +172,14 @@ git branch -d dm/add-oauth-login
 $ claude --agent dungeonmaster
 > Add OAuth login to the authentication system
 ...
-[DungeonMaster creates .worktrees/dm-add-oauth-login/ on branch dm/add-oauth-login]
-[Pathfinder creates plan at .worktrees/dm-add-oauth-login/plans/oauth-plan.md]
+[Phase 0: session variables captured]
+[Phase 1: Worktree Creation Subroutine creates .worktrees/feat-add-oauth-login/ on branch feat/add-oauth-login]
+[Pathfinder creates plan at ~/.ai-tpk/plans/{repo-slug}/20260401-143022-add-oauth-login.md]
 [Bitsmith implements OAuth in the worktree]
 [Ruinor and Riskmancer review in the worktree context]
 [Quill updates documentation in the worktree]
 ...
-Branch `dm/add-oauth-login` is ready at `.worktrees/dm-add-oauth-login`. Run `/open-pr` to create a pull request, or handle cleanup manually.
+Branch `feat/add-oauth-login` is ready at `.worktrees/feat-add-oauth-login`. Run `/open-pr` to create a pull request, or handle cleanup manually.
 ```
 
 ### Session 2: Database Performance
@@ -195,41 +190,43 @@ Branch `dm/add-oauth-login` is ready at `.worktrees/dm-add-oauth-login`. Run `/o
 $ claude --agent dungeonmaster
 > Fix slow database queries on issue #42
 ...
-[DungeonMaster creates .worktrees/dm-fix-db-perf-issue-42/ on branch dm/fix-db-perf-issue-42]
-[Pathfinder creates plan at .worktrees/dm-fix-db-perf-issue-42/plans/db-optimization.md]
+[Phase 0: session variables captured]
+[Phase 1: Worktree Creation Subroutine creates .worktrees/fix-db-perf-issue-42/ on branch fix/db-perf-issue-42]
+[Pathfinder creates plan at ~/.ai-tpk/plans/{repo-slug}/20260401-144500-fix-db-perf-issue-42.md]
 [Bitsmith implements query fixes in the worktree]
 [Ruinor and Windwarden review in the worktree context]
 ...
-Branch `dm/fix-db-perf-issue-42` is ready at `.worktrees/dm-fix-db-perf-issue-42`. Run `/open-pr` to create a pull request, or handle cleanup manually.
+Branch `fix/db-perf-issue-42` is ready at `.worktrees/fix-db-perf-issue-42`. Run `/open-pr` to create a pull request, or handle cleanup manually.
 ```
 
 **Result:**
-- Session 1: Branch `dm/add-oauth-login` preserved at `.worktrees/dm-add-oauth-login`; run `/open-pr` when ready
-- Session 2: Branch `dm/fix-db-perf-issue-42` preserved at `.worktrees/dm-fix-db-perf-issue-42`; run `/open-pr` when ready
+- Session 1: Branch `feat/add-oauth-login` preserved at `.worktrees/feat-add-oauth-login`; run `/open-pr` when ready
+- Session 2: Branch `fix/db-perf-issue-42` preserved at `.worktrees/fix-db-perf-issue-42`; run `/open-pr` when ready
 - Main branch untouched until you merge or create a PR
 - Zero git conflicts between sessions
+
+## Advisory Sessions: No Worktree
+
+Advisory sessions (triggered via `/ask`, `/ops`, or any free-form question classified as advisory) never create a worktree:
+
+```bash
+$ claude --agent dungeonmaster
+> How does the session isolation work with worktrees?
+...
+[Phase 0: session variables captured]
+[Advisory branch: Worktree Creation Subroutine not invoked]
+[DM answers directly via Phases A-B-C — no plan, no code, no worktree]
+```
+
+The advisory workflow bypasses the entire constructive/investigative pipeline. No `.worktrees/` entry is created, no branch is created, and no plan file is written.
 
 ## Workflow Flags Summary
 
 | Flag | Effect | Use Case |
 |------|--------|----------|
-| `--no-worktree` | Suppress worktree creation; operate in main working tree | Read-only analysis, single-file trivial changes, explicit backwards compatibility |
-| `--explore-options` | Trigger options exploration before execution planning | Architectural decisions, technology selection, multiple viable paths |
+| `--explore-options` | Scope-exploration mode: invoke Pathfinder to surface scope and implementation options, then stop before plan generation until the user confirms | Architectural decisions, technology selection, multiple viable paths |
 
-You can combine flags:
-
-```bash
-claude --agent dungeonmaster --no-worktree --explore-options
-```
-
-## Backwards Compatibility
-
-This feature is **fully backwards compatible**:
-
-- Sessions without `--no-worktree` automatically get worktree isolation
-- Sessions with `--no-worktree` behave exactly like pre-worktree DM sessions
-- Existing workflows are unaffected
-- The `.worktrees/` directory is already gitignored
+Note: the `--explore-options` flag is a constructive-pipeline flag. It has no effect when the session is classified as advisory (`INTENT: advisory`).
 
 ## Troubleshooting
 
@@ -238,27 +235,27 @@ This feature is **fully backwards compatible**:
 If you see this error during worktree creation:
 
 ```
-fatal: 'dm/add-oauth-login' already exists.
+fatal: 'feat/add-oauth-login' already exists.
 ```
 
 **Solution:** The branch already exists from a previous session. Either:
 
-1. Delete the stale branch: `git branch -D dm/add-oauth-login`
-2. Use `--no-worktree` to operate in the main tree for this session
-3. Start a new session with a different task description
+1. Delete the stale branch: `git branch -D feat/add-oauth-login`
+2. Start a new session with a different task description
+3. Use `/clean-the-desk` to remove merged branches and their worktrees in bulk
 
-DungeonMaster retries with a numeric suffix (e.g., `dm/add-oauth-login-2`) after 3 attempts before falling back to the main working tree.
+DungeonMaster retries with a numeric suffix (e.g., `feat/add-oauth-login-2`) after 3 attempts before falling back to the main working tree.
 
 ### Stale or Crashed Worktrees
 
-If a session crashes before Phase 5, use the Cleanup commands above to remove the orphaned worktree and branch.
+If a session crashes before Phase 5, use the cleanup commands above to remove the orphaned worktree and branch.
 
 ### Worktree on Wrong Branch
 
 If you manually switch branches within a worktree, git may confuse the worktree state. To fix:
 
 ```bash
-git worktree remove .worktrees/dm-corrupted-task
+git worktree remove .worktrees/feat-corrupted-task
 git worktree prune
 ```
 
@@ -281,7 +278,7 @@ Git worktrees provide a lightweight solution:
 - Worktrees share git object storage (efficient)
 - Cleanup is simple: `git worktree remove`
 
-This enables truly parallel development workflows where multiple issues can be worked on simultaneously without manual coordination.
+Deferring worktree creation to Phase 1 (rather than Phase 0) means advisory sessions never incur the cost of worktree creation, and re-entry guard continuations don't redundantly create a second worktree for an already-established session.
 
 ## Best Practices
 
@@ -294,16 +291,13 @@ This enables truly parallel development workflows where multiple issues can be w
 3. **Clean up worktrees after completion**
    - Stale worktrees consume disk space
    - `git worktree remove` is quick and safe
+   - `/merged` automates cleanup after a PR is merged
 
 4. **Run `/open-pr`** to create a pull request when your branch is ready
    - The worktree stays active for feedback iteration after the PR is created
    - Delete the worktree when the PR is merged
 
 5. **Merge manually** when you are confident the work needs no review — then remove the worktree and branch (see Cleanup section above).
-
-6. **Use `--no-worktree`** only for trivial changes
-   - Most tasks benefit from worktree isolation
-   - Only skip when explicitly needed (read-only work)
 
 ## Related Documentation
 

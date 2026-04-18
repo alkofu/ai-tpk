@@ -117,14 +117,7 @@ flowchart TD
 - ALL plan reviews
 - ALL implementation reviews
 
-**Provides:**
-- Quality and correctness review
-- Basic security checks (obvious injection, exposed secrets, basic OWASP)
-- Basic performance checks (N+1 queries, obvious inefficiencies, missing indexes)
-- Basic complexity checks (obvious over-engineering, YAGNI violations)
-- **Specialist triage** - flags when deeper expertise is needed
-
-**Configuration:** `mandatory: true`, `invoke_when: "all plan and implementation reviews"`
+For the authoritative provides list and configuration, see [`claude/agents/ruinor.md`](/claude/agents/ruinor.md).
 
 #### Riskmancer - Security Specialist
 
@@ -133,16 +126,7 @@ flowchart TD
 - User explicitly requests with `--review-security` flag, OR
 - Plan/code contains security keywords (heuristic fallback)
 
-**Provides:**
-- OWASP Top 10 deep analysis
-- Advanced authentication/authorization review
-- Cryptography and key management audit
-- Payment processing and PII handling review
-- Advanced injection pattern detection
-
-**Configuration:** `mandatory: false`, `invoke_when: "security-sensitive features or when Ruinor flags security concerns"`
-
-**Trigger keywords:** auth, authentication, authorization, session, jwt, token, password, crypto, encrypt, decrypt, secret, credential, payment, pii, personal data, api key, oauth, saml, security
+For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/riskmancer.md`](/claude/agents/riskmancer.md).
 
 #### Windwarden - Performance Specialist
 
@@ -151,16 +135,7 @@ flowchart TD
 - User explicitly requests with `--review-performance` flag, OR
 - Plan/code contains performance keywords (heuristic fallback)
 
-**Provides:**
-- Algorithmic complexity analysis
-- Database query optimization review
-- Scalability pattern validation
-- Caching strategy assessment
-- Resource usage optimization
-
-**Configuration:** `mandatory: false`, `invoke_when: "performance-critical features or when Ruinor flags performance concerns"`
-
-**Trigger keywords:** database, query, performance, scale, scalability, optimization, cache, index, pagination, algorithm, batch, real-time, throughput, latency, memory, cpu
+For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/windwarden.md`](/claude/agents/windwarden.md).
 
 #### Knotcutter - Complexity Specialist
 
@@ -169,16 +144,7 @@ flowchart TD
 - User explicitly requests with `--review-complexity` flag, OR
 - Plan/code contains complexity keywords (heuristic fallback)
 
-**Provides:**
-- Architectural over-engineering detection
-- Premature abstraction identification
-- Radical simplification proposals
-- YAGNI enforcement (deep analysis)
-- Complexity reduction strategies
-
-**Configuration:** `mandatory: false`, `invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"`
-
-**Trigger keywords:** refactor, architecture, abstraction, framework, pattern, generalize, reusable, complexity, simplify, redesign, restructure
+For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/knotcutter.md`](/claude/agents/knotcutter.md).
 
 #### Truthhammer - Factual Validation Specialist
 
@@ -187,16 +153,7 @@ flowchart TD
 - User explicitly requests with `--verify-facts` flag, OR
 - Plan/code contains factual-validation keywords (heuristic fallback)
 
-**Provides:**
-- Config property verification for external services
-- API signature validation for libraries and SDKs
-- Version compatibility verification
-- CLI flag and environment variable validation
-- Cross-reference verification against official documentation
-
-**Configuration:** `mandatory: false`, `invoke_when: "plans or code reference specific external system behavior, or when Ruinor flags factual verification concerns"`
-
-**Trigger keywords:** changelog, breaking change, deprecated, upgrade path, migration guide, compatibility matrix, release notes
+For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/truthhammer.md`](/claude/agents/truthhammer.md).
 
 ## Triggering Mechanisms
 
@@ -252,18 +209,7 @@ Recommend performance specialist review.
 
 If no user flags present AND Ruinor doesn't recommend specialists, the orchestrator checks plan/code content for specialist keywords.
 
-**Security keywords:**
-- auth, authentication, authorization, session
-- jwt, token, password, crypto, encrypt, secret
-- credential, payment, pii, oauth, api key
-
-**Performance keywords:**
-- database, query, scale, cache, index
-- pagination, algorithm, batch, throughput
-
-**Complexity keywords:**
-- refactor, architecture, abstraction, framework
-- pattern, redesign, restructure
+The full keyword lists are defined per-agent in the agent files: [`claude/agents/riskmancer.md`](/claude/agents/riskmancer.md) (security), [`claude/agents/windwarden.md`](/claude/agents/windwarden.md) (performance), [`claude/agents/knotcutter.md`](/claude/agents/knotcutter.md) (complexity), and [`claude/agents/truthhammer.md`](/claude/agents/truthhammer.md) (factual validation). Truthhammer's list is intentionally narrow — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) "Keyword Detection (Heuristic Fallback)" section for the rationale.
 
 **Limitations:**
 - Less precise than Ruinor recommendations
@@ -396,6 +342,8 @@ The new workflow is fully compatible with existing:
 Existing workflows continue to work; they just run more efficiently now.
 
 ## Key Principles
+
+> **Note:** These principles are recorded here as ADR-level design decisions. The authoritative runtime sources for these rules are [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) (orchestration rules, intermediate review gates, REJECT remediation) and [`claude/agents/ruinor.md`](/claude/agents/ruinor.md) (review verdicts and adversarial mode). When the runtime behavior diverges from this list, the agent files are authoritative.
 
 - **Plans are artifacts** - Saved to `~/.ai-tpk/plans/{repo-slug}/` for visibility and persistence
 - **Reviews are ephemeral** - Verdicts returned in-memory, not saved to files

@@ -49,24 +49,15 @@ Both sessions operate independently:
 
 ### Phase 0: Session Variable Capture
 
-DM performs **Phase 0: Session Isolation** before any other work. Phase 0 only captures three session-scoped variables in conversation memory — no worktree is created here:
+DM performs **Phase 0: Session Isolation** before any other work. Phase 0 only captures session-scoped variables in conversation memory — no worktree is created here.
 
-- `SESSION_TS` — current local time formatted as `YYYYMMDD-HHmmss`
-- `SESSION_SLUG` — the task description slugified (lowercase, alphanumeric and hyphens, max 40 characters)
-- `REPO_SLUG` — the repository directory name (used to namespace plan files)
-
-Phase 0 also includes a **re-entry guard** that detects when a free-form follow-up message is continuing an existing session (e.g., adding scope to an in-flight feature). When a continuation is detected, Phase 0 is skipped entirely and the session proceeds directly to Phase 1 with the existing context. Slash-command invocations (`/feature`, `/bug`, `/ask`, `/ops`) always bypass the guard and start a fresh session boundary.
+For the authoritative Phase 0 specification — including the exact variable definitions, the re-entry guard logic, slash-command bypass behavior, and session reset triggers — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-0-session-isolation).
 
 ### Phase 1: Worktree Creation Subroutine
 
-Worktree creation happens in **Phase 1**, not Phase 0. After intent classification, the routing branch invokes the **Worktree Creation Subroutine** when required. This subroutine:
+Worktree creation happens in **Phase 1**, not Phase 0. After intent classification, the routing branch invokes the **Worktree Creation Subroutine** when required.
 
-1. Derives a branch name using a conventional commit prefix: `{type}/{slugified-task}` — for example, "Add OAuth login" → `feat/add-oauth-login`, "Fix null pointer in auth" → `fix/null-pointer-auth`, "Refactor cache layer" → `refactor/cache-layer`. The prefix is inferred from the nature of the request (`feat/`, `fix/`, `refactor/`, `chore/`, `docs/`, `test/`).
-2. Delegates `git worktree add` to Bitsmith (the DM's Bash scope is read-only; write operations are always delegated).
-3. Sets `WORKTREE_PATH` and `WORKTREE_BRANCH` in conversation memory for the remainder of the session.
-4. Logs: "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
-
-See `claude/agents/dungeonmaster.md` for the full subroutine specification.
+For the authoritative subroutine specification — including branch-name derivation rules with conventional commit prefixes, the exact Bash command sequence delegated to Bitsmith, branch-collision retry logic (numeric suffix retries, fallback after 3 failures), and session-context propagation — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-1-planning).
 
 ### When a Worktree is Created vs. Not Created
 
@@ -153,7 +144,7 @@ Sub-agents respect this context:
 
 ### Bitsmith's Path Mismatch Guard
 
-Bitsmith includes a safeguard that prevents silent writes to the main working tree when a session worktree is active. This **Path Mismatch Guard** fires as a per-operation invariant before every Write, Edit, or file-modifying Bash command. If you (or Bitsmith) accidentally reference a file path outside the active worktree, Bitsmith halts and surfaces the conflict to the Dungeon Master for confirmation rather than proceeding silently. This ensures changes land on the correct branch in the correct worktree, preventing accidental main-tree modifications during isolated sessions.
+Bitsmith includes a safeguard that prevents silent writes to the main working tree when a session worktree is active. For the authoritative Path Mismatch Guard specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#path-mismatch-guard). This ensures changes land on the correct branch in the correct worktree, preventing accidental main-tree modifications during isolated sessions.
 
 ## Phase 5 Completion Log
 
@@ -170,6 +161,8 @@ No interactive prompt is shown. The worktree is never removed automatically. Whe
 git worktree remove .worktrees/feat-add-oauth-login
 git branch -d feat/add-oauth-login
 ```
+
+For the authoritative Phase 5e specification, see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-5-completion).
 
 ## Example: Two Parallel Sessions
 
@@ -228,6 +221,8 @@ $ claude --agent dungeonmaster
 ```
 
 The advisory workflow bypasses the entire constructive/investigative pipeline. No `.worktrees/` entry is created, no branch is created, and no plan file is written.
+
+For the authoritative bypass rule, see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-1-planning) — the advisory branch of the Mutual Exclusivity note.
 
 ## Workflow Flags Summary
 

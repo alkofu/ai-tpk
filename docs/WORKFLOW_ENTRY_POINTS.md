@@ -20,12 +20,8 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 
 **Flow:**
 1. Dungeon Master routes to **Tracebloom** for investigation
-2. Tracebloom produces a **Diagnostic Report** (symptom, investigation summary, root cause, evidence, recommended next action)
-3. DM evaluates the report's recommendation and routes accordingly:
-   - **"Route to Pathfinder"** → Proceed to planning with the report as context
-   - **"Fix is trivial"** → Skip planning, route directly to Bitsmith
-   - **"Inconclusive"** → Present findings to user, ask how to proceed
-   - **"No bug found"** → Session ends unless user disagrees
+2. Tracebloom produces a **Diagnostic Report**. For the authoritative report schema and the five required fields, see [`claude/agents/tracebloom.md`](/claude/agents/tracebloom.md#diagnostic-report).
+3. DM evaluates the report's recommendation and routes accordingly: For the authoritative routing logic for each of the four "Recommended next action" values, see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-1-planning) "Investigative Gate".
 
 **Key property:** Read-only investigation. Tracebloom never writes, edits, or runs write-bearing commands. The Diagnostic Report is structured to feed directly into Pathfinder's planning.
 

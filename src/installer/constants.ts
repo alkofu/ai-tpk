@@ -5,6 +5,7 @@ export const CLAUDE_WHITELIST_DIRS: readonly string[] = [
   "hooks",
   "commands",
   "references",
+  "scripts",
 ];
 
 /** Standalone files of claude/ installed into ~/.claude */

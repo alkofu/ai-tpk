@@ -1,4 +1,4 @@
-# Match install.sh whitelist: only CLAUDE.md, settings.json, skills/, agents/ are tracked under claude/
+# Match CLAUDE_WHITELIST_DIRS and CLAUDE_WHITELIST_FILES in src/installer/constants.ts
 claude/**
 !claude/CLAUDE.md
 !claude/settings.json
@@ -12,6 +12,8 @@ claude/**
 !claude/commands/**
 !claude/references/
 !claude/references/**
+!claude/scripts/
+!claude/scripts/**
 
 # Git worktrees
 .worktrees/

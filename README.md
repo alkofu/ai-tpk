@@ -31,12 +31,18 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 
 - [docs/INSTALLATION.md](/docs/INSTALLATION.md) — Install lifecycle: clone, run install.sh, set up a dev environment, update, recover and clean backups, clean agent artifacts.
 - [docs/DEMO.md](/docs/DEMO.md) — A short, screenshot-driven tour of what an AI TPK session looks like in practice.
-- [docs/CONFIGURATION.md](/docs/CONFIGURATION.md) — Settings, hooks, MCP servers, myclaude launcher, agents, references, skills, slash commands, CI, and configuration update workflow.
+- [docs/HOOKS.md](/docs/HOOKS.md) — Settings, marketplaces, and the four Claude Code hooks (PermissionRequest, SessionStart, SubagentStop, Stop).
+- [docs/INSTRUCTIONS.md](/docs/INSTRUCTIONS.md) — How user-global (`claude/CLAUDE.md`) and project-level (`.claude/CLAUDE.md`) instructions interact.
+- [docs/MCP.md](/docs/MCP.md) — MCP server roster, configuration format, wrapper scripts, and stamp-based skipping.
+- [docs/MYCLAUDE.md](/docs/MYCLAUDE.md) — The `myclaude` session launcher: per-MCP wizards, env vars, and persistence.
+- [docs/SKILLS.md](/docs/SKILLS.md) — Agents (brief), shared references catalog, and the skills catalog (mandatory + additional).
+- [docs/SLASH_COMMANDS.md](/docs/SLASH_COMMANDS.md) — Full table of installed slash commands and what each does.
+- [docs/CONTRIBUTING.md](/docs/CONTRIBUTING.md) — Continuous Integration and the configuration update workflow.
 - [docs/AGENTS.md](/docs/AGENTS.md) — Agent roster, per-agent profiles, documentation/session-logging integrations, and shared reference files.
 - [docs/WORKFLOW_ENTRY_POINTS.md](/docs/WORKFLOW_ENTRY_POINTS.md) — Investigative vs. constructive task routing.
 - [docs/WORKTREE_ISOLATION.md](/docs/WORKTREE_ISOLATION.md) — Parallel sessions, agent artifacts storage, and worktree mechanics.
 - [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) — Mandatory-baseline + opt-in-specialist review workflow with diagrams and key principles.
-- Contributing — see [docs/CONFIGURATION.md § Configuration Updates](/docs/CONFIGURATION.md#configuration-updates) for the configuration update workflow and [docs/AGENTS.md § Shared Agent References](/docs/AGENTS.md#shared-agent-references) for shared reference file conventions. For repo-wide development workflow (build, test, lint, format, push), see [docs/INSTALLATION.md § Development Setup](/docs/INSTALLATION.md#development-setup).
+- Contributing — see [docs/CONTRIBUTING.md § Configuration Updates](/docs/CONTRIBUTING.md#configuration-updates) for the configuration update workflow and [docs/AGENTS.md § Shared Agent References](/docs/AGENTS.md#shared-agent-references) for shared reference file conventions. For repo-wide development workflow (build, test, lint, format, push), see [docs/INSTALLATION.md § Development Setup](/docs/INSTALLATION.md#development-setup).
 
 ## License
 

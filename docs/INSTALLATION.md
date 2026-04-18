@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide covers the installation lifecycle for ai-tpk: cloning, running install.sh, setting up a development environment, updating, recovering or cleaning backups, and cleaning up agent-produced artifacts. For configuration details (MCP servers, myclaude launcher, hooks, agents, skills, slash commands), see [docs/CONFIGURATION.md](/docs/CONFIGURATION.md).
+This guide covers the installation lifecycle for ai-tpk: cloning, running install.sh, setting up a development environment, updating, recovering or cleaning backups, and cleaning up agent-produced artifacts. For configuration details, see [docs/HOOKS.md](/docs/HOOKS.md), [docs/MCP.md](/docs/MCP.md), [docs/MYCLAUDE.md](/docs/MYCLAUDE.md), [docs/SKILLS.md](/docs/SKILLS.md), and [docs/SLASH_COMMANDS.md](/docs/SLASH_COMMANDS.md).
 
 ## Prerequisites
 

@@ -260,14 +260,14 @@ This ensures documentation stays synchronized with code without manual effort, a
 
 ## Session Logging
 
-Orchestration sessions are automatically chronicled by a two-stage shell pipeline that runs as Claude Code hooks. Logs are written to `~/.ai-tpk/logs/{REPO_SLUG}/`, are gitignored, and stay local to your machine. For the authoritative hook pipeline behavior and enriched chronicle schema, see [docs/CONFIGURATION.md — SubagentStop Hook and Stop Hook](/docs/CONFIGURATION.md). When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually — see [`claude/agents/talekeeper.md`](/claude/agents/talekeeper.md) for its session discovery, tracking, and narration protocol.
+Orchestration sessions are automatically chronicled by a two-stage shell pipeline that runs as Claude Code hooks. Logs are written to `~/.ai-tpk/logs/{REPO_SLUG}/`, are gitignored, and stay local to your machine. For the authoritative hook pipeline behavior and enriched chronicle schema, see [docs/HOOKS.md — SubagentStop Hook and Stop Hook](/docs/HOOKS.md). When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually — see [`claude/agents/talekeeper.md`](/claude/agents/talekeeper.md) for its session discovery, tracking, and narration protocol.
 
 ## Terminal Tab Rename
 
-Terminal tab titles are automatically managed via a SessionStart hook for resume and a Stop hook for first-turn AI title generation. Titles persist across terminal restarts. See [docs/CONFIGURATION.md — SessionStart Hook - Terminal Tab Title Restore](/docs/CONFIGURATION.md) and [Stop Hook - Terminal Tab Title Generation](/docs/CONFIGURATION.md) for full hook behavior, supported terminals, and dependencies.
+Terminal tab titles are automatically managed via a SessionStart hook for resume and a Stop hook for first-turn AI title generation. Titles persist across terminal restarts. See [docs/HOOKS.md — SessionStart Hook - Terminal Tab Title Restore](/docs/HOOKS.md) and [Stop Hook - Terminal Tab Title Generation](/docs/HOOKS.md) for full hook behavior, supported terminals, and dependencies.
 
 ## Shared Agent References
 
 Agent definitions can reference shared behavioral vocabulary defined in `claude/references/`. This eliminates duplication across multiple agents:
 
-For the authoritative catalog of shared reference files and what each one does, see [docs/CONFIGURATION.md — References](/docs/CONFIGURATION.md). Each agent definition file in [`claude/agents/`](/claude/agents/) cites the specific references it loads.
+For the authoritative catalog of shared reference files and what each one does, see [docs/SKILLS.md — References](/docs/SKILLS.md#references). Each agent definition file in [`claude/agents/`](/claude/agents/) cites the specific references it loads.

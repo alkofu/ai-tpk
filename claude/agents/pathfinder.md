@@ -186,10 +186,25 @@ Once requirements are clear and research is complete:
 4. Avoid vagueness (not "step 1: implement")
 5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly). Note: this confirmation covers the execution steps (the *how*); the Section 4 Scope Confirmation covered the objective and approach (the *what*). Both serve distinct purposes and both are intentional.
 6. For steps with behavioral acceptance criteria (i.e., "given X, the system should do Y"), add `**test-first:** true` to signal Bitsmith to write a failing test before implementing. Do not annotate steps whose acceptance criteria are purely structural (e.g., "file exists," "config is valid YAML," "directory is created"). See `claude/references/implementation-standards.md` for the full test-first protocol that Bitsmith follows when this annotation is present.
+7. **Documentation-primary detection.** After all Task Flow steps are drafted, classify each step by the file types its TODOs modify, applying the following two-clause rule:
+   - **Inclusion clause (what counts as documentation):** A file is documentation if its primary audience is end users or external developers. The canonical set is: `*.md` files under `docs/`, `examples/`, or `tutorials/`; top-level `README*` files; top-level `CHANGELOG*` files; top-level `CONTRIBUTING*` files; top-level `CODE_OF_CONDUCT*` files; top-level `LICENSE*` files; top-level `NOTICE*` files. A step is 'documentation-only' if every file it modifies is in this set.
+   - **Exclusion clause (operational `.md` files that are NOT documentation):** The following `.md` files are operational artifacts (agent prompts, reference material, skill bodies, GitHub templates), not user-facing documentation, and must NOT be classified as documentation: `claude/agents/*.md`, `claude/references/*.md`, `claude/skills/**/*.md`, `claude/commands/*.md`, `claude/hooks/**/*.md`, `.github/**/*.md` (including PR and issue templates). Steps that modify these files are non-documentation steps regardless of file extension.
+   - **Catch-all:** Any file not explicitly named in the inclusion clause is non-documentation by default. A step is 'non-documentation' if any TODO modifies a non-documentation file (code, configuration, scripts, tests, build files, lockfiles, operational `.md` files per the exclusion clause, or anything else not in the inclusion clause).
+   - **Decision:** If every step in the Task Flow is documentation-only, the plan is documentation-primary; emit the frontmatter tag (next bullet). If any step is non-documentation, the plan is not documentation-primary; do not emit the tag.
+   - When the plan is documentation-primary, prepend the following YAML frontmatter as the literal first content of the plan file — no blank lines, no comments before it — followed by a blank line, then the `# Feature: ...` heading:
+
+     ```
+     ---
+     documentation-primary: true
+     ---
+     ```
+
+     The `documentation-primary: true` line must appear by itself with no leading whitespace and no trailing characters — DM's frontmatter check uses a line-anchored grep (`^documentation-primary: true$`) and any deviation (extra spaces, capitalisation, merged lines) will silently cause the routing to fall back to Bitsmith. When the plan is not documentation-primary, do not emit any frontmatter at all (do not emit `documentation-primary: false` — absence is the negative signal).
+   - When the plan is documentation-primary, do NOT add `**test-first:** true` annotations to any step. Quill has no test framework and the annotation is meaningless in Mode A. The `test-first` annotation in step 6 of this section applies only to non-documentation-primary plans.
 
 ### 6. Pre-Submission Checklist
 
-Before saving the plan, run through all 8 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 7.
+Before saving the plan, run through all 9 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 7.
 
 1. **Per-agent specificity:** Are instructions for each affected file/agent distinct where they differ meaningfully?
 2. **File reference accuracy:** Have you verified section names and line numbers by reading the actual files?
@@ -199,6 +214,7 @@ Before saving the plan, run through all 8 questions below. If any question revea
 6. **Sequencing and dependencies:** Are steps ordered so each prerequisite is satisfied before it is needed?
 7. **Completeness:** Does the plan cover every part of the stated objective with no unexplained gaps?
 8. **Ambiguity test:** Could a careful executor reasonably make a wrong judgement call from any instruction? If yes, rewrite that instruction.
+9. **Documentation-primary classification:** Did you apply the all-or-nothing rule from Section 5 step 7? If every step is documentation-only, is the YAML frontmatter (`---\ndocumentation-primary: true\n---`) present at the top of the plan AND are no `**test-first:** true` annotations present? If any step is non-documentation, is the frontmatter absent? Confirm the inclusion/exclusion clauses were checked — operational `.md` files under `claude/agents/`, `claude/references/`, `claude/skills/`, `claude/commands/`, `claude/hooks/`, `.github/` are NOT documentation.
 
 ### 7. Save Plan
 
@@ -394,7 +410,7 @@ Before considering a plan complete, verify:
 4. ✅ **Explicit user confirmation** - User approved plan before finalizing (skipped in revision mode)
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
-7. ✅ **Pre-submission checklist passed** - all 8 questions reviewed and any issues corrected before saving
+7. ✅ **Pre-submission checklist passed** - all 9 questions reviewed and any issues corrected before saving
 8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when Askmaw brief, Tracebloom report, or Confirmed Scope block is present — REVISION_MODE skips Sections 3 and 4 entirely — proceed directly to Section 5)
 
 ## Tool Usage

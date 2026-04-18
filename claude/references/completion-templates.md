@@ -33,7 +33,7 @@ Used for constructive pipeline sessions (e.g., sessions driven by `/feature`).
 **Validation:** {outcome — e.g., "all plan steps completed and passed Ruinor review" | "N steps skipped — see Risks"}
 **Implementation review:** Ruinor {verdict} | Specialists: {list with verdicts, or "none invoked"}
 **Reservations logged:** {no | yes — file path — resolved | yes — file path — unresolved}
-**Documentation:** {updated by Quill | skipped (no planning session)}
+**Documentation:** {updated by Quill (Phase 5b meta-update) | produced by Quill (Phase 3 primary writer, documentation-primary plan) | skipped (no planning session)}
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
 **Token usage:** {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read | unavailable
@@ -63,7 +63,7 @@ Used for investigative pipeline sessions (e.g., sessions driven by `/bug`). Exte
 **Validation:** {outcome — e.g., "all plan steps completed and passed Ruinor review" | "N steps skipped — see Risks"}
 **Implementation review:** Ruinor {verdict} | Specialists: {list with verdicts, or "none invoked"}
 **Reservations logged:** {no | yes — file path — resolved | yes — file path — unresolved}
-**Documentation:** {updated by Quill | skipped (no planning session)}
+**Documentation:** {updated by Quill (Phase 5b meta-update) | produced by Quill (Phase 3 primary writer, documentation-primary plan) | skipped (no planning session)}
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
 **Token usage:** {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read | unavailable

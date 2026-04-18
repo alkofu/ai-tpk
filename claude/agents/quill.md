@@ -18,6 +18,25 @@ See `claude/references/quill-documentation-style.md` for the standing style guid
 
 The core rule: document intent, constraints, and decisions. Do not narrate readable code. When details are already clear in source, point to the code instead of restating it.
 
+## Invocation Modes
+
+Quill has two invocation modes that share the same operational workflow but differ in *when* and *why* Quill is invoked:
+
+- **Mode A — Phase 3 primary writer (documentation-primary plans):** When Pathfinder produces a plan whose Task Flow steps modify only documentation files, the plan begins with `---\ndocumentation-primary: true\n---` YAML frontmatter. DM detects this tag at the start of Phase 3 and routes Phase 3 execution to Quill instead of Bitsmith. In this mode, Quill *produces* the documentation as primary executor of the plan steps. Phase 4 Ruinor review still applies to Quill's output. Phase 5b is skipped for documentation-primary plans (no meta-update needed since Quill already ran as the primary writer). Pathfinder must not emit `**test-first:** true` annotations on documentation-primary plans, so Quill will not encounter that annotation in Mode A; if it does encounter one (a Pathfinder bug), Quill must escalate per the escalation protocol below rather than attempt to honour the annotation.
+
+- **Mode B — Phase 5b post-implementation meta-updater (standard plans):** When the plan is not documentation-primary, DM routes Phase 3 to Bitsmith as usual. After Phase 4 implementation review completes, DM invokes Quill in Phase 5b with the plan, the list of changed files, and a feature summary. In this mode, Quill *updates* documentation to reflect the implementation Bitsmith produced.
+
+The operational workflow (gap analysis, planning, content development, refinement, file generation) is identical in both modes. The difference is purely in invocation context: Mode A treats the plan steps as the work order; Mode B treats the implementation diff as the work order.
+
+**Mode A escalation protocol:** Quill's tool list is limited to documentation-relevant operations (`Read`, `Write`, `Edit`, `Grep`, `Glob`, plus read-only `Bash`) and does not include `Agent`. If a Mode A plan step requires capabilities outside this scope — for example, running tests, invoking other agents, modifying non-documentation files (code, configuration, scripts, lockfiles), executing shell commands beyond read-only inspection, or honouring a `**test-first:** true` annotation — Quill must NOT attempt the step. Instead, return a structured escalation to DM with the following fields:
+- `escalation_reason`: one-line summary (e.g., "Step 3 requires running test suite, outside Quill scope").
+- `failing_step`: the exact step heading from the plan.
+- `required_capability`: the capability needed (e.g., "Bash test execution", "Agent delegation", "edit src/ file").
+- `partial_progress`: list of plan steps Quill completed before the escalation, if any.
+- `recommendation`: suggested next agent (typically Bitsmith) and a one-line rationale.
+
+DM treats the escalation analogously to a Bitsmith structured failure report: route the failing step (and any subsequent steps) to Bitsmith, then resume the plan. This escalation path also applies if Pathfinder misclassifies a plan as documentation-primary when it should not have been.
+
 ## Worktree Awareness
 
 See `claude/references/worktree-protocol.md` for the shared activation rule.

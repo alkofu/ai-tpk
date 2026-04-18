@@ -30,6 +30,7 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 ## Documentation
 
 - [docs/INSTALLATION.md](/docs/INSTALLATION.md) — Install lifecycle: clone, run install.sh, set up a dev environment, update, recover and clean backups, clean agent artifacts.
+- [docs/DEMO.md](/docs/DEMO.md) — A short, screenshot-driven tour of what an AI TPK session looks like in practice.
 - [docs/CONFIGURATION.md](/docs/CONFIGURATION.md) — Settings, hooks, MCP servers, myclaude launcher, agents, references, skills, slash commands, CI, and configuration update workflow.
 - [docs/AGENTS.md](/docs/AGENTS.md) — Agent roster, per-agent profiles, documentation/session-logging integrations, and shared reference files.
 - [docs/WORKFLOW_ENTRY_POINTS.md](/docs/WORKFLOW_ENTRY_POINTS.md) — Investigative vs. constructive task routing.

@@ -150,6 +150,7 @@ SECURITY_STRIPPED=$(printf '%s' "$COMMAND" | sed "s/'[^']*'//g")
 # matches_allowed_tools NEUTRALIZED_CMD
 # Returns 0 (true) if the command matches an allowedTools Bash(...) glob pattern.
 # SYNC: Keep this list in sync with allowedTools in claude/settings.json
+# Includes path-prefix-guarded entries for bash ~/.claude/scripts/*.sh — see corresponding allowedTools entries.
 matches_allowed_tools() {
   local cmd="$1"
   case "$cmd" in
@@ -174,6 +175,42 @@ matches_allowed_tools() {
     yarn\ *)             return 0 ;;
     python\ *)           return 0 ;;
     python3\ *)          return 0 ;;
+    bash\ /home/placeholder/.claude/scripts/*.sh)
+      # Guard: reject path traversal (.. component)
+      [[ "$cmd" == */../* || "$cmd" == */.. ]] && return 1
+      # Guard: reject subdirectory paths (script must be directly under scripts/)
+      local _rel
+      _rel="${cmd#bash /home/placeholder/.claude/scripts/}"
+      _rel="${_rel%% *}"
+      [[ "$_rel" == */* ]] && return 1
+      # Guard: resolve symlinks and verify canonical path stays under $HOME/.claude/scripts/
+      local _script_path _real _rel_real
+      _script_path="${cmd#bash }"
+      _script_path="${_script_path%% *}"
+      _script_path="${_script_path//\/home\/placeholder\//$HOME/}"
+      _real="$(readlink -f "$_script_path" 2>/dev/null)" || return 1
+      [[ "$_real" == "$HOME/.claude/scripts/"* ]] || return 1
+      _rel_real="${_real#$HOME/.claude/scripts/}"
+      [[ "$_rel_real" == */* ]] && return 1
+      return 0 ;;
+    bash\ /home/placeholder/.claude/scripts/*.sh\ *)
+      # Guard: reject path traversal (.. component)
+      [[ "$cmd" == */../* || "$cmd" == */.. ]] && return 1
+      # Guard: reject subdirectory paths (script must be directly under scripts/)
+      local _rel
+      _rel="${cmd#bash /home/placeholder/.claude/scripts/}"
+      _rel="${_rel%% *}"
+      [[ "$_rel" == */* ]] && return 1
+      # Guard: resolve symlinks and verify canonical path stays under $HOME/.claude/scripts/
+      local _script_path _real _rel_real
+      _script_path="${cmd#bash }"
+      _script_path="${_script_path%% *}"
+      _script_path="${_script_path//\/home\/placeholder\//$HOME/}"
+      _real="$(readlink -f "$_script_path" 2>/dev/null)" || return 1
+      [[ "$_real" == "$HOME/.claude/scripts/"* ]] || return 1
+      _rel_real="${_real#$HOME/.claude/scripts/}"
+      [[ "$_rel_real" == */* ]] && return 1
+      return 0 ;;
     *\ --help)           return 0 ;;
     *\ --version)        return 0 ;;
     *)                   return 1 ;;

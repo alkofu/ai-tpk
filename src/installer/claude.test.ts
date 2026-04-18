@@ -51,6 +51,23 @@ describe("installClaudeWhitelist", () => {
     }
   });
 
+  it("preserves the executable bit on installed scripts", () => {
+    const src = path.join(tmpDir, "exec-bit-src");
+    const dest = path.join(tmpDir, "exec-bit-dest");
+    const claudeSrc = path.join(src, "claude");
+    const scriptsDir = path.join(claudeSrc, "scripts");
+    fs.mkdirSync(scriptsDir, { recursive: true });
+    const scriptFile = path.join(scriptsDir, "sample.sh");
+    fs.writeFileSync(scriptFile, "#!/bin/sh\necho hello\n");
+    fs.chmodSync(scriptFile, 0o755);
+    installClaudeWhitelist(src, dest);
+    const destPath = path.join(dest, ".claude", "scripts", "sample.sh");
+    assert.ok(
+      (fs.statSync(destPath).mode & 0o100) !== 0,
+      "installed script should have owner-execute bit set",
+    );
+  });
+
   it("skips missing items without throwing", () => {
     const src = path.join(tmpDir, "partial-install-src");
     const dest = path.join(tmpDir, "partial-install-dest");

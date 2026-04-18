@@ -35,6 +35,8 @@
     "Bash(* --version)",
     "Bash(python *)",
     "Bash(python3 *)",
+    "Bash(bash ~/.claude/scripts/*.sh)",
+    "Bash(bash ~/.claude/scripts/*.sh *)",
     "mcp__grafana__search_dashboards",
     "mcp__grafana__get_dashboard_by_uid",
     "mcp__grafana__get_dashboard_summary",

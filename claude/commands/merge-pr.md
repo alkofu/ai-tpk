@@ -9,25 +9,20 @@ standalone call — do not chain commands with `&&`, `;`, or `|`.
 **Note for DM:** Steps that perform write operations (destructive git commands, merge operations)
 must be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.
 
-## Step 1 — Verify GitHub authentication
+## Step 1 — Run preflight checks
 
-Run: `gh auth status`
+Run: `bash ~/.claude/scripts/git-preflight.sh merge-pr`
 
-If the command exits with a non-zero status or prints an error, abort immediately and tell the
-user: "GitHub authentication is required. Run `gh auth login` and try again."
+This script verifies GitHub authentication, detects the current branch, and guards against
+protected branches (`main`, `master`, `develop`). On success it prints the detected branch
+name to stdout.
 
-## Step 2 — Detect current branch
+If the script exits non-zero, propagate its stderr message to the user verbatim and abort.
+Do not proceed.
 
-Run: `git branch --show-current`
+On success, capture the printed branch name as `<branch>` for use in later steps.
 
-Store the result as `<branch>`. You will use it in later steps.
-
-## Step 3 — Guard against protected branches
-
-If `<branch>` is `main`, `master`, or `develop`, abort immediately and tell the user:
-"Cannot merge a protected branch. Check out your PR branch and run `/merge-pr` again."
-
-## Step 4 — Find the open PR
+## Step 2 — Find the open PR
 
 Run: `gh pr view --json number,title,mergeStateStatus`
 
@@ -37,9 +32,9 @@ and tell the user: "No open PR found for branch `<branch>`. Open a PR first with
 If a PR is found, print its number and title as confirmation before continuing. Store the
 parsed fields for use in later steps: `<pr-number>`, `<mergeStateStatus>`.
 
-## Step 5 — Check sync status and sync if needed
+## Step 3 — Check sync status and sync if needed
 
-Inspect `<mergeStateStatus>` from Step 4 and handle each value as follows:
+Inspect `<mergeStateStatus>` from Step 2 and handle each value as follows:
 
 - **`BEHIND` or `DIRTY`:** The branch needs to be rebased onto main before merging.
   Print: "Branch is behind main. Running /sync-pr to rebase."
@@ -62,26 +57,26 @@ Inspect `<mergeStateStatus>` from Step 4 and handle each value as follows:
 - **`UNKNOWN` or any unrecognised value:** Warn but continue. Tell the user: "Merge state
   status is `<mergeStateStatus>` — proceeding with caution."
 
-- **`CLEAN`, `UNSTABLE`, or `HAS_HOOKS`:** Proceed to Step 6. All three are mergeable
+- **`CLEAN`, `UNSTABLE`, or `HAS_HOOKS`:** Proceed to Step 4. All three are mergeable
   states. `UNSTABLE` means some non-required checks are failing but the PR is still
   mergeable. `HAS_HOOKS` means the PR is mergeable with passing commit status and
   pre-receive hooks configured (GitHub Enterprise). Both are semantically equivalent to
   `CLEAN` for merge-readiness purposes.
 
-## Step 6 — Wait for required CI checks to pass
+## Step 4 — Wait for required CI checks to pass
 
 Run: `gh pr checks <pr-number> --watch --fail-fast --required`
 
 This command blocks until all required checks complete. `--fail-fast` exits as soon as any
 required check fails to avoid unnecessary wait time. `--required` restricts watching to
 required checks only — this is intentional, because `UNSTABLE` (non-required checks failing)
-is treated as a proceed state in Step 5, so non-required check failures must not cause an
+is treated as a proceed state in Step 3, so non-required check failures must not cause an
 abort here.
 
 Interpret the exit code:
 
 - **Exit 0:** All required checks passed. Print: "All required CI checks passed." Proceed
-  to Step 7.
+  to Step 5.
 
 - **Exit 1 (check failure):** At least one required check failed. Run:
   `gh pr checks <pr-number> --required --json name,state,bucket`
@@ -95,28 +90,28 @@ Interpret the exit code:
 - **Any other non-zero exit:** Abort with: "Unexpected error while checking CI status
   (exit code: `<code>`). Run `gh pr checks` manually to investigate."
 
-## Step 7 — Squash-merge the PR [write operation — delegate to Bitsmith]
+## Step 5 — Squash-merge the PR [write operation — delegate to Bitsmith]
 
 Delegate to Bitsmith to run: `gh pr merge <pr-number> --squash --delete-branch`
 
 `--delete-branch` deletes the remote branch after merge. The local branch and worktree are
-cleaned up by `/merged` in Step 8.
+cleaned up by `/merged` in Step 6.
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
 Interpret the result:
 
 - **Exit 0 (success):** Print: "PR #`<pr-number>` squash-merged successfully." Proceed to
-  Step 8.
+  Step 6.
 
 - **Non-zero exit (failure):** Report the full error output to the user. Common failure
   modes include:
   - "Pull request is not mergeable" — branch protection or required reviews not met.
   - "GraphQL: ... was not merged" — merge conflict detected server-side.
   Abort with: "Merge failed. Resolve the issue above and run `/merge-pr` again."
-  Do not proceed to Step 8.
+  Do not proceed to Step 6.
 
-## Step 8 — Chain into /merged cleanup
+## Step 6 — Chain into /merged cleanup
 
 Print: "Merge complete. Proceeding to post-merge cleanup (/merged)."
 
@@ -124,13 +119,14 @@ Print: "Merge complete. Proceeding to post-merge cleanup (/merged)."
 in the current session context (i.e., this `/merge-pr` invocation is running inside a
 worktree session), both values are already available to `/merged`, which allows it to take
 its Step 0 shortcut (session-context path) instead of running the full discovery flow
-(Steps 1–5). If no worktree session context is available (e.g., bare branch checkout without
-a worktree), do not synthesize these values — let `/merged` run its normal discovery flow.
+(Steps 1–5 of `/merged`). If no worktree session context is available (e.g., bare branch
+checkout without a worktree), do not synthesize these values — let `/merged` run its normal
+discovery flow.
 
 **PR metadata propagation for Template D:** Before executing `/merged`, record the following
 values in session memory so that `/merged` can populate Template D's conditional fields:
-- `MERGED_PR_NUMBER` — the PR number from Step 4
-- `MERGED_PR_TITLE` — the PR title from Step 4
+- `MERGED_PR_NUMBER` — the PR number from Step 2
+- `MERGED_PR_TITLE` — the PR title from Step 2
 - `MERGE_METHOD: squash`
 
 When `/merged` runs, it checks for `MERGED_PR_NUMBER` in session memory. If present, it

@@ -30,7 +30,7 @@ Runs when a tool call falls outside the `allowedTools` list and requires permiss
 3. Extracts the Bash command and strips quoted strings to avoid false positives
 4. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`) — denies if found
 5. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands — denies if found
-6. For commands that pass the deny checks: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. If it matches, runs five safety guards; auto-approves if all pass
+6. For commands that pass the deny checks: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. Path-prefix-guarded entries for `bash ~/.claude/scripts/*.sh` (and the `$HOME`-expanded form) are included in the allowlist, allowing installed shell scripts under `~/.claude/scripts/` to be invoked unattended without broadly approving arbitrary `bash` calls. If the neutralized command matches, runs five safety guards; auto-approves if all pass
 7. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
 8. Fails open (no output, exit 0) if `jq` is unavailable
 
@@ -76,6 +76,7 @@ Auto-approved entries include the `[auto-approved]` marker; calls falling throug
 - Denied: `git commit --no-verify -m "msg"` (bypasses pre-commit hooks)
 - Denied: `git commit -n -m "msg"` (short form of `--no-verify` for `git commit`)
 - Denied: `git push --no-verify` (bypasses pre-push hooks)
+- Auto-approved: `bash ~/.claude/scripts/git-preflight.sh merge-pr` (matches path-prefix-guarded `bash ~/.claude/scripts/*.sh *` entry; all safety guards pass)
 - Auto-approved: `git log --format=$FORMAT` (matches `git *`, simple expansion only, no safety guard triggered)
 - Auto-approved: `mkdir -p $HOME/.config` (matches `mkdir *`)
 - Auto-approved: `ls ~/projects` (matches `ls *`, tilde is a simple expansion)

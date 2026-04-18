@@ -9,25 +9,20 @@ commands with `&&`, `;`, or `|`.
 **Note for DM:** Steps that perform write operations (file edits, destructive git commands) must
 be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.
 
-## Step 1 — Verify GitHub authentication
+## Step 1 — Run preflight checks
 
-Run: `gh auth status`
+Run: `bash ~/.claude/scripts/git-preflight.sh sync-pr`
 
-If the command exits with a non-zero status or prints an error, abort immediately and tell the
-user: "GitHub authentication is required. Run `gh auth login` and try again."
+This script verifies GitHub authentication, detects the current branch, and guards against
+protected branches (`main`, `master`, `develop`). On success it prints the detected branch
+name to stdout.
 
-## Step 2 — Detect current branch
+If the script exits non-zero, propagate its stderr message to the user verbatim and abort.
+Do not proceed.
 
-Run: `git branch --show-current`
+On success, capture the printed branch name as `<branch>` for use in later steps.
 
-Store the result as `<branch>`. You will use it in later steps.
-
-## Step 3 — Guard against protected branches
-
-If `<branch>` is `main`, `master`, or `develop`, abort immediately and tell the user:
-"Cannot sync a protected branch. Check out your PR branch and run `/sync-pr` again."
-
-## Step 4 — Check for an open PR
+## Step 2 — Check for an open PR
 
 Run: `gh pr list --head <branch> --state open --json number,title --limit 1`
 
@@ -38,22 +33,22 @@ If the user answers anything other than `yes`, abort without making any changes.
 
 If a PR is found, print its number and title as confirmation before continuing.
 
-## Step 5 — Fetch remote refs
+## Step 3 — Fetch remote refs
 
 Run: `git fetch origin`
 
 This updates remote-tracking refs without modifying the working tree.
 
-## Step 6 — Guard against a dirty working tree
+## Step 4 — Guard against a dirty working tree
 
 Run: `git status --porcelain`
 
 If the output is non-empty, abort immediately and tell the user: "Working tree is dirty. Commit
 or stash your changes before syncing."
 
-## Step 7 — Rebase onto refs/remotes/origin/main [write operation — delegate to Bitsmith]
+## Step 5 — Rebase onto refs/remotes/origin/main [write operation — delegate to Bitsmith]
 
-Delegate Steps 7.1 and 7.2 to Bitsmith as a single task. Bitsmith runs the rebase and, if
+Delegate Steps 5.1 and 5.2 to Bitsmith as a single task. Bitsmith runs the rebase and, if
 conflicts occur, inline-executes `/resolve-conflicts`. Bitsmith reports back only the final
 outcome (success or abort).
 
@@ -61,24 +56,24 @@ outcome (success or abort).
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
-**Step 7.1** — Run: `git rebase refs/remotes/origin/main`
+**Step 5.1** — Run: `git rebase refs/remotes/origin/main`
 
-- If the rebase exits with **zero** → proceed directly to Step 8.
-- If the rebase exits **non-zero** → continue to Step 7.2.
+- If the rebase exits with **zero** → proceed directly to Step 6.
+- If the rebase exits **non-zero** → continue to Step 5.2.
 
-**Step 7.2** — Inline-execute the `/resolve-conflicts` protocol within the current session.
+**Step 5.2** — Inline-execute the `/resolve-conflicts` protocol within the current session.
 Do not spawn a separate slash command session — inline execution preserves session context
 and keeps error handling within `/sync-pr`'s flow.
-(This follows the same inline-execution pattern used in `/merge-pr` Step 5, which
+(This follows the same inline-execution pattern used in `/merge-pr` Step 3, which
 inline-executes `/sync-pr`.)
 
 If `/resolve-conflicts` aborts (any abort condition within its protocol), `/sync-pr` also
 aborts — propagate the error message to the user without modification. Do not proceed to
-Step 8.
+Step 6.
 
-If `/resolve-conflicts` completes successfully, proceed to Step 8.
+If `/resolve-conflicts` completes successfully, proceed to Step 6.
 
-## Step 8 — Force-push and report success [write operation — delegate to Bitsmith]
+## Step 6 — Force-push and report success [write operation — delegate to Bitsmith]
 
 Delegate to Bitsmith to run: `git push --force-with-lease origin <branch>`
 

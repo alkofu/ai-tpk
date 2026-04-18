@@ -306,5 +306,7 @@ Deferring worktree creation to Phase 1 (rather than Phase 0) means advisory sess
 ## Related Documentation
 
 - [Agent Reference: Dungeon Master](/docs/AGENTS.md#dungeon-master---orchestrator) - Orchestration workflow details
-- [Configuration Guide](/docs/CONFIGURATION.md) - Hooks, MCP servers, agents, skills, and slash commands
+- [Hooks](/docs/HOOKS.md) - Settings and the four Claude Code hooks
+- [MCP Servers](/docs/MCP.md) - MCP server roster and configuration
+- [Slash Commands](/docs/SLASH_COMMANDS.md) - Available slash commands
 - [Review Workflow](/docs/adrs/REVIEW_WORKFLOW.md) - Quality gate and review process

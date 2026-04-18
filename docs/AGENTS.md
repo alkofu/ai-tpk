@@ -224,7 +224,8 @@ When the data is insufficient, she says so plainly and records a candidate for f
 
 ### Everwise Scout: Subagent Transcript Drill-Down
 
-Everwise now includes Scout, a selective transcript analysis capability. When chronicle analysis identifies specific anomalies—REJECT verdicts, repeated REVISE loops (3+), rapid re-invocations (<60 seconds), unresolved escalations, or anomalous agent routing—Everwise can dynamically discover and read raw Claude Code subagent JSONL transcripts to understand what actually happened beyond the chronicle's metadata. Scout uses a two-pass reading algorithm with a 20-line cap per transcript and a 3-transcript budget per session, keeping context consumption bounded while providing ground-truth behavioral evidence. This capability works in full graceful degradation mode when `~/.claude/` data is unavailable.
+**Scout (Selective Transcript Analysis)**
+Everwise includes Scout, a selective transcript-analysis capability. When chronicle analysis identifies anomalies, Scout reads raw Claude Code subagent JSONL transcripts to understand what actually happened beyond chronicle metadata. For the authoritative trigger criteria, two-pass reading algorithm, per-transcript line cap, per-session transcript budget, security policies, and graceful-degradation behavior, see [`claude/agents/everwise.md`](/claude/agents/everwise.md) — "Step 2b: Flag Entries for Transcript Drill-Down" and "Step 2c: Read Flagged Transcripts".
 
 ---
 
@@ -259,9 +260,7 @@ This ensures documentation stays synchronized with code without manual effort, a
 
 ## Session Logging
 
-Orchestration sessions are automatically chronicled by a two-stage shell pipeline. During each session, `talekeeper-capture.sh` runs as a SubagentStop command hook and appends raw sub-agent events to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw.jsonl`. At session end, `talekeeper-enrich.sh` runs as an async Stop hook and processes the raw log into a structured enriched JSONL chronicle (`~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-{session_id}.jsonl`). The enriched chronicle includes all agent metadata plus an `agent_transcript_path` field for SubagentStop events, enabling downstream tools like Everwise Scout to locate and analyze raw transcripts. Both scripts filter out internal hook-agent noise. Logs are gitignored and stay local to your machine.
-
-When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually. It reads the enriched chronicle files, delivers a concise chat digest, and appends structured narrative sections with Mermaid diagrams to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrative.md`.
+Orchestration sessions are automatically chronicled by a two-stage shell pipeline that runs as Claude Code hooks. Logs are written to `~/.ai-tpk/logs/{REPO_SLUG}/`, are gitignored, and stay local to your machine. For the authoritative hook pipeline behavior and enriched chronicle schema, see [docs/CONFIGURATION.md — SubagentStop Hook and Stop Hook](/docs/CONFIGURATION.md). When you want a human-readable summary of past sessions, invoke the Talekeeper narrator agent manually — see [`claude/agents/talekeeper.md`](/claude/agents/talekeeper.md) for its session discovery, tracking, and narration protocol.
 
 ## Terminal Tab Rename
 
@@ -271,16 +270,4 @@ Terminal tab titles are automatically managed via a SessionStart hook for resume
 
 Agent definitions can reference shared behavioral vocabulary defined in `claude/references/`. This eliminates duplication across multiple agents:
 
-- **`claude/references/github-auth-probe.md`** — Canonical procedure for verifying GitHub account access before pushing or committing. Both `commit-message-guide` and `open-pull-request` skills reference this to ensure consistent GitHub authentication checks.
-- **`claude/references/implementation-standards.md`** — Shared behavioral norms (Minimal Diff, YAGNI, Test-First) for implementation, planning, and review agents. Bitsmith, Pathfinder, Ruinor, and Knotcutter all cite this as the canonical source; each may elaborate in its own definition file.
-- **`claude/references/review-gates.md`** — Shared two-gate review framework (Plan Review Gate and Implementation Review Gate) for all reviewer agents (Ruinor, Riskmancer, Windwarden, Knotcutter, Truthhammer). Defines universal operational constraints (read-only operation, in-memory returns) and plan-file-scoping rules. Each reviewer agent defines its own domain-specific criteria for each gate inline in its definition file.
-- **`claude/references/verdict-taxonomy.md`** — Shared verdict labels (REJECT, REVISE, ACCEPT-WITH-RESERVATIONS, ACCEPT) and severity scales. Agents load this reference when issuing verdicts to ensure consistent evaluation vocabulary.
-- **`claude/references/worktree-protocol.md`** — Shared rules for how agents interpret and apply the `WORKING_DIRECTORY:` context block. Agents load this reference when operating in isolated worktrees to ensure consistent path handling.
-- **`claude/references/dm-routing-examples.md`** — 11 worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports. The DM loads this reference at runtime rather than embedding the examples inline in its system prompt.
-- **`claude/references/completion-templates.md`** — Four rigid per-command completion report templates (A: Constructive, B: Investigative, C: Operational PR, D: Post-Merge) and a shared Common Fields block. The DM output contract and `/open-pr`, `/merged`, `/merge-pr` commands all reference this file to ensure consistent, parseable completion output across sessions.
-
-- **`claude/references/bash-style.md`** — Required Bash command style guide for all agents with Bash tool access. Defines enforced rules: no compound commands, no process substitution, no `--no-verify` on git commands, and no command substitution in git commit commands.
-
-- **`claude/references/quill-documentation-style.md`** — Documentation style guide used by Quill when authoring and updating documentation.
-
-When modifying these reference files, changes apply automatically to all agents that load them, eliminating the need to update redundant constraints across multiple agent definitions.
+For the authoritative catalog of shared reference files and what each one does, see [docs/CONFIGURATION.md — References](/docs/CONFIGURATION.md). Each agent definition file in [`claude/agents/`](/claude/agents/) cites the specific references it loads.

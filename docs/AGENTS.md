@@ -249,7 +249,13 @@ He wears the dark *koromo* of a Zen monk, bound at the waist with a rope cord. H
 
 ## Documentation Integration
 
-The Dungeon Master orchestration agent automatically invokes Quill (documentation specialist) in Phase 5 (Completion) when a planning session was conducted. Quill runs as step 5b — after reservations are logged (5a) but before the Resolution Gate (5c) and completion summary (5d). Quill receives the plan file, list of changed files, and feature summary, then updates documentation to reflect the implementation. If the Resolution Gate triggers post-gate Bitsmith work, Quill is re-invoked after the follow-up Phase 4 review. This ensures documentation stays synchronized with code without manual effort.
+Quill (documentation specialist) has two invocation modes within the DM pipeline:
+
+**Mode A — Phase 3 primary writer (documentation-primary plans):** When Pathfinder produces a plan whose every step modifies only documentation files (READMEs, changelogs, `docs/` content, and similar user-facing files — not operational agent or reference files), Pathfinder emits a `documentation-primary: true` YAML frontmatter tag in the plan file. DM reads this tag at the start of Phase 3 and routes execution to Quill instead of Bitsmith. Phase 4 Ruinor review still applies to Quill's output. Phase 5b is skipped — Quill already produced the documentation as primary writer.
+
+**Mode B — Phase 5b post-implementation meta-updater (standard plans):** For plans that include any non-documentation work, DM routes Phase 3 to Bitsmith as usual. After Phase 4 implementation review passes, DM invokes Quill in step 5b — after reservations are logged (5a) but before the Resolution Gate (5c) and completion summary (5d). Quill receives the plan file, list of changed files, and a feature summary, then updates documentation to reflect Bitsmith's implementation. If the Resolution Gate triggers post-gate Bitsmith fixes, Quill is re-invoked afterward as a standard meta-update (Mode B) regardless of the original Phase 3 routing.
+
+This ensures documentation stays synchronized with code without manual effort, and that documentation-only plans are handled directly by the documentation specialist rather than routed through Bitsmith.
 
 ## Session Logging
 

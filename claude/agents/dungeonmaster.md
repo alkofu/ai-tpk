@@ -467,8 +467,25 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 ### Phase 3: Execution
 
+**Phase 3 routing decision:** Determine the Phase 3 execution agent by reading the plan file frontmatter. The plan file path is the value `{PLAN_FILE_PATH}` returned by Pathfinder in Phase 1 step 4 (do not reconstruct the path from session variables; use the value Pathfinder gave you). Run the following read-only Bash command, substituting the actual plan file path:
+
+`head -n 5 {PLAN_FILE_PATH} | grep -c '^documentation-primary: true$' || true`
+
+The trailing `|| true` ensures `grep -c`'s exit code 1 (no matches) does not propagate as a shell failure — the relevant signal is the printed count, not the exit code.
+
+- If the command outputs `1`: the plan is documentation-primary; the Phase 3 execution agent is **Quill**. Log: `"Phase 3 routing: Quill (documentation-primary plan detected)."`
+- If the command outputs a value other than `0` or `1`: the frontmatter is malformed (possible duplicate tag); default to **Bitsmith** and log: `"Phase 3 routing: defaulted to Bitsmith (frontmatter check inconclusive: output was <N>, expected 0 or 1)."`
+- If the command outputs `0`: the plan is not documentation-primary; the Phase 3 execution agent is **Bitsmith**. Log: `"Phase 3 routing: Bitsmith."`
+- If the file does not exist or the command fails for any reason: default to **Bitsmith** and log: `"Phase 3 routing: defaulted to Bitsmith (frontmatter check inconclusive: <reason>)."`
+
+This routing decision is **re-derivable on demand** by re-running the same read-only Bash command against `{PLAN_FILE_PATH}`. No in-memory `PHASE_3_AGENT` variable is required or permitted — the plan file frontmatter is the canonical, durable source of truth. If conversation context is interrupted (stalled-loop termination, Phase 4 fix loop re-entry, or any other re-entry into Phase 3 or Phase 5b), re-run the routing check against the plan file rather than relying on memory.
+
+**Backward compatibility:** Existing plan files written before this routing logic was introduced have no frontmatter; the `grep -c` command outputs `0` and routing falls through to Bitsmith — the absence of the tag is the negative signal, so backward compatibility is automatic and no migration of existing plans is required.
+
+This is a read-only Bash usage authorized by DM's read-only scope (see "What the Dungeon Master may do directly" in this file).
+
 1. Convert the approved plan into execution tasks.
-2. Delegate each execution task to Bitsmith or another specialist. Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active. Bitsmith must operate entirely within this directory.
+2. Delegate each execution task to the Phase 3 execution agent determined by the routing decision above (Bitsmith for standard plans, Quill for documentation-primary plans). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active. The chosen agent must operate entirely within this directory. When the routing decision selected Quill, Quill executes the plan steps as the primary writer (Invocation Mode A — see quill.md). The Phase 4 Ruinor review still applies to Quill's output exactly as it would for Bitsmith's output. If a Mode A plan step exceeds Quill's documentation scope (e.g., requires running tests or invoking other agents), Quill returns a structured escalation per its escalation protocol; treat the escalation as you would a Bitsmith structured failure report.
 3. After each delegated task:
     - compare results against the plan
     - decide whether to continue, retry, or adjust
@@ -488,7 +505,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 5. Track implementation artifacts (changed files, new code).
 
-**Note on intermediate review gates:** After every 2 consecutive Bitsmith invocations without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed Bitsmith completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree. The counter resets to zero after each intermediate or Phase 4 Ruinor review, regardless of verdict.
+**Note on intermediate review gates:** After every 2 consecutive execution-agent invocations (whether Bitsmith or Quill) without an intervening Ruinor review, run an intermediate Ruinor review before continuing. Do not accumulate more than 2 unreviewed execution-agent completions in sequence. Phase 4's final Ruinor review remains mandatory even when intermediate reviews have passed during Phase 3. When passing file paths to Ruinor for intermediate reviews, DM must use worktree-absolute paths (e.g., `{WORKING_DIRECTORY}/src/foo.ts`), since Bitsmith operates in the worktree. The counter resets to zero after each intermediate or Phase 4 Ruinor review, regardless of verdict. Note: in documentation-primary plans, Quill typically completes the entire plan in a single invocation (Mode A), so this counter rarely accumulates for Quill; the generalization is a correctness measure, not an expected operational pattern.
 
 ### Phase 4: Implementation Review (Quality Gate)
 
@@ -542,18 +559,20 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     **Verification gate:** If step 5a was triggered (i.e., any reviewer issued ACCEPT-WITH-RESERVATIONS during this session), then before proceeding to step 5b, confirm that `open-questions.md` was actually written by checking the Bitsmith delegation result for success. If the delegation result does not confirm success, re-delegate to Bitsmith before proceeding. If step 5a was not triggered (no ACCEPT-WITH-RESERVATIONS verdicts), skip this gate and proceed directly to step 5b.
 
     **5b — Documentation update:**
-    If Pathfinder was invoked during this session, invoke Quill with the following three context items:
-    - (a) plan file path (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`)
-    - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
-    - (c) one-sentence feature summary
+    **Note:** On post-Resolution-Gate re-invocations triggered from step 5c, skip this re-check and go directly to Branch 3 (see step 5c). The following frontmatter re-check applies only to the initial Phase 5b entry during normal session flow. **Determine the Phase 5b branch** by re-running the same read-only frontmatter check used in Phase 3 (`head -n 5 {PLAN_FILE_PATH} | grep -c '^documentation-primary: true$' || true`). The plan file frontmatter is the canonical source — do not rely on an in-memory variable that may have been lost across context interruption. Then:
+
+    - **Branch 1 — Skip Quill (no planning session):** If Pathfinder was NOT invoked during this session, skip Quill entirely (unchanged from prior behaviour).
+    - **Branch 2 — Skip Quill (already ran in Phase 3):** If Pathfinder was invoked AND the frontmatter check outputs `1` (documentation-primary plan, Phase 3 was Quill), skip the Phase 5b Quill invocation. Quill already produced the documentation as the primary writer in Phase 3; a meta-update would be redundant. Log: `"Phase 5b: Quill skipped — already invoked as Phase 3 primary writer for documentation-primary plan."`
+    - **Branch 3 — Invoke Quill (standard meta-update):** If Pathfinder was invoked AND the frontmatter check outputs `0` (or the check was inconclusive — same fallback as Phase 3), invoke Quill with the following three context items. An output other than `0` or `1` is treated the same as `0` — route to Branch 3 with a logged warning about malformed frontmatter.
+      - (a) plan file path (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`)
+      - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
+      - (c) one-sentence feature summary
 
     Include the `WORKING_DIRECTORY` context block if a session worktree is active. Quill must write documentation relative to this directory.
 
-    If Pathfinder was NOT invoked during this session, skip Quill entirely.
+    **Pre-Quill gate:** (Applies only when Branch 3 fires, i.e., when Phase 5b is actually invoking Quill.) Before invoking Quill, cross-reference all steps in the approved plan against the list of completed Bitsmith delegations. If any plan step has not been executed and reviewed by Ruinor, defer Quill and complete those steps first. Do not invoke Quill based on self-assertion alone.
 
-    **Pre-Quill gate:** Before invoking Quill, cross-reference all steps in the approved plan against the list of completed Bitsmith delegations. If any plan step has not been executed and reviewed by Ruinor, defer Quill and complete those steps first. Do not invoke Quill based on self-assertion alone.
-
-    Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes — including work triggered by the Resolution Gate (step 5c) — that work must re-enter Phase 4 (Implementation Review) and Quill must be re-invoked afterward. Do not treat post-documentation Bitsmith invocations as pre-reviewed work, and do not skip the Quill re-invocation even if Quill already ran earlier in this session.
+    Quill must only be invoked after Phase 4 implementation review is fully complete and all reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS. If any Bitsmith implementation work is needed after Quill completes — including work triggered by the Resolution Gate (step 5c) — that work must re-enter Phase 4 (Implementation Review) and Quill must be re-invoked afterward. Do not treat post-documentation Bitsmith invocations as pre-reviewed work, and do not skip the Quill re-invocation even if Quill already ran earlier in this session. When Phase 3 routed to Quill (Branch 2 path in Phase 5b), the Phase 4 review of Quill's Phase 3 output satisfies this requirement for the Phase 3 invocation; the Phase 5b skip in Branch 2 does not bypass any review.
 
     **5c — Resolution Gate:**
     This step fires only when step 5a logged ACCEPT-WITH-RESERVATIONS items. If no reservations were logged, skip to step 5d.
@@ -565,7 +584,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     **Auto-fix path** (fires when ALL reservations are MINOR severity):
     - Delegate the fixes to Bitsmith
     - After Bitsmith completes, re-enter Phase 4 (Implementation Review) for the changed files
-    - After Phase 4 completes, re-invoke Quill (step 5b) to update documentation for the new changes — do not skip Quill even if it already ran earlier in this session
+    - After Phase 4 completes, re-invoke Quill (step 5b) to update documentation for the new changes — do not skip Quill even if it already ran earlier in this session. Even when Phase 3 originally routed to Quill (Branch 2 in Phase 5b), post-gate fixes by Bitsmith may have introduced changes that need a Quill meta-update; treat the post-gate Quill re-invocation as Branch 3 (standard meta-update) regardless of the original Phase 3 routing — skip the frontmatter re-check and go directly to Branch 3.
     - Return to step 5a to log any new reservations from the post-gate Phase 4 review (these are logged only — they do not re-trigger this gate per the loop protection rule above)
     - Proceed to step 5d
 
@@ -579,7 +598,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
     1. **Fix now** — delegate fixes to Bitsmith, re-enter Phase 4, re-invoke Quill (step 5b), then proceed to step 5d
     2. **Proceed** — proceed to step 5d as-is; reservations remain logged in the open-questions file from step 5a
 
-    When "Fix now" is selected: after Bitsmith completes and Phase 4 re-review passes, re-invoke Quill (step 5b) before proceeding to step 5d. Do not skip Quill even if it already ran earlier in this session. Log any new post-gate reservations in 5a (logged only, no re-trigger).
+    When "Fix now" is selected: after Bitsmith completes and Phase 4 re-review passes, re-invoke Quill (step 5b) before proceeding to step 5d. Do not skip Quill even if it already ran earlier in this session. Log any new post-gate reservations in 5a (logged only, no re-trigger). Treat this re-invocation as Branch 3 (standard meta-update) regardless of the original Phase 3 routing, since post-gate fixes are always handled by Bitsmith — skip the frontmatter re-check and go directly to Branch 3.
 
     Examples of reservations requiring user decision:
     - Adding a new validation layer the plan did not anticipate (MAJOR — out of original scope)
@@ -594,7 +613,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
       - "no" — no ACCEPT-WITH-RESERVATIONS verdicts were issued
       - "yes — {file path} — resolved" — reservations were logged and resolved (via auto-fix or user-requested "Fix now")
       - "yes — {file path} — unresolved" — reservations were logged and the user chose "Proceed" in the Resolution Gate, or the gate did not fire due to loop protection
-    - **Documentation:** "updated by Quill" if Quill was invoked in 5b; "skipped (no planning session)" otherwise.
+    - **Documentation:** "updated by Quill (Phase 5b meta-update)" if Quill was invoked in 5b (Branch 3); "produced by Quill (Phase 3 primary writer, documentation-primary plan)" if Quill was invoked in Phase 3 and Phase 5b was skipped via Branch 2; "skipped (no planning session)" if Pathfinder was not invoked (Branch 1).
 
     If notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 

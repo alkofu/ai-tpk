@@ -167,8 +167,20 @@ plan files. Do not run `git rev-parse`, `ls`, or any other command. Proceed to S
 
 **If SESSION_TS is available:**
 
-Derive the current repo slug by running: `git rev-parse --show-toplevel`
-Take the basename of the result. Store it as `<repo-slug>`.
+Derive the current repo slug using the session-context sidecar:
+
+1. **Try sidecar first.** Use the `Read` tool on `~/.ai-tpk/session-context/current.json`.
+   If the file exists and contains a JSON object with a non-empty `repo_slug` field,
+   use that value as `<repo-slug>` and proceed directly to the `ls -1` step below.
+   The `Read` tool does not trigger a permission prompt — this is the preferred path.
+   The sidecar is written by `session-start.sh` on every session start, so under
+   normal conditions this path is taken; the fallback exists for users who have not
+   yet re-run `install.sh` after this update.
+
+2. **Fallback.** If the `Read` tool reports the file is missing, OR if the file is
+   present but `repo_slug` is empty, missing, or unparseable, fall back to:
+   `git rev-parse --show-toplevel` (a Bash call — this triggers the usual permission
+   prompt). Take the basename of the result and store it as `<repo-slug>`.
 
 List files matching the session timestamp in the plan directory:
 `ls -1 ~/.ai-tpk/plans/<repo-slug>/{SESSION_TS}-* 2>/dev/null`
@@ -194,4 +206,8 @@ Populate the fields as follows:
 - **Branch deleted:** `<branch>`, or "skipped (detached HEAD)" if Step 8 was skipped, or "skipped (see warning)" if Step 8 failed.
 - **Current branch:** main (up to date)
 - **Plan files cleaned:** the list of deleted file names from Step 10a, or "none" if Step 10a found no files, or "skipped (no SESSION_TS)" if Step 10a was skipped entirely.
-- **Token usage:** Run `~/.claude/scripts/token-summary.sh <repo-slug>` (where `<repo-slug>` is the value derived in Step 10a). Use its output verbatim. If it outputs `unavailable`, report that value as-is.
+- **Token usage:** Derive the current repo slug as follows: use the `Read` tool on
+  `~/.ai-tpk/session-context/current.json`; if the file is absent or `repo_slug` is
+  empty, fall back to `git rev-parse --show-toplevel` (Bash call) and take the basename.
+  Then run `~/.claude/scripts/token-summary.sh <repo-slug>`. Use its output verbatim.
+  If it outputs `unavailable`, report that value as-is.

@@ -12,8 +12,9 @@ Agent-produced artifacts (plans, open-questions files, lessons) are stored in us
 
 - **Plans** → `~/.ai-tpk/plans/{repo-slug}/` — One subdirectory per repository, containing plan files and associated open-questions files
 - **Lessons** → `~/.ai-tpk/lessons/` — Flat structure for Everwise Scout analysis recommendations (cross-repo)
+- **Session context** → `~/.ai-tpk/session-context/current.json` — Sidecar written by the SessionStart hook on every session start, containing `{"repo_slug": "<value>"}`. Read by talekeeper hooks and LLM commands to avoid redundant `git rev-parse` calls and the permission prompts they trigger. The directory is created lazily on first use; no installer step is required.
 
-These directories are created automatically when you run `install.sh`.
+The `plans/` and `lessons/` directories are created automatically when you run `install.sh`. The `session-context/` directory is created on first session start.
 
 ## Quick Start
 
@@ -87,7 +88,8 @@ After the subroutine completes, your repository structure looks like:
 │       ├── .git
 │       └── ...
 ├── src/
-├── ~/.ai-tpk/plans/{repo-slug}/ # Plans (user-scoped, outside repo)
+├── ~/.ai-tpk/plans/{repo-slug}/          # Plans (user-scoped, outside repo)
+├── ~/.ai-tpk/session-context/current.json # Session-context sidecar (written each session start)
 └── .gitignore                   # Contains .worktrees/
 ```
 

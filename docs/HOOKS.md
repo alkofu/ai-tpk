@@ -99,11 +99,17 @@ Auto-approved entries include the `[auto-approved]` marker; calls falling throug
 - Logged + normal dialog: `Write to /tmp/output.txt` (path not in allowed set — falls through to normal dialog)
 - Allowed: `echo -n hello`, `git log -n 5` (context-aware: `-n` only blocked in `git commit` context)
 
-#### SessionStart Hook - Terminal Tab Title Restore
+#### SessionStart Hook - Terminal Tab Title Restore and Session-Context Sidecar
 
 Runs at the start of every Claude Code session. For resumed sessions, restores the previously stored tab title. For fresh sessions (e.g., after `/new`), resets the tab to the repo or directory name so the previous session's stale title does not persist until the Stop hook generates a new one. Title generation from conversation content is handled by the Stop hook (`tab-rename-stop.sh`).
 
 **Purpose:** Ensures the tab title always reflects the current session on startup — either a stored title for resumed sessions or a neutral repo/directory default for fresh sessions. Script: `claude/hooks/session-start.sh`.
+
+**Session-context sidecar:** On every invocation, the hook derives the current `repo_slug` (basename of `git rev-parse --show-toplevel` from the session's `cwd`, or the `cwd` basename when not in a git repo) and writes it to `~/.ai-tpk/session-context/current.json` as `{"repo_slug": "<value>"}`. This sidecar is written before the `--name` override exit and all title-restore branches, so it is present regardless of whether tab-rename work is performed. The directory is created automatically on first use; no installer step is required.
+
+The sidecar eliminates the `git rev-parse --show-toplevel` Bash permission prompt that LLM commands previously had to issue on every session. Commands and hooks read it via the `Read` tool (no prompt) or via a shell `jq` call, with a fallback to the inline git derivation for installations that have not yet been updated.
+
+**Concurrent sessions:** The sidecar uses a fixed path (`current.json`, not keyed by session ID). The last session to start wins. This is an accepted limitation for users running simultaneous Claude Code sessions across different repositories.
 
 **Non-obvious behaviors:** `--name` override is detected via process ancestry (walks up to 3 levels); `-n` is intentionally excluded to avoid false positives. Fresh-session neutral title is derived from the git repo basename when inside a repo, or the directory basename otherwise — matching the context used by the Stop hook. The neutral default is not persisted to `~/.claude/session-titles/`, so the Stop hook's single-fire guard is not tripped and the AI-generated title replaces it after the first exchange.
 
@@ -125,6 +131,8 @@ Runs after every sub-agent completion to capture raw session event data.
 
 **Purpose:** Appends raw sub-agent completion events to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw.jsonl` for later enrichment. Script: `claude/hooks/talekeeper-capture.sh`.
 
+**REPO_SLUG resolution:** The hook reads `repo_slug` from `~/.ai-tpk/session-context/current.json` (written by the SessionStart hook) when the sidecar is present and `jq` is available. It then cross-checks the sidecar value against the git context of the hook's own process (`git rev-parse --show-toplevel`). If they differ — indicating the sidecar was written by a concurrent session on a different repository — the inline git derivation wins. If the sidecar is absent or unreadable, the hook falls back to the original inline derivation unconditionally.
+
 **Non-obvious behavior:** Filters out `hook-agent-*` events — Stop hook agents are not real sub-agents and must not pollute the log. Always exits 0; logging must never block the session.
 
 #### Stop Hook - Session Enrichment
@@ -136,6 +144,8 @@ Note: A second Stop hook (`tab-rename-stop.sh`) also fires asynchronously for te
 **Session enrichment (async):**
 
 Processes the raw sub-agent event log captured during the session into a structured enriched JSONL chronicle. Script: `claude/hooks/talekeeper-enrich.sh`.
+
+**REPO_SLUG resolution:** Uses the same sidecar-then-cross-check-then-fallback pattern as the SubagentStop hook. The sidecar is preferred; a staleness cross-check against the hook's own git context overrides it when they disagree; the inline git derivation is the unconditional fallback when the sidecar is absent.
 
 **Non-obvious behaviors:** Filters out `hook-agent-*` events and `talekeeper` self-captures. Reads each agent's transcript file (`agent_transcript_path`) and sums token usage across all assistant turns. Clears the raw log on success.
 

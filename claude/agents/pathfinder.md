@@ -199,7 +199,7 @@ Once requirements are clear and research is complete:
      ---
      ```
 
-     The `documentation-primary: true` line must appear by itself with no leading whitespace and no trailing characters — DM's frontmatter check uses a line-anchored grep (`^documentation-primary: true$`) and any deviation (extra spaces, capitalisation, merged lines) will silently cause the routing to fall back to Bitsmith. When the plan is not documentation-primary, do not emit any frontmatter at all (do not emit `documentation-primary: false` — absence is the negative signal).
+     The `documentation-primary: true` line must appear by itself with no leading whitespace and no trailing characters — DM's frontmatter check (the `claude/scripts/plan-type.sh` helper) uses a line-anchored grep (`^documentation-primary: true$`) and any deviation (extra spaces, capitalisation, merged lines) will silently cause the routing to fall back to Bitsmith. When the plan is not documentation-primary, do not emit any frontmatter at all (do not emit `documentation-primary: false` — absence is the negative signal).
    - When the plan is documentation-primary, do NOT add `**test-first:** true` annotations to any step. Quill has no test framework and the annotation is meaningless in Mode A. The `test-first` annotation in step 6 of this section applies only to non-documentation-primary plans.
 
 ### 6. Pre-Submission Checklist

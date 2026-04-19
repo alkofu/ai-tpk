@@ -503,20 +503,19 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 ### Phase 3: Execution
 
-**Phase 3 routing decision:** Determine the Phase 3 execution agent by reading the plan file frontmatter. The plan file path is the value `{PLAN_FILE_PATH}` returned by Pathfinder in Phase 1 step 4 (do not reconstruct the path from session variables; use the value Pathfinder gave you). Run the following read-only Bash command, substituting the actual plan file path:
+**Phase 3 routing decision:** Determine the Phase 3 execution agent by reading the plan file frontmatter via the helper script. The plan file path is the value `{PLAN_FILE_PATH}` returned by Pathfinder in Phase 1 step 4 (do not reconstruct the path from session variables; use the value Pathfinder gave you). Run the following read-only Bash command, substituting the actual plan file path:
 
-`head -n 5 {PLAN_FILE_PATH} | grep -c '^documentation-primary: true$' || true`
+`bash ~/.claude/scripts/plan-type.sh {PLAN_FILE_PATH}`
 
-The trailing `|| true` ensures `grep -c`'s exit code 1 (no matches) does not propagate as a shell failure — the relevant signal is the printed count, not the exit code.
+The script always exits 0 and prints exactly one of three tokens to stdout: `quill`, `bitsmith`, or `error`. On `error`, the script also writes a one-line diagnostic to stderr (e.g., `plan-type.sh: file not found: <path>` or `plan-type.sh: malformed frontmatter (<N> matches found, expected 0 or 1)`). Capture stderr so it can be quoted in the warning log.
 
-- If the command outputs `1`: the plan is documentation-primary; the Phase 3 execution agent is **Quill**. Log: `"Phase 3 routing: Quill (documentation-primary plan detected)."`
-- If the command outputs a value other than `0` or `1`: the frontmatter is malformed (possible duplicate tag); default to **Bitsmith** and log: `"Phase 3 routing: defaulted to Bitsmith (frontmatter check inconclusive: output was <N>, expected 0 or 1)."`
-- If the command outputs `0`: the plan is not documentation-primary; the Phase 3 execution agent is **Bitsmith**. Log: `"Phase 3 routing: Bitsmith."`
-- If the file does not exist or the command fails for any reason: default to **Bitsmith** and log: `"Phase 3 routing: defaulted to Bitsmith (frontmatter check inconclusive: <reason>)."`
+- If the token is `quill`: the plan is documentation-primary; the Phase 3 execution agent is **Quill**. Log: `"Phase 3 routing: Quill (documentation-primary plan detected)."`
+- If the token is `bitsmith`: the plan is not documentation-primary; the Phase 3 execution agent is **Bitsmith**. Log: `"Phase 3 routing: Bitsmith."`
+- If the token is `error`: default to **Bitsmith** and log: `"Phase 3 routing: defaulted to Bitsmith (frontmatter check inconclusive: <stderr-diagnostic>)."` Substitute the script's stderr line for `<stderr-diagnostic>` so the two underlying causes (malformed frontmatter vs. file missing/unreadable) remain distinguishable in the session record.
 
 This routing decision is **re-derivable on demand** by re-running the same read-only Bash command against `{PLAN_FILE_PATH}`. No in-memory `PHASE_3_AGENT` variable is required or permitted — the plan file frontmatter is the canonical, durable source of truth. If conversation context is interrupted (stalled-loop termination, Phase 4 fix loop re-entry, or any other re-entry into Phase 3 or Phase 5b), re-run the routing check against the plan file rather than relying on memory.
 
-**Backward compatibility:** Existing plan files written before this routing logic was introduced have no frontmatter; the `grep -c` command outputs `0` and routing falls through to Bitsmith — the absence of the tag is the negative signal, so backward compatibility is automatic and no migration of existing plans is required.
+**Backward compatibility:** Existing plan files written before this routing logic was introduced have no frontmatter; `plan-type.sh` emits `bitsmith` and routing falls through to Bitsmith — the absence of the tag is the negative signal, so backward compatibility is automatic and no migration of existing plans is required.
 
 This is a read-only Bash usage authorized by DM's read-only scope (see "What the Dungeon Master may do directly" in this file).
 
@@ -595,11 +594,11 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
     **Verification gate:** If step 5a was triggered (i.e., any reviewer issued ACCEPT-WITH-RESERVATIONS during this session), then before proceeding to step 5b, confirm that `open-questions.md` was actually written by checking the Bitsmith delegation result for success. If the delegation result does not confirm success, re-delegate to Bitsmith before proceeding. If step 5a was not triggered (no ACCEPT-WITH-RESERVATIONS verdicts), skip this gate and proceed directly to step 5b.
 
     **5b — Documentation update:**
-    **Note:** On post-Resolution-Gate re-invocations triggered from step 5c, skip this re-check and go directly to Branch 3 (see step 5c). The following frontmatter re-check applies only to the initial Phase 5b entry during normal session flow. **Determine the Phase 5b branch** by re-running the same read-only frontmatter check used in Phase 3 (`head -n 5 {PLAN_FILE_PATH} | grep -c '^documentation-primary: true$' || true`). The plan file frontmatter is the canonical source — do not rely on an in-memory variable that may have been lost across context interruption. Then:
+    **Note:** On post-Resolution-Gate re-invocations triggered from step 5c, skip this re-check and go directly to Branch 3 (see step 5c). The following frontmatter re-check applies only to the initial Phase 5b entry during normal session flow. **Determine the Phase 5b branch** as follows. First check whether Pathfinder was invoked this session (Branch 1 below). If Pathfinder was invoked, re-run the same read-only helper script used in Phase 3 (`bash ~/.claude/scripts/plan-type.sh {PLAN_FILE_PATH}`) and dispatch on the stdout token. The plan file frontmatter is the canonical source — do not rely on an in-memory variable that may have been lost across context interruption. Capture the script's stderr so it can be quoted in any warning log. Then:
 
-    - **Branch 1 — Skip Quill (no planning session):** If Pathfinder was NOT invoked during this session, skip Quill entirely (unchanged from prior behaviour).
-    - **Branch 2 — Skip Quill (already ran in Phase 3):** If Pathfinder was invoked AND the frontmatter check outputs `1` (documentation-primary plan, Phase 3 was Quill), skip the Phase 5b Quill invocation. Quill already produced the documentation as the primary writer in Phase 3; a meta-update would be redundant. Log: `"Phase 5b: Quill skipped — already invoked as Phase 3 primary writer for documentation-primary plan."`
-    - **Branch 3 — Invoke Quill (standard meta-update):** If Pathfinder was invoked AND the frontmatter check outputs `0` (or the check was inconclusive — same fallback as Phase 3), invoke Quill with the following three context items. An output other than `0` or `1` is treated the same as `0` — route to Branch 3 with a logged warning about malformed frontmatter.
+    - **Branch 1 — Skip Quill (no planning session):** If Pathfinder was NOT invoked during this session, skip Quill entirely (unchanged from prior behaviour). The helper script is not invoked in this branch.
+    - **Branch 2 — Skip Quill (already ran in Phase 3):** If Pathfinder was invoked AND the helper script's stdout token is `quill` (documentation-primary plan, Phase 3 was Quill), skip the Phase 5b Quill invocation. Quill already produced the documentation as the primary writer in Phase 3; a meta-update would be redundant. Log: `"Phase 5b: Quill skipped — already invoked as Phase 3 primary writer for documentation-primary plan."`
+    - **Branch 3 — Invoke Quill (standard meta-update):** If Pathfinder was invoked AND the helper script's stdout token is `bitsmith` or `error`, invoke Quill with the following three context items. The `error` token is treated the same as `bitsmith` for routing purposes — route to Branch 3 with a logged warning: `"Phase 5b: Quill invoked despite frontmatter check warning (<stderr-diagnostic>)."` Substitute the script's stderr line for `<stderr-diagnostic>` so the underlying cause is recorded.
       - (a) plan file path (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`)
       - (b) list of files changed during implementation, collected via `git diff --name-only` against the pre-execution commit
       - (c) one-sentence feature summary

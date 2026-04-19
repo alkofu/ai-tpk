@@ -3,7 +3,23 @@
 # Invoked as a command hook -- no LLM, millisecond latency
 # Reads event JSON from stdin, appends timestamped entry to raw log
 
-REPO_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+# Prefer the session-context sidecar written by session-start.sh; fall back
+# to the original git-based derivation when the sidecar is absent or unreadable.
+SIDECAR_FILE="$HOME/.ai-tpk/session-context/current.json"
+REPO_SLUG=""
+if [ -f "$SIDECAR_FILE" ] && command -v jq &>/dev/null; then
+  REPO_SLUG=$(jq -r '.repo_slug // ""' "$SIDECAR_FILE" 2>/dev/null)
+fi
+if [ -z "$REPO_SLUG" ]; then
+  REPO_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+fi
+# Cross-check: verify the sidecar slug matches the current git context.
+# If they differ, the sidecar is stale (written by a different-repo session).
+_CURRENT_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+if [ "$REPO_SLUG" != "$_CURRENT_SLUG" ]; then
+  REPO_SLUG="$_CURRENT_SLUG"
+fi
+unset _CURRENT_SLUG SIDECAR_FILE
 LOG_DIR="$HOME/.ai-tpk/logs/$REPO_SLUG"
 LOG_FILE="$LOG_DIR/talekeeper-raw.jsonl"
 

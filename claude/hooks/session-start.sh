@@ -20,6 +20,20 @@ fi
 CWD=$(echo "$STDIN_DATA" | jq -r '.cwd // ""' 2>/dev/null)
 CWD="${CWD:-$PWD}"
 
+# Write session-context sidecar for downstream consumers (talekeeper hooks,
+# LLM commands). Uses a fixed path so consumers can read it without knowing
+# the session ID. Last-writer-wins for concurrent sessions — that race is an
+# accepted limitation. Written here, before the --name override exit and the
+# title-restore branches, so the sidecar is present on every invocation that
+# has a usable CWD.
+REPO_SLUG="$(basename "$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || echo "$CWD")")"
+SIDECAR_DIR="$HOME/.ai-tpk/session-context"
+SIDECAR_FILE="$SIDECAR_DIR/current.json"
+mkdir -p "$SIDECAR_DIR" 2>/dev/null || true
+jq -nc --arg repo_slug "$REPO_SLUG" \
+  '{repo_slug: $repo_slug}' > "$SIDECAR_FILE" 2>/dev/null || true
+unset REPO_SLUG SIDECAR_DIR SIDECAR_FILE
+
 # Source shared tab-rename library
 # shellcheck source=lib-tab-rename.sh
 source "$(dirname "$0")/lib-tab-rename.sh"

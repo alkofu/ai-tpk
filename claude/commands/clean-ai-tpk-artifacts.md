@@ -18,9 +18,19 @@ Store the age as `<days>` and the flag as `<all-repos>` (true/false).
 
 ## Step 2 — Derive current repo slug
 
-Run: `git rev-parse --show-toplevel`
+Derive the repo slug using the session-context sidecar:
 
-Take the basename of the result. Store it as `<repo-slug>`.
+1. **Try sidecar first.** Use the `Read` tool on `~/.ai-tpk/session-context/current.json`.
+   If the file exists and contains a JSON object with a non-empty `repo_slug` field,
+   use that value as `<repo-slug>`. The `Read` tool does not trigger a permission
+   prompt — this is the preferred path. The sidecar is written by `session-start.sh`
+   on every session start, so under normal conditions this path is taken; the fallback
+   exists for users who have not yet re-run `install.sh` after this update.
+
+2. **Fallback.** If the `Read` tool reports the file is missing, OR if the file is
+   present but `repo_slug` is empty, missing, or unparseable, run:
+   `git rev-parse --show-toplevel` (a Bash call — this triggers the usual permission
+   prompt). Take the basename of the result. Store it as `<repo-slug>`.
 
 ## Step 3 — Determine search scope
 

@@ -19,105 +19,80 @@ worktree session).
 **If both are set:**
 Print: `"Using session context: <WORKTREE_PATH> (<WORKTREE_BRANCH>)"`
 Set `<worktree-path>` to `WORKTREE_PATH` and `<branch>` to `WORKTREE_BRANCH`. Proceed through
-Steps 1 and 2 (to identify `<main-path>` and verify the worktree exists), then skip directly
-to Step 6.
+Step 1 (to identify `<main-path>` and verify the worktree exists), then skip directly
+to Step 2.
 
 **If not both set:**
 Proceed to Step 1 (full discovery flow).
 
-## Step 1 — Enumerate all worktrees
+## Step 1 — Discover candidates
 
-Run: `git worktree list --porcelain`
+Run `~/.claude/scripts/merged-discover.sh` as a single Bash call. The script:
+- Runs `git fetch --prune` and records success/failure.
+- Captures `git worktree list --porcelain` and parses it in pure bash.
+- Identifies the main worktree path (the first block in the porcelain output — **not**
+  `git rev-parse --show-toplevel`, which returns the wrong value from inside a worktree).
+- Builds the list of non-prunable worktrees whose paths start with `<main-path>/`.
+- Detects gone-upstream branches using `git for-each-ref` plumbing internally (not
+  `git branch -vv` — that format is undocumented and unstable).
+- Computes `candidates`: the subset of worktree branches whose upstream is gone.
+- Emits a single-line JSON object to stdout:
 
-Parse the porcelain output. The output consists of blocks separated by blank lines. Each
-block starts with a `worktree <path>` line, followed by a `HEAD <sha>` line, and then
-either a `branch refs/heads/<name>` line or the word `detached`. Some blocks may also
-contain a `prunable` line.
+```json
+{
+  "main_path": "<absolute-path>",
+  "fetch_ok": true,
+  "worktrees": [
+    { "path": "<absolute-path>", "branch": "<branch-name>" }
+  ],
+  "gone_branches": ["<branch-name>"],
+  "candidates": ["<branch-name>"]
+}
+```
 
-## Step 2 — Identify the main worktree
+Extract `<main-path>` from `.main_path`.
 
-The **first block** in the porcelain output is always the main worktree, regardless of
-which directory the command is invoked from. Extract its path as `<main-path>`.
+**If arriving from Step 0 (session-context path):** Verify that `WORKTREE_PATH` appears
+in the discovery output's `worktrees[*].path` list. If it does not, tell the user:
+"Session context worktree not found in `git worktree list` output. Aborting." and stop.
+If it does, proceed to Step 2.
 
-Do **not** use `git rev-parse --show-toplevel` for this purpose — it returns the worktree
-path when run from inside a worktree, which would produce incorrect results.
+**If `.fetch_ok` is `false`:** Warn the user that remote-gone detection is unavailable.
+Then proceed with the branching rules below using whatever `candidates` the script produced
+(which may be empty if the fetch failed).
 
-**If arriving from Step 0 (session-context path):** Verify that `<worktree-path>` appears
-as a worktree path in the porcelain output. If it does not, tell the user: "Session context
-worktree not found in `git worktree list` output. Aborting." and stop. If it does, proceed
-to Step 6.
+**Branching on candidates and worktrees:**
 
-## Step 3 — Build the candidate list
+- **If `.candidates | length == 1`:** Auto-select that branch. Find its worktree path by
+  looking up the matching entry in `.worktrees[*]` where `.branch == candidates[0]`.
+  Print: `"Identified merged branch via remote deletion: <branch> at <path>. Proceeding with cleanup."`
+  Store as `<worktree-path>` and `<branch>`. Proceed to Step 2.
 
-From the remaining blocks (all blocks after the first), build a list of cleanup candidates
-by applying these filters in order:
+- **If `.candidates | length == 0` and `.worktrees | length == 0`:**
+  Print: "No worktrees found to clean up." Stop here — do not continue to later steps.
 
-1. **Skip prunable entries.** If a block contains a `prunable` line, exclude it entirely.
-   These are stale entries, often belonging to a different repository.
+- **If `.candidates | length == 0` and `.worktrees | length >= 1`:**
+  Present the full `.worktrees` array as a numbered list (path and branch for each).
+  Ask the user: "Multiple worktrees found. Which one was merged? Enter the number, or 'none' to abort."
+  If the user answers `none` or provides an invalid selection, abort without making any changes.
+  Store the selected candidate's path as `<worktree-path>` and branch as `<branch>`.
 
-2. **Skip cross-repo worktrees.** If the worktree path does not start with `<main-path>/`,
-   exclude it. This ensures only worktrees belonging to this repository are candidates.
+- **If `.candidates | length > 1`:**
+  Present those candidates as a numbered list (branch name for each; look up the path
+  from `.worktrees`).
+  Ask the user: "Multiple worktrees found. Which one was merged? Enter the number, or 'none' to abort."
+  If the user answers `none` or provides an invalid selection, abort without making any changes.
+  Store the selected candidate's path as `<worktree-path>` and branch as `<branch>`.
 
-3. **Parse branch name.** If the block has a `branch refs/heads/<name>` line, strip the
-   `refs/heads/` prefix and store `<name>` as the branch. If the block has `detached`
-   instead of a `branch` line, store the branch as `(detached HEAD)`.
-
-Each candidate entry contains a path and a branch name (or `(detached HEAD)`).
-
-## Step 4 — Check for remote-gone signal
-
-Run: `git fetch --prune`
-
-This is a non-destructive network operation that updates remote tracking refs and prunes
-refs for branches deleted on the remote. It modifies local tracking refs but not local
-branches or the working tree. No Bitsmith delegation is required.
-
-If `git fetch --prune` fails (e.g., network error, authentication failure), warn the user
-that remote-gone detection is unavailable and fall through to Step 5 (the manual picker).
-
-Run: `git branch -vv`
-
-Parse the output for lines whose tracking-ref information contains `: gone]` — for example,
-a line like `  fix/my-branch  abc1234 [origin/fix/my-branch: gone] commit message` indicates
-that `origin/fix/my-branch` was deleted on the remote.
-
-Cross-reference the gone branches with the candidate list from Step 3. A candidate matches
-if its branch name equals the local branch name shown in a gone line. Candidates with
-`(detached HEAD)` as their branch cannot match and are ignored in this cross-reference.
-
-**If exactly one candidate has a `[gone]` upstream:**
-Auto-select it. Print: `"Identified merged branch via remote deletion: <branch> at <path>. Proceeding with cleanup."`
-Store the candidate's path as `<worktree-path>` and branch as `<branch>`, then proceed to Step 6.
-
-**If zero or multiple candidates have `[gone]` upstream:**
-Fall through to Step 5 (the manual picker).
-
-## Step 5 — Branch on candidate count
-
-**If zero candidates:**
-Tell the user: "No worktrees found to clean up." Stop here — do not continue to later steps.
-
-**If exactly one candidate:**
-Print the candidate's path and branch name.
-Store the candidate's path as `<worktree-path>` and branch as `<branch>`.
-
-**If multiple candidates:**
-Print a numbered list of all candidates (path and branch for each). Ask the user:
-"Multiple worktrees found. Which one was merged? Enter the number, or 'none' to abort."
-
-If the user answers `none` or provides an invalid selection, abort without making any changes.
-
-Store the selected candidate's path as `<worktree-path>` and branch as `<branch>`.
-
-## Step 6 — Change to the main repo directory
+## Step 2 — Change to the main repo directory
 
 Before any destructive operations, change the working directory to `<main-path>` (from
-Step 2). This is critical: if the current shell is inside `<worktree-path>`, removing that
+Step 1). This is critical: if the current shell is inside `<worktree-path>`, removing that
 worktree will destroy the cwd and cause all subsequent commands to fail.
 
-All remaining steps (7 through 10) must execute with `<main-path>` as the working directory.
+All remaining steps (3 through 6) must execute with `<main-path>` as the working directory.
 
-## Step 7 — Remove the worktree [write operation — delegate to Bitsmith]
+## Step 3 — Remove the worktree [write operation — delegate to Bitsmith]
 
 Delegate to Bitsmith to run (from `<main-path>`): `git worktree remove --force <worktree-path>`
 
@@ -128,7 +103,7 @@ in the worktree are expendable.
 
 If the command fails, report the error to the user and abort. Do not continue to later steps.
 
-## Step 8 — Delete the local branch [write operation — delegate to Bitsmith]
+## Step 4 — Delete the local branch [write operation — delegate to Bitsmith]
 
 **If `<branch>` is `(detached HEAD)`:** Skip this step entirely. There is no branch to delete.
 Print: "Skipping branch deletion — worktree was in detached HEAD state."
@@ -138,9 +113,9 @@ Print: "Skipping branch deletion — worktree was in detached HEAD state."
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
 If the command fails (e.g., the branch was already deleted or does not exist locally), report
-the failure as a warning but do not abort — continue to Step 9.
+the failure as a warning but do not abort — continue to Step 5.
 
-## Step 9 — Checkout main [write operation — delegate to Bitsmith]
+## Step 5 — Checkout main [write operation — delegate to Bitsmith]
 
 Delegate to Bitsmith to run (from `<main-path>`): `git checkout main`
 
@@ -148,7 +123,7 @@ Delegate to Bitsmith to run (from `<main-path>`): `git checkout main`
 
 If this fails, report the error and abort.
 
-## Step 10 — Pull latest from origin [write operation — delegate to Bitsmith]
+## Step 6 — Pull latest from origin [write operation — delegate to Bitsmith]
 
 Delegate to Bitsmith to run (from `<main-path>`): `git pull origin main`
 
@@ -157,13 +132,13 @@ Delegate to Bitsmith to run (from `<main-path>`): `git pull origin main`
 If this fails, report the error but do not treat it as fatal — the local checkout is already
 on `main`.
 
-## Step 10a — Auto-clean session plan files
+## Step 6a — Auto-clean session plan files
 
 Check whether `SESSION_TS` is present in your conversation memory.
 
 **If SESSION_TS is not available** (e.g., `/merged` was run in a new session without
 worktree context): Skip this step silently. Do not list, prompt about, or delete any
-plan files. Do not run `git rev-parse`, `ls`, or any other command. Proceed to Step 11.
+plan files. Do not run `git rev-parse`, `ls`, or any other command. Proceed to Step 7.
 
 **If SESSION_TS is available:**
 
@@ -174,24 +149,30 @@ List files matching the session timestamp in the plan directory:
 `ls -1 ~/.ai-tpk/plans/<repo-slug>/{SESSION_TS}-* 2>/dev/null`
 
 If no files match (command produces no output or the directory does not exist), skip
-this step silently and proceed to Step 11.
+this step silently and proceed to Step 7.
 
 If matching files exist, delegate to Bitsmith to delete each file using `rm` (one call
 per file, not chained). Do not prompt the user. Do not mention or touch any files that
 do not match `{SESSION_TS}-*`.
 
-Store the list of deleted file names for use in Step 11's summary.
+Store the list of deleted file names for use in Step 7's summary.
 
 (Per DM delegation policy, file deletions must be delegated to Bitsmith.)
 
-## Step 11 — Report final summary
+## Step 7 — Report final summary
 
 Format the summary using Template D (Post-Merge Cleanup) from `claude/references/completion-templates.md`.
 
 Populate the fields as follows:
 - **PR** and **Merge method:** Include these lines only when `MERGED_PR_NUMBER` is present in session context (i.e., `/merged` was chained from `/merge-pr`). Omit both lines when `/merged` is run standalone.
 - **Worktree removed:** `<worktree-path>`, or "N/A" if no worktree was found.
-- **Branch deleted:** `<branch>`, or "skipped (detached HEAD)" if Step 8 was skipped, or "skipped (see warning)" if Step 8 failed.
+- **Branch deleted:** `<branch>`, or "skipped (detached HEAD)" if Step 4 was skipped, or "skipped (see warning)" if Step 4 failed.
 - **Current branch:** main (up to date)
-- **Plan files cleaned:** the list of deleted file names from Step 10a, or "none" if Step 10a found no files, or "skipped (no SESSION_TS)" if Step 10a was skipped entirely.
-- **Token usage:** Run `~/.claude/scripts/token-summary.sh <repo-slug>` (where `<repo-slug>` is the value derived in Step 10a). Use its output verbatim. If it outputs `unavailable`, report that value as-is.
+- **Plan files cleaned:** the list of deleted file names from Step 6a, or "none" if Step 6a found no files, or "skipped (no SESSION_TS)" if Step 6a was skipped entirely.
+- **Token usage:** Derive the current repo slug as in Step 6a. Then run (single Bash call):
+
+  ```
+  ls -t ~/.ai-tpk/logs/<repo-slug>/talekeeper-*.jsonl 2>/dev/null | head -n1 | xargs -I{} jq -rs '[.[] | select(has("input_tokens"))] | reduce .[] as $r ({input:0,output:0,cw:0,cr:0}; .input += ($r.input_tokens // 0) | .output += ($r.output_tokens // 0) | .cw += ($r.cache_creation_input_tokens // 0) | .cr += ($r.cache_read_input_tokens // 0)) | "\(.input/1000 | floor)k in / \(.output/1000 | floor)k out / \(.cw/1000 | floor)k cache-write / \(.cr/1000 | floor)k cache-read"' {}
+  ```
+
+  The pipeline (a) lists chronicle files for the repo by modification time, (b) selects the most recent, (c) feeds it to `jq -rs` which slurps all newline-delimited JSON records into a single array, filters to records that have an `input_tokens` key (token record fields are flat top-level keys — not nested under a `usage` object), reduces the four token fields, and formats the totals. If no chronicle file is found or `jq` exits non-zero, the pipeline produces empty output — report "unavailable".

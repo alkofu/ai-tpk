@@ -11,77 +11,61 @@ be delegated to Bitsmith per the DM delegation policy. Those steps are marked be
 **Known limitation:** `--limit 1000` captures at most the 1000 most-recently merged PRs.
 Branches from PRs merged long ago may not appear in the list and will not be cleaned up.
 
-## Step 1 — Verify GitHub authentication
+## Step 1 — Discover stale branches
 
-Run: `gh auth status`
+Run `~/.claude/scripts/clean-the-desk-discover.sh` as a single Bash call.
 
-If the command exits with a non-zero status or prints an error, abort immediately and tell the
-user: "GitHub authentication is required. Run `gh auth login` and try again."
+Exit-code contract:
+- **Exit 0** — discovery succeeded; parse stdout as JSON.
+- **Non-zero exit** — abort immediately; the script has already printed an error message to stderr.
 
-## Step 2 — Fetch remote-tracking refs
+On success, stdout is a single-line JSON object with the following shape:
 
-Run: `git fetch origin`
+```json
+{
+  "branches_to_delete": ["feat/old-branch", "fix/another"],
+  "worktrees_to_remove": [
+    {"branch": "feat/old-branch", "path": "/abs/path/to/worktree"}
+  ],
+  "skipped_reasons": {
+    "main": "protected",
+    "feat/current": "current branch",
+    "feat/closed-pr": "upstream gone (PR not in merged-list — possibly closed-without-merge)"
+  }
+}
+```
 
-This updates remote-tracking refs without modifying the working tree.
+- `.branches_to_delete` — local branches whose PR is confirmed merged and that are safe to delete.
+- `.worktrees_to_remove` — worktrees that must be removed before the associated branch can be deleted. Every entry here has a matching entry in `.branches_to_delete`.
+- `.skipped_reasons` — merged-list or gone-upstream branches that were excluded from cleanup, with the reason for each. Present this to the user in Step 2 if non-empty.
 
-## Step 3 — Collect merged PR branch names
+If both `.branches_to_delete` and `.worktrees_to_remove` are empty, print "Nothing to clean up."
+and stop.
 
-Run: `gh pr list --state merged --json headRefName --limit 1000`
+## Step 2 — Display summary and ask for confirmation
 
-Parse the JSON response. Extract the `headRefName` value from each object into a list of merged
-branch names. These are already short names (e.g., `feat/my-feature`) — no stripping needed.
-
-## Step 4 — Collect local branch names
-
-Run: `git branch --format='%(refname:short)'`
-
-This produces one short branch name per line.
-
-## Step 5 — Collect worktree path-to-branch mapping
-
-Run: `git worktree list --porcelain`
-
-Parse the output to build a map from worktree path to branch name. Each worktree entry begins
-with a `worktree` line (the path) followed later by a `branch` line. Strip the `refs/heads/`
-prefix from the branch value. This map is used in Step 7 to find worktrees associated with
-stale branches.
-
-## Step 6 — Identify stale branches
-
-A branch is stale if it meets ALL of the following:
-- It exists in the local branch list (Step 4)
-- Its name appears in the merged PR branch list (Step 3)
-- Its name is NOT `main` or `master`
-
-## Step 7 — Find associated worktrees
-
-Using the porcelain output from Step 5, map each stale branch to its worktree path (if any).
-A worktree entry has a `worktree` line (the path) followed later by a `branch` line. Collect
-every worktree path whose branch matches a stale branch.
-
-## Step 8 — Display summary and ask for confirmation
-
-Print a clear summary:
-- List each worktree path that will be removed (if any)
-- List each branch that will be deleted (if any)
-- If both lists are empty, tell the user "Nothing to clean up." and stop.
+Print a clear summary derived from the JSON:
+- List each worktree path that will be removed (from `.worktrees_to_remove[*].path`), if any.
+- List each branch that will be deleted (from `.branches_to_delete`), if any.
+- If `.skipped_reasons` is non-empty, surface it so the user understands why some branches were
+  not included — for example: "Skipped: main (protected), feat/current (current branch)."
 
 Ask the user: "Proceed with deletion? (yes/no)"
 
 If the user answers anything other than `yes`, abort without making any changes.
 
-## Step 9 — Remove worktrees [write operation — delegate to Bitsmith]
+## Step 3 — Remove worktrees [write operation — delegate to Bitsmith]
 
-For each worktree path identified in Step 7, delegate to Bitsmith to run:
+For each entry in `.worktrees_to_remove`, delegate to Bitsmith to run:
 `git worktree remove --force {path}`
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
 Report each removal as it completes.
 
-## Step 10 — Delete stale branches [write operation — delegate to Bitsmith]
+## Step 4 — Delete stale branches [write operation — delegate to Bitsmith]
 
-For each stale branch, delegate to Bitsmith to run:
+For each branch in `.branches_to_delete`, delegate to Bitsmith to run:
 `git branch -D {branch}`
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
@@ -89,7 +73,7 @@ For each stale branch, delegate to Bitsmith to run:
 If the command fails (e.g., because the branch is still checked out somewhere), treat it as a
 skip — do not treat it as a fatal error. Note the branch as skipped.
 
-## Step 11 — Report final summary
+## Step 5 — Report final summary
 
 Print a final summary with three sections:
 - **Worktrees removed:** list of paths (or "none")

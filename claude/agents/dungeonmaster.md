@@ -644,7 +644,7 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
     Format the completion summary using the appropriate template from `claude/references/completion-templates.md`: Template A (Constructive) for constructive sessions, Template B (Investigative) for investigative sessions.
 
     To obtain the values for the template:
-    - **Token usage:** read the session's enriched chronicle file — glob `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-*.jsonl` and select the file most recently modified during this session. Sum `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` across all entries using `jq`. Report as: "{input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read" (divide raw counts by 1000, round to 1 decimal). If the chronicle file is not found, unreadable, or contains no token data, report "unavailable".
+    - **Token usage:** run `~/.claude/scripts/token-summary.sh {REPO_SLUG}` and use its output verbatim. The script reads a pre-computed cache written by the Stop hook, or falls back to computing from the most recent chronicle file. If no data is available, it emits `unavailable` — report that value as-is.
     - **Reservations logged:** populate from Phase 5a and 5c. Values:
       - "no" — no ACCEPT-WITH-RESERVATIONS verdicts were issued
       - "yes — {file path} — resolved" — reservations were logged and resolved (via auto-fix or user-requested "Fix now")

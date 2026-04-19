@@ -54,6 +54,8 @@ See sections below for per-agent operational specs, [docs/WORKFLOW_ENTRY_POINTS.
 
 <img src="avatars/dungeonmaster.png" alt="Dungeon Master Avatar" width="300">
 
+The Dungeon Master is not a character at the table — he is the table itself. He has no race, no class, no body that the party can see. He is the voice that says when the lantern gutters, when the quest begins, and when initiative is rolled. He sets the scene, calls on each adventurer in turn, and holds the thread of the campaign from the first roll to the last. Where the party acts, the Dungeon Master frames; where the party speaks, the Dungeon Master listens, decides, and narrates the consequence.
+
 **Core Mission:** Coordinate multi-step software development work by delegating planning to Pathfinder and execution to Bitsmith or specialist agents.
 
 **Configuration File:** `/claude/agents/dungeonmaster.md`
@@ -110,6 +112,12 @@ Quill has a single professional rival: documentation written by someone who clea
 
 <img src="avatars/riskmancer.png" alt="Riskmancer Avatar" width="300">
 
+A dark elf necromancer who studied threats so long he learned to think the way they think. Riskmancer wears robes the colour of dried ink and carries a small bound book in which he writes, in a neat script, every way a thing might fail. Where other adventurers see a door, he sees a hinge that can be lifted, a lock that can be picked, and a poisoned needle hidden in the keyhole.
+
+He does not panic. He catalogues. He has read the same scroll of cursed items so many times that the cursed items know him by name. He is fond of saying that paranoia is only paranoia until the threat arrives, and then it is foresight.
+
+> *"Every door has three locks. The third one is the one you didn't see."*
+
 **Core Mission:** Identify and prioritize vulnerabilities before production deployment, focusing on OWASP Top 10 analysis, secrets detection, input validation, and authentication checks.
 
 **Configuration File:** `/claude/agents/riskmancer.md`
@@ -119,6 +127,12 @@ Quill has a single professional rival: documentation written by someone who clea
 ### Pathfinder - Planning Consultant
 
 <img src="avatars/pathfinder.png" alt="Pathfinder Avatar" width="300">
+
+A human ranger in a weather-stained hood, with an unstrung bow across his back and a folded map worn soft at the creases from being opened a thousand times. Pathfinder does not march into the dungeon — he walks its edges first, climbs the ridge above it, and asks the locals what the wind has been doing. He believes a quest survives or dies in the hour before the first sword is drawn, and he spends that hour gladly.
+
+He listens more than he speaks. When he speaks, it is to ask one question at a time, and to wait for the answer before asking the next. His maps are not decorative; they are arguments, drawn in ink, about which paths are real and which are wishful thinking.
+
+> *"The party that knows the ground will outlive the party that knows the spell."*
 
 **Core Mission:** Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `~/.ai-tpk/plans/{repo-slug}/`.
 
@@ -130,6 +144,12 @@ Quill has a single professional rival: documentation written by someone who clea
 
 <img src="avatars/knotcutter.png" alt="Knotcutter Avatar" width="300">
 
+A half-orc barbarian with shoulders like a doorframe and an axe whose edge is kept honest by frequent, unsentimental use. Knotcutter does not believe in the ornamental. If a rope has a knot, he does not study the knot — he cuts it. If a wall has a door, he prefers the door, but he is not above the wall.
+
+He arrives at a problem and asks, plainly, which parts of it can be removed without anyone noticing. Most parts, in his experience, can. He has earned a reputation as the only adventurer in the party who returns from the dungeon with less in his pack than he set out with, and who counts that as a victory.
+
+> *"If it can be cut, cut it. If it cannot be cut, ask again tomorrow."*
+
 **Core Mission:** Ruthlessly simplify systems by removing non-essential components until only vital elements remain, providing deep complexity analysis beyond Ruinor's baseline checks.
 
 **Configuration File:** `/claude/agents/knotcutter.md`
@@ -139,6 +159,12 @@ Quill has a single professional rival: documentation written by someone who clea
 ### Ruinor - Quality Gate Reviewer
 
 <img src="avatars/ruinor.png" alt="Ruinor Avatar" width="300">
+
+A dragonborn warrior whose scales are the colour of cooled iron and whose breath, on a cold morning, still smells faintly of smoke. Ruinor stands at the gate of every dungeon and asks one question before he lets the party pass: *is this plan worthy of the lives it will spend?* He has turned back parties twice his size with a single shake of the head.
+
+He is not cruel; he is honest, and honesty in a dragonborn carries weight. He renders verdicts the way his ancestors rendered judgement — clearly, without ornament, and without apology. He has been known to repeat the verdict a second time, more slowly, for parties that did not believe him the first time.
+
+> *"A plan that cannot survive my reading will not survive the dungeon."*
 
 **Core Mission:** Serve as the mandatory quality gate before plans are executed or code is merged, issuing clear verdicts (REJECT / REVISE / ACCEPT-WITH-RESERVATIONS / ACCEPT) with baseline coverage of quality, correctness, security, performance, and complexity.
 
@@ -150,6 +176,12 @@ Quill has a single professional rival: documentation written by someone who clea
 
 <img src="avatars/windwarden.png" alt="Windwarden Avatar" width="300">
 
+An elf ranger who has spent so many years on the high passes that she now hears weather before it arrives. Windwarden moves lightly and notices everything: the faint hum of a bridge under load, the long pause before a spell that should be quick, the moment a column of marching boots falls out of step. Where others see a working system, she sees a system that is working *for now*.
+
+She does not raise alarms idly. She measures. She times. She counts. When she finally speaks, the party listens, because she has earned the right to be believed by being right too many times to dismiss.
+
+> *"The bridge is fine. The bridge is fine. The bridge is fine. The bridge is — move."*
+
 **Core Mission:** Hunt performance bottlenecks and scalability issues before they reach production, providing deep performance expertise beyond Ruinor's baseline checks.
 
 **Configuration File:** `/claude/agents/windwarden.md`
@@ -159,6 +191,12 @@ Quill has a single professional rival: documentation written by someone who clea
 ### Truthhammer - Factual Validation Specialist
 
 <img src="avatars/truthhammer.png" alt="Truthhammer Avatar" width="300">
+
+A dwarven paladin in heavy armour, with a war-hammer at his belt and a stack of well-thumbed reference scrolls in a satchel at his hip. Truthhammer does not take a claim on faith. If a wizard says the spell takes three components, he opens the spellbook and counts them. If a merchant says the road is safe, he asks which road, on which day, and at what hour. He has been told he is exhausting. He considers this a compliment.
+
+He believes that a single unverified fact, left to wander loose in a plan, will eventually return wearing the clothes of a disaster. So he checks. And he checks again. And when the source agrees with the claim, he sets the hammer down and says so plainly. When the source disagrees, he sets the hammer down even more carefully, and says so plainly anyway.
+
+> *"Trust the source, not the storyteller. The source does not embellish."*
 
 **Core Mission:** Verify factual claims about external systems (config keys, API signatures, version compatibility, CLI flags, environment variables) against authoritative official documentation.
 

@@ -60,6 +60,16 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 - [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) — Mandatory-baseline + opt-in-specialist review workflow with diagrams and key principles.
 - Contributing — see [docs/CONTRIBUTING.md § Configuration Updates](/docs/CONTRIBUTING.md#configuration-updates) for the configuration update workflow and [docs/AGENTS.md § Shared Agent References](/docs/AGENTS.md#shared-agent-references) for shared reference file conventions. For repo-wide development workflow (build, test, lint, format, push), see [docs/INSTALLATION.md § Development Setup](/docs/INSTALLATION.md#development-setup).
 
+## The Party Convenes
+
+*Should I order pizza with artichoke?*
+
+<div align="center">
+  <img src="docs/images/artichoke-pizza.png" alt="AI TPK agent responses to the question 'Should I order pizza with artichoke?', each agent answering in character." width="640" />
+</div>
+
+*The question was posed. The party had opinions.*
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

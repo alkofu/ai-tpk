@@ -4,6 +4,22 @@
 
 # AI TPK
 
+> *The lantern at the centre of the table guttered once, then steadied, and the Dungeon Master cleared his throat.*
+>
+> *"A new quest," he said, and the table fell quiet — the half-orc clerk Askmaw set down his ledger, the high elf Quill closed his book on a single careful finger, and the hooded ranger Pathfinder leaned forward to study the map.*
+>
+> *Tracebloom, the desert druid, did not look up from the cracked earth he had been reading; he had heard the silence before the words.*
+>
+> *Bitsmith tested the weight of her hammer against her palm, already thinking of the metal she would shape.*
+>
+> *Beside her, the half-orc barbarian Knotcutter rested his axe across his knees and grinned at no one in particular, already deciding which knots in this quest would not need untying.*
+>
+> *In the corner, the dwarven paladin Truthhammer set his tankard down with a thud, and the dragonborn Ruinor bared his teeth in something that was not quite a smile.*
+>
+> *The dark elf Riskmancer traced a glyph on the table that no one else could see, and the elf ranger Windwarden tilted her head as if catching a far wind.*
+>
+> *"The party is ready," said the Dungeon Master. "Roll for initiative."*
+
 **AI TPK** (Total Party Kill — a D&D term for when the entire adventuring party is wiped out) is a clone-run-forget tool that installs a curated set of AI agents, skills, slash commands, hooks, and MCP servers into `~/.claude/` (and into `~/.cursor/` when present). It is inspired by tabletop roleplaying games, featuring agents with D&D-themed roles like Dungeon Master (orchestrator), Riskmancer (security), and Pathfinder (planning). Just as a well-prepared party survives the dungeon, well-configured AI tools help you survive the codebase.
 
 ## Quick Install

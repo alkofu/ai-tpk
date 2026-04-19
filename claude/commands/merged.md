@@ -194,10 +194,4 @@ Populate the fields as follows:
 - **Branch deleted:** `<branch>`, or "skipped (detached HEAD)" if Step 8 was skipped, or "skipped (see warning)" if Step 8 failed.
 - **Current branch:** main (up to date)
 - **Plan files cleaned:** the list of deleted file names from Step 10a, or "none" if Step 10a found no files, or "skipped (no SESSION_TS)" if Step 10a was skipped entirely.
-- **Token usage:** Derive the current repo slug as in Step 10a. Then run (single Bash call):
-
-  ```
-  ls -t ~/.ai-tpk/logs/<repo-slug>/talekeeper-*.jsonl 2>/dev/null | head -n1 | xargs -I{} jq -rs '[.[] | select(has("input_tokens"))] | reduce .[] as $r ({input:0,output:0,cw:0,cr:0}; .input += ($r.input_tokens // 0) | .output += ($r.output_tokens // 0) | .cw += ($r.cache_creation_input_tokens // 0) | .cr += ($r.cache_read_input_tokens // 0)) | "\(.input/1000 | floor)k in / \(.output/1000 | floor)k out / \(.cw/1000 | floor)k cache-write / \(.cr/1000 | floor)k cache-read"' {}
-  ```
-
-  The pipeline (a) lists chronicle files for the repo by modification time, (b) selects the most recent, (c) feeds it to `jq -rs` which slurps all newline-delimited JSON records into a single array, filters to records that have an `input_tokens` key (token record fields are flat top-level keys — not nested under a `usage` object), reduces the four token fields, and formats the totals. If no chronicle file is found or `jq` exits non-zero, the pipeline produces empty output — report "unavailable".
+- **Token usage:** Run `~/.claude/scripts/token-summary.sh <repo-slug>` (where `<repo-slug>` is the value derived in Step 10a). Use its output verbatim. If it outputs `unavailable`, report that value as-is.

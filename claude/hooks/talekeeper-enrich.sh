@@ -120,4 +120,14 @@ if [ -s "$OUTPUT_FILE" ]; then
   truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' > "$RAW_LOG"
 fi
 
+# Pre-compute token summary for fast-path reads by token-summary.sh
+# Reads from the just-written chronicle, not the (now-cleared) raw log.
+# Any failure here is silently swallowed — hook must always exit 0.
+if [ -s "$OUTPUT_FILE" ] && command -v jq &>/dev/null; then
+  TOKEN_SUMMARY=$(jq -rs '[.[] | select(has("input_tokens"))] | reduce .[] as $r ({input:0,output:0,cw:0,cr:0}; .input += ($r.input_tokens // 0) | .output += ($r.output_tokens // 0) | .cw += ($r.cache_creation_input_tokens // 0) | .cr += ($r.cache_read_input_tokens // 0)) | "\(.input/1000 | floor)k in / \(.output/1000 | floor)k out / \(.cw/1000 | floor)k cache-write / \(.cr/1000 | floor)k cache-read"' "$OUTPUT_FILE" 2>/dev/null || true)
+  if [ -n "$TOKEN_SUMMARY" ]; then
+    printf '%s\n' "$TOKEN_SUMMARY" > "$LOG_DIR/latest-token-summary.txt" 2>/dev/null || true
+  fi
+fi
+
 exit 0

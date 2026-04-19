@@ -62,6 +62,8 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 
 ## The Party Convenes
 
+*Should I order pizza with artichoke?*
+
 <div align="center">
   <img src="docs/images/artichoke-pizza.png" alt="AI TPK agent responses to the question 'Should I order pizza with artichoke?', each agent answering in character." width="640" />
 </div>

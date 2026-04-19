@@ -19,49 +19,56 @@ This skill is **mandatory** for:
 
 **Do not** open a PR through any means without running this skill first.
 
-## Stack Detection
-
-Before running the checks below, detect which toolchain the repository uses. Check in this order and use the **first match**:
-
-1. **`package.json` exists** (Node/npm): Use `npm run lint` and `npm run format:check` (Steps 1-2 below as written).
-2. **`Makefile` exists with `lint` target**: Use `make lint` for lint. For format check: look for a `make fmt-check`, `make format-check`, or `make check-format` target (exits non-zero on violations without modifying files). If the Makefile only has a `fmt` target that modifies files, skip the format check for this project and warn the user: "Makefile `fmt` target detected but it modifies files — skipping format check. Add a `fmt-check` target to enable it." (substitute lint command in Step 1).
-3. **`pyproject.toml` exists**: Use `ruff check .` for lint and `ruff format --check .` for format (substitute in Steps 1-2).
-4. **`setup.py` or `setup.cfg` exists** (legacy Python): Use `flake8 .` for lint and `black --check .` for format (substitute in Steps 1-2).
-5. **`go.mod` exists** (Go): Use `golangci-lint run` for lint and `gofmt -l .` for format check (substitute in Steps 1-2; format check passes if `gofmt -l .` produces no output).
-6. **`Cargo.toml` exists** (Rust): Use `cargo clippy` for lint and `cargo fmt --check` for format check (substitute in Steps 1-2).
-7. **No match**: Warn the user that no recognized lint/format toolchain was found. Skip validation and proceed to `open-pull-request` with a note that pre-PR checks were not run.
-
-The npm commands in Steps 1-2 below are the default. When stack detection selects a different toolchain, substitute the corresponding commands but follow the same pass/fail logic.
-
 ## Steps
 
 Each check must be run as a **separate, standalone Bash call**. Do not chain commands with `&&` or `;` — this is required by the bash-style rule.
 
-### Step 1 — Run lint (npm default: `npm run lint`)
+### Step 0 — Detect stack
 
-Run the following as a standalone Bash call:
+Run the following as a standalone Bash call (no args — uses the current directory):
 
 ```
-npm run lint
+~/.claude/scripts/detect-stack.sh
+```
+
+The script emits a single-line JSON object to stdout:
+
+```json
+{"stack": "...", "lint_cmd": "...", "format_check_cmd": "...", "format_warning": "..."}
+```
+
+Branch on `.stack`:
+
+- If `.stack == "unknown"`: print the value of `.format_warning` (which will be "No recognized lint/format toolchain was found. Skipping validation."), then jump directly to Step 3. Note in the handoff that pre-PR checks were not run.
+- Otherwise: store `.lint_cmd` as `<lint_cmd>` and `.format_check_cmd` as `<format_check_cmd>` for use in Steps 1–2. If `.format_warning` is non-empty, print it now (this surfaces the Makefile `fmt`-only warning to the user). Proceed to Step 1.
+
+### Step 1 — Run lint
+
+Run the following as a standalone Bash call, using the `<lint_cmd>` value captured in Step 0:
+
+```
+<lint_cmd>
 ```
 
 - If lint **passes** (exit code 0): proceed to Step 2.
 - If lint **fails** (non-zero exit): stop immediately. Do not proceed to format check or PR creation. Report the full lint output to the user and request that the errors be fixed before retrying.
 
-### Step 2 — Run format check (npm default: `npm run format:check`)
+### Step 2 — Run format check
 
-Run the following as a standalone Bash call:
+If `<format_check_cmd>` is empty (e.g., a Makefile repo with only a `fmt` target that modifies files), skip this step with the note: "No format check is configured for this stack." Proceed directly to Step 3.
+
+Otherwise, run the following as a standalone Bash call, using the `<format_check_cmd>` value captured in Step 0:
 
 ```
-npm run format:check
+<format_check_cmd>
 ```
 
 - If format check **passes** (exit code 0): proceed to Step 3.
-- If format check **fails** (non-zero exit): stop immediately. Do not open the PR. Report the full output to the user. Suggest running `npm run format` to auto-fix formatting issues, then re-running `npm run format:check` to confirm.
+- If format check **fails** (non-zero exit): stop immediately. Do not open the PR. Report the full output to the user and request that the formatting issues be fixed before retrying.
 
 ### Step 3 — Proceed to open-pull-request
 
-Only after **both** Step 1 and Step 2 pass may you proceed to the `open-pull-request` skill to create the pull request.
+Only after **both** Step 1 and Step 2 pass (or after Step 0 short-circuits to here on `stack == "unknown"`, or after Step 2 is skipped due to empty `<format_check_cmd>`) may you proceed to the `open-pull-request` skill to create the pull request.
 
 ## Fail-Fast Behavior
 

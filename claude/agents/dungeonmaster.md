@@ -264,7 +264,22 @@ This subroutine is **invoked explicitly** by routing branches in this section th
 
 **When invoked, perform the following steps in order:**
 
-1. **Derive branch name:** Slugify the task description using a conventional commit prefix → `{type}/{slugified-task}` (e.g., "Add OAuth login" → `feat/add-oauth-login`, "Fix null pointer in auth" → `fix/null-pointer-auth`, "Refactor cache layer" → `refactor/cache-layer`). Infer the prefix from the nature of the request: use `feat/` for new features, `fix/` for bug fixes, `refactor/` for refactoring, `chore/` for maintenance/config/tooling, `docs/` for documentation-only changes, `test/` for test-only changes. If the request is ambiguous, use `chore/session-{YYYYMMDD-HHmmss}` (local time). Max 60 characters, lowercase, alphanumeric and hyphens only.
+1. **Derive branch name:**
+
+   **Part (a) — DM judgment (prefix inference):** Infer the conventional-commit type prefix from the nature of the request: use `feat/` for new features, `fix/` for bug fixes, `refactor/` for refactoring, `chore/` for maintenance/config/tooling, `docs/` for documentation-only changes, `test/` for test-only changes. The following are prefix-inference illustrations only — they show how to map request intent to a prefix type, not the exact slug the script will emit:
+   - "Add OAuth login" → infer `feat` → script produces `feat/add-oauth-login`
+   - "Resolve null pointer in auth" → infer `fix` → script produces `fix/resolve-null-pointer-in-auth`
+   - "Simplify cache layer" → infer `refactor` → script produces `refactor/simplify-cache-layer`
+
+   If the request is ambiguous, use `chore/session-{YYYYMMDD-HHmmss}` (local time) as `{branch-name}` and skip the slugify call below.
+
+   **Part (b) — mechanical transform (script call):** Call `bash ~/.claude/scripts/slugify.sh "<description>" "<prefix>"` and capture stdout as `{branch-name}`. The script handles lowercasing, character normalization, hyphen collapsing, and the 60-character cap on the full composed branch name.
+
+   On a non-zero exit, handle by exit code:
+   - Exit 2 (programmer error — empty arg passed): do NOT silently fall back. Abort with a clear error message to the user explaining the argument was empty.
+   - Exit 3 or 4 (data error — pathological prefix or empty slug): fall back to `chore/session-{YYYYMMDD-HHmmss}` and warn the user.
+
+   The `{branch-slug}` used in `WORKTREE_PATH` (step 2) is the portion of `{branch-name}` after the final `/`, with any remaining `/` replaced by `-` to keep the path segment flat (e.g., `{branch-name}` = `feat/add-oauth-login` → `{branch-slug}` = `add-oauth-login`, so `WORKTREE_PATH` = `{REPO_ROOT}/.worktrees/add-oauth-login`).
 
 2. **Delegate worktree creation to Bitsmith** (DM's Bash is read-only scoped; `mkdir` and `git worktree add` are write operations):
    ```

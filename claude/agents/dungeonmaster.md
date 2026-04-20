@@ -195,21 +195,7 @@ Parse Ruinor's review output for "Specialist Review Recommended" field:
 
 ### Keyword Detection (Heuristic Fallback)
 
-If no user flags and Ruinor doesn't recommend specialists, check plan/request for keywords:
-
-**Security keywords** (suggest Riskmancer):
-- auth, authentication, authorization, session, jwt, token, password, crypto, encrypt, secret, credential, payment, pii, oauth, api key
-
-**Performance keywords** (suggest Windwarden):
-- database, query, performance, scale, optimization, cache, index, pagination, algorithm, batch, real-time, throughput, latency
-
-**Complexity keywords** (suggest Knotcutter):
-- refactor, architecture, abstraction, framework, pattern, generalize, redesign, restructure, simplify
-
-**Factual validation keywords** (suggest Truthhammer):
-- changelog, breaking change, deprecated, upgrade path, migration guide, compatibility matrix, release notes
-
-**Note:** Keyword detection is a fallback heuristic. Prefer Ruinor's recommendations as the primary trigger mechanism. Truthhammer's factual-validation keywords are intentionally narrow (7 high-signal terms only) — generic infrastructure terms are excluded to avoid triggering Truthhammer on nearly every task. Ruinor's intelligent recommendations and the `--verify-facts` user flag are the primary trigger mechanisms for Truthhammer.
+If no user flags and Ruinor doesn't recommend specialists, check the plan/request against the canonical keyword list maintained in `claude/references/specialist-triggering.md` (security, performance, complexity, and factual-validation keywords with their corresponding specialist suggestions). That reference also documents why Truthhammer's keyword set is intentionally narrow.
 
 ## Important constraints
 

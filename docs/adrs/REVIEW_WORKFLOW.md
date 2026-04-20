@@ -209,7 +209,7 @@ Recommend performance specialist review.
 
 If no user flags present AND Ruinor doesn't recommend specialists, the orchestrator checks plan/code content for specialist keywords.
 
-The full keyword lists are defined per-agent in the agent files: [`claude/agents/riskmancer.md`](/claude/agents/riskmancer.md) (security), [`claude/agents/windwarden.md`](/claude/agents/windwarden.md) (performance), [`claude/agents/knotcutter.md`](/claude/agents/knotcutter.md) (complexity), and [`claude/agents/truthhammer.md`](/claude/agents/truthhammer.md) (factual validation). Truthhammer's list is intentionally narrow — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) "Keyword Detection (Heuristic Fallback)" section for the rationale.
+The canonical keyword list (security, performance, complexity, and factual-validation keywords with their specialist mappings) is maintained in [`claude/references/specialist-triggering.md`](/claude/references/specialist-triggering.md). Truthhammer's list is intentionally narrow — see that reference for the rationale.
 
 **Limitations:**
 - Less precise than Ruinor recommendations

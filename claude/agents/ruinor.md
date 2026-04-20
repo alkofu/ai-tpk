@@ -133,6 +133,8 @@ For plan reviews:
 ### Phase 5: Specialist Assessment
 After completing the multi-perspective review, assess whether specialist-level concerns warrant deeper investigation:
 
+Note: The Dungeon Master's heuristic-fallback specialist-routing keyword list is maintained in `claude/references/specialist-triggering.md`. The criteria below are Ruinor's own prose-based specialist-flagging logic and are intentionally distinct from that keyword list, but the two should remain semantically aligned — when adding or removing a specialist-flagging condition here, consider whether the corresponding keyword list also needs an update.
+
 **Flag for Riskmancer (Security Specialist) when:**
 - Authentication, authorization, or access control logic is involved
 - Cryptography, encryption, or key management is present

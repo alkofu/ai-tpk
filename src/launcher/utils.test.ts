@@ -1,7 +1,7 @@
 import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { log } from "@clack/prompts";
-import { errorMessage, tryLoad, tryLoadOptional } from "./utils.js";
+import { errorMessage, tryLoad } from "./utils.js";
 
 describe("errorMessage", () => {
   it("returns the message property when given an Error instance", () => {
@@ -29,20 +29,11 @@ describe("errorMessage", () => {
 });
 
 describe("tryLoad", () => {
-  it("returns the value from the callback when it succeeds", () => {
-    assert.deepStrictEqual(
-      tryLoad(() => [1, 2, 3], "test"),
-      [1, 2, 3],
-    );
-  });
-});
-
-describe("tryLoadOptional", () => {
   it("returns the callback result and emits no warning on success", (t) => {
     const warnMock = mock.method(log, "warn", () => {});
     t.after(() => warnMock.mock.restore());
 
-    const result = tryLoadOptional(() => 42, "test-label");
+    const result = tryLoad(() => 42, "test-label");
 
     assert.strictEqual(result, 42);
     assert.strictEqual(warnMock.mock.calls.length, 0);
@@ -52,7 +43,7 @@ describe("tryLoadOptional", () => {
     const warnMock = mock.method(log, "warn", () => {});
     t.after(() => warnMock.mock.restore());
 
-    const result = tryLoadOptional(() => {
+    const result = tryLoad(() => {
       throw new Error("boom");
     }, "test-label");
 
@@ -68,7 +59,7 @@ describe("tryLoadOptional", () => {
     const warnMock = mock.method(log, "warn", () => {});
     t.after(() => warnMock.mock.restore());
 
-    const result = tryLoadOptional(
+    const result = tryLoad(
       () => {
         throw new Error("boom");
       },
@@ -79,5 +70,15 @@ describe("tryLoadOptional", () => {
     assert.strictEqual(result, null);
     assert.strictEqual(warnMock.mock.calls.length, 1);
     assert.strictEqual(warnMock.mock.calls[0].arguments[0], "custom message");
+  });
+
+  it("returns the value and emits no warning on success even when warningMessage is supplied", (t) => {
+    const warnMock = mock.method(log, "warn", () => {});
+    t.after(() => warnMock.mock.restore());
+
+    const result = tryLoad(() => "hello", "test-label", "should not appear");
+
+    assert.strictEqual(result, "hello");
+    assert.strictEqual(warnMock.mock.calls.length, 0);
   });
 });

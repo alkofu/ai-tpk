@@ -100,7 +100,7 @@ The wizard orchestration lives in `main.ts`. The summary screen gate (`promptSum
 - `mcp/gcp-observability.ts` — ADC credential check and project prompt
 - `mcp/kubernetes.ts` — `kubectx` context listing, selection prompt, and context switching
 
-Shared utilities are split across `utils.ts` (exports `errorMessage`, `tryLoad`, and `tryLoadOptional`) and `prompts.ts` (exports `handleCancel` and `selectMcps`). The `env.ts` module builds environment variables (using a private `writeDotfile` helper); `config.ts` handles persistence. Claude is launched inline in `main.ts` via `spawnSync`.
+Shared utilities are split across `utils.ts` (exports `errorMessage` and `tryLoad`, where `tryLoad` returns `null` and emits `log.warn` on failure) and `prompts.ts` (exports `handleCancel` and `selectMcps`). Outro line construction — the text shown in the `Launching: …` summary — lives in `outro.ts` (exports the pure `buildOutroLines(resolved, effectiveSkipped)` function); this is the sole source of truth for which MCPs were configured vs. skipped. The `env.ts` module builds environment variables (using a private `writeDotfile` helper); `config.ts` handles persistence. Claude is launched inline in `main.ts` via `spawnSync`.
 
 ## Integration with install.sh
 
@@ -132,7 +132,7 @@ If neither source provides a valid credential file, the launcher logs a warning,
 
 When 'GCP Observability' is selected in the MCP multiselect, the launcher first runs `gcloud projects list --format=value(projectId) --sort-by=projectId` to fetch the set of accessible projects, then performs an informational ADC credential check. If both succeed, the launcher presents a `select()` prompt listing the available project IDs. If either step fails, the launcher logs a warning, skips the GCP MCP, and continues with the remaining selected MCPs (no project prompt is shown). When the prompt does run and the previously used project is still in the list it is pre-selected; otherwise the first project in the list is selected.
 
-If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, the launcher logs a warning, skips the GCP MCP, and continues with the rest of the session. Other MCP failures (Grafana, CloudWatch, Kubernetes) remain fatal.
+If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, the launcher logs a warning, skips the GCP MCP, and continues with the rest of the session. Failures in any other MCP loader (Grafana, CloudWatch, Kubernetes) are also non-fatal: the launcher logs a warning, skips that MCP, and continues with the remaining selected MCPs.
 
 The selected project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/myclaude/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
 
@@ -154,7 +154,7 @@ If the dotfile is absent or empty, and no project was set another way, the wrapp
 
 ### Prerequisites
 
-`kubectx` must be installed and on `PATH`. A valid `~/.kube/config` with at least one context must exist. The launcher does not install `kubectx` — if it is absent, the launcher exits with a descriptive error pointing to the install instructions.
+`kubectx` must be installed and on `PATH`. A valid `~/.kube/config` with at least one context must exist. The launcher does not install `kubectx` — if it is absent, the launcher logs a warning, skips the Kubernetes MCP, and continues launching Claude with the remaining selections.
 
 ### Context selection and switching
 
@@ -167,6 +167,8 @@ If the selected context differs from the saved previous context, the launcher ru
 `buildEnvVars` in `env.ts` sets `K8S_CONTEXT` to the selected context name. The Kubernetes MCP server (`mcp-server-kubernetes`) reads this to determine which context to use, overriding whatever context is currently active in `~/.kube/config`. This override matters when `KUBECONFIG` or other kubeconfig env vars are present in the environment.
 
 `~/.claude/.current-kube-context` is also written (mode 0600) for symmetry with the CloudWatch and GCP patterns, and to support potential future wrapper scripts or slash commands that need the selected context at runtime.
+
+If the `kubectx` switch fails, `launchClaude` sets `kubernetes: undefined` on the config passed to `buildEnvVars`, so neither `K8S_CONTEXT` nor `~/.claude/.current-kube-context` are written. The outro line reflects the skip, keeping the display, env export, and dotfile consistent.
 
 ### Persistence
 

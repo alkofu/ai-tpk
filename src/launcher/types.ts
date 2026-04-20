@@ -32,6 +32,13 @@ export interface ResolvedConfig {
   kubernetes?: KubernetesConfig;
 }
 
+export type SkippedMap = {
+  grafana?: false | "loader-failed";
+  cloudwatch?: false | "loader-failed";
+  gcp?: false | "loader-failed";
+  kubernetes?: false | "loader-failed" | "switch-failed";
+};
+
 export interface LauncherConfig {
   selectedMcps: string[];
   grafana?: {

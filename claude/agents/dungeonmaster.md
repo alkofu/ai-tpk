@@ -466,28 +466,10 @@ When triggered:
 - Invoke Pathfinder with `STOP_AFTER_SCOPE: true`. Pathfinder researches the codebase, produces a Scope Confirmation (objective, assumptions, affected subsystems, out of scope) and implementation options, then returns this output to DM without writing a plan.
 - DM presents scope + options to the user and waits for explicit selection. Do not proceed until the user responds.
 - **If the user does not ask to proceed with planning:** The scope-exploration session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
-- **If user selects an option and asks to continue:** Re-invoke Pathfinder with the `## Confirmed Scope` block (using the re-invocation template below) and proceed to step 3.
+- **If user selects an option and asks to continue:** Re-invoke Pathfinder with the `## Confirmed Scope` block (using the Pathfinder re-invocation template defined in pathfinder.md Section 4) and proceed to step 3.
 - **If user rejects presented options or requests a different approach:** Re-invoke Pathfinder with `STOP_AFTER_SCOPE: true` and the user's feedback as additional constraints appended to the delegation prompt. Repeat the scope + options presentation.
 
-**Pathfinder re-invocation template (after scope confirmation):**
-
-````
-WORKING_DIRECTORY: {WORKTREE_PATH}
-WORKTREE_BRANCH: {WORKTREE_BRANCH}
-REPO_SLUG: {REPO_SLUG}
-All file operations and Bash commands must use this directory as the working root.
-
-## Confirmed Scope
-
-**Objective:** {confirmed objective}
-**Assumptions:** {confirmed assumptions, possibly amended by user}
-**Selected Option:** {option name, or "N/A — single approach" if no options were presented}
-**Rejected Options:** {list of rejected options, or "N/A"}
-**User modifications:** {any changes the user requested to scope or approach, or "None"}
-
-## Instructions
-Proceed directly to plan generation (Section 5). Do not repeat scope confirmation.
-````
+**Pathfinder re-invocation template (after scope confirmation):** Use the template defined in `pathfinder.md` Section 4 ("Scope Confirmation"), in the fenced code block immediately following the `## Confirmed Scope` re-invocation handling note. When emitting the delegation prompt, substitute the placeholder fields (`{WORKTREE_PATH}`, `{WORKTREE_BRANCH}`, `{REPO_SLUG}`, confirmed objective, assumptions, selected option, rejected options, and any user modifications) with the values gathered from the user during scope confirmation.
 
 When not triggered: proceed to step 3; options discovery happens naturally inside Pathfinder's Section 4.
 
@@ -501,7 +483,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
    - Surface the scope summary and any implementation options to the user exactly as Pathfinder returned them.
    - Wait for the user to confirm scope and (if options were presented) select an implementation approach. Do not proceed until the user responds.
 
-3b. Re-invoke Pathfinder with the confirmed scope. Use the re-invocation template defined in the Explore-Options Gate above, substituting the user's confirmed objective, assumptions, selected option, and any user modifications. Pathfinder will skip Section 4 and proceed directly to plan generation.
+3b. Re-invoke Pathfinder with the confirmed scope. Use the Pathfinder re-invocation template defined in pathfinder.md Section 4, substituting the user's confirmed objective, assumptions, selected option, and any user modifications. Pathfinder will skip Section 4 and proceed directly to plan generation.
 
 4. Pathfinder saves the completed plan to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`.
 

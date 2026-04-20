@@ -41,3 +41,7 @@ The workflow is:
 **Critical implication for all changes:** The installed artifacts carry **no back-references to this repository**. Once copied, they are standalone files at their destination. Any change you make must therefore be complete and self-contained within the artifact itself — do not add relative paths, symlinks, or runtime references that assume the repo still exists on disk.
 
 This self-containment constraint applies to everything `install.sh` installs — the contents of `claude/` and `src/mcp/wrappers/`. It does **not** apply to repo-scope artifacts in `.claude/`, which are only active when the repo is checked out. When reviewing or authoring any artifact in `claude/` or `src/mcp/wrappers/`, always ask: *"Will this work correctly after being copied to its destination with no repo present?"*
+
+## Project Constitution
+
+This repository has a Project Constitution defining repo-scoped invariants that govern all work here. See `.claude/constitution.md` for the full text, definitions, and enforcement details. All plans, implementations, and reviews are evaluated against these principles; Ruinor enforces them as a mandatory checklist.

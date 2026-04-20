@@ -127,7 +127,7 @@ Or use the `/merged` command after a PR is merged — it removes the worktree an
 
 ## Worktree Awareness in Sub-Agents
 
-When a DungeonMaster session has an active worktree, all sub-agents (Pathfinder, Bitsmith, Quill, Tracebloom) automatically receive worktree context:
+When a DungeonMaster session has an active worktree, Pathfinder, Bitsmith, Quill, and Tracebloom automatically receive the worktree context block:
 
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/feat-add-oauth-login
@@ -141,6 +141,8 @@ Sub-agents respect this context:
 - **Bitsmith:** Performs all code changes within the worktree; commits land on the worktree's branch
 - **Quill:** Writes documentation updates relative to the worktree
 - **Tracebloom:** Reads files from the worktree when investigating
+
+Ruinor does not receive the worktree context block. Instead, DM inserts a `## Project Constitution` block at the top of every Ruinor delegation prompt. For the full injection logic — detection path, bootstrap exception, and placement rules — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) (Project Constitution Injection section).
 
 ### Bitsmith's Path Mismatch Guard
 

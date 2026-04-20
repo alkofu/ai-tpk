@@ -37,11 +37,13 @@ See `claude/references/review-gates.md` for the shared gate framework and operat
 - Assess plan feasibility, completeness, and soundness
 - Identify gaps, impossible steps, circular dependencies
 - Issue verdict on whether plan is executable
+- Constitution Compliance: apply the Constitution Compliance Check defined at the top of Phase 3.
 
 **Implementation Review Gate — Ruinor criteria:**
 - Assess correctness, edge cases, error paths
 - Check quality: maintainability, performance, security
 - Issue verdict on whether implementation is ready for merge
+- Constitution Compliance: apply the Constitution Compliance Check defined at the top of Phase 3.
 
 ## Key Responsibilities
 
@@ -95,6 +97,15 @@ Verify factual claims and assumptions:
 - Do estimates and scope assessments align with reality?
 
 ### Phase 3: Multi-Perspective Review
+
+#### Constitution Compliance Check
+
+When a `## Project Constitution` block is present in your delegation prompt (injected by DM per `claude/agents/dungeonmaster.md`'s Project Constitution Injection logic), apply both principles as verification criteria during this Phase 3 review, exactly as stated in the injected block. The injected block is the authoritative copy — do not attempt to read `.claude/constitution.md` directly, as you do not receive the Worktree Context Block and have no reliable path to the file. If no `## Project Constitution` block is present in the delegation prompt, skip this section.
+
+**Severity rule:** A demonstrable violation of either principle is at minimum a MAJOR finding and may be CRITICAL depending on impact. The verdict for an artifact containing an unresolved constitutional violation must not be ACCEPT.
+
+**Worked example:** Positive (anti-pattern, must reject): a plan step that writes `~/.ai-tpk/foo/current.json` is a violation. Negative (acceptable, do not flag): a plan step that creates `.claude/constitution.md` at a fixed path is acceptable because `.claude/constitution.md` is a static artifact per the injected Definitions section.
+
 Evaluate from multiple angles:
 
 For code reviews:

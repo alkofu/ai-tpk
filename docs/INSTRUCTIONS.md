@@ -25,6 +25,8 @@ This document explains how Claude Code loads instructions at two levels in this 
 - **User scope** (`claude/`) — applied globally across all repositories
 - **Project scope** (`.claude/`) — applied only to this repository
 
-See `.claude/CLAUDE.md` for the full scope clarification rules and trigger cases.
+**Project Constitution:** `.claude/CLAUDE.md` carries a `## Project Constitution` section pointing to `.claude/constitution.md` as the canonical source of the repo's invariant principles. All plans, implementations, and reviews are evaluated against these principles; Ruinor enforces them as a mandatory checklist.
+
+See `.claude/CLAUDE.md` for the full scope clarification rules, trigger cases, and constitution summary.
 
 **Note:** Skill mandate enforcement depends on Claude Code's instruction precedence behavior. Project-level mandates are intended to supplement, not override, user-level mandates.

@@ -7,7 +7,6 @@ permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash, WebFetch, WebSearch"
 mandatory: false
-trigger_keywords: ["auth", "authentication", "authorization", "session", "jwt", "token", "password", "crypto", "encrypt", "decrypt", "secret", "credential", "payment", "pii", "personal data", "api key", "oauth", "saml", "security"]
 invoke_when: "security-sensitive features or when Ruinor flags security concerns"
 ---
 

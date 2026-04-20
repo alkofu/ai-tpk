@@ -7,7 +7,6 @@ permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash"
 mandatory: false
-trigger_keywords: ["database", "query", "performance", "scale", "scalability", "optimization", "cache", "index", "pagination", "algorithm", "batch", "real-time", "throughput", "latency", "memory", "cpu"]
 invoke_when: "performance-critical features or when Ruinor flags performance concerns"
 ---
 

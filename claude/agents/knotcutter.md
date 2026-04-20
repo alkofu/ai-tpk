@@ -7,7 +7,6 @@ model: claude-opus-4-7
 permissionMode: auto
 level: 3
 mandatory: false
-trigger_keywords: ["refactor", "architecture", "abstraction", "framework", "pattern", "generalize", "reusable", "complexity", "simplify", "redesign", "restructure"]
 invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"
 ---
 

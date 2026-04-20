@@ -7,7 +7,6 @@ permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash, WebFetch, WebSearch"
 mandatory: false
-trigger_keywords: ["changelog", "breaking change", "deprecated", "upgrade path", "migration guide", "compatibility matrix", "release notes"]
 invoke_when: "plans or code reference specific external system behavior, or when Ruinor flags factual verification concerns"
 ---
 
@@ -22,7 +21,6 @@ invoke_when: "plans or code reference specific external system behavior, or when
 - Migration or upgrade steps reference behavior of specific tool versions
 - When Ruinor flags factual verification concerns
 - User explicitly requests factual validation (--verify-facts)
-- Plan or request contains high-signal keywords: changelog, breaking change, deprecated, upgrade path, migration guide, compatibility matrix, release notes
 
 **Not invoked for:** Internal business logic, pure refactoring with no external dependencies, UI changes with no API calls, or work that makes no claims about external system behavior.
 

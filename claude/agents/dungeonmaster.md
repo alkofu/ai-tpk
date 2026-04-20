@@ -328,11 +328,42 @@ If the task was classified as investigative (see "When to call Tracebloom" routi
 
 1. Delegate to Tracebloom with the user's reported symptom and any error messages or context using the delegation template below
 2. When Tracebloom returns a Diagnostic Report, evaluate the "Recommended next action" field:
-   - **"Route to Pathfinder for planning a fix"**: Proceed to step 2 (Planning), passing the Diagnostic Report to Pathfinder as context using the handoff template below
+   - **"Route to Pathfinder for planning a fix"**: Run the **Premise Check** in step 3 below before delegating. Once the user confirms (or adjusts) the premise, proceed to step 2 (Planning), passing the Diagnostic Report to Pathfinder as context using the handoff template below.
    - **"Fix is trivial -- route to Bitsmith directly"**: Skip Pathfinder. Delegate the fix directly to Bitsmith with the Diagnostic Report as context. Proceed to Phase 4 (Implementation Review) after Bitsmith completes.
    - **"Inconclusive"**: Present the Diagnostic Report findings to the user. Ask: "Tracebloom's investigation was inconclusive. Would you like to (a) investigate further with a narrower focus, (b) proceed to planning based on what we know, or (c) provide additional context?" Act on the user's choice.
    - **"No bug found"**: Present the explanation to the user. Session ends unless the user disagrees and wants further investigation.
-3. Present a one-line summary of the Diagnostic Report to the user before proceeding (e.g., "Tracebloom identified [root cause] in [file]. Proceeding to planning.").
+3. **Premise Check** (fires only when step 2 selected the "Route to Pathfinder for planning a fix" branch — skip this step for the other three branches):
+
+   a. Extract three scope-bearing items from the Diagnostic Report:
+      - **Root cause:** the one-sentence statement from the Diagnostic Report's `Root cause` field. If the field is multi-sentence, use the first sentence; do not paraphrase.
+      - **Affected files/components:** the file paths (and component names where given) listed in the Diagnostic Report's `Evidence` field. Present them as a short bullet list. If Evidence contains non-file entries (log queries, metric results, git commits), include only the file/component entries here; the user will see the full Diagnostic Report in the handoff. If Evidence contains no file/component entries at all (e.g., infrastructure-only evidence consisting of logs, metrics, or Kubernetes state), render this as a single line: `- (No file-scope evidence — see Diagnostic Report for runtime evidence)`.
+      - **Recommended next action:** the verbatim string from the Diagnostic Report's `Recommended next action` field (which, on this branch, will be "Route to Pathfinder for planning a fix").
+
+   b. Surface this disclosure to the user using the **Premise Check template** below.
+
+   c. **Wait for explicit user response.** Do not delegate to Pathfinder until the user replies. There is no implicit timeout.
+
+   d. Interpret the response:
+      - If the user replies with "proceed", "go ahead", "continue", "yes", "ok", or any clearly affirmative variant: invoke Pathfinder using the unchanged Diagnostic Report handoff template (defined later in this gate). Pass the Diagnostic Report verbatim with no modifications.
+      - If the user provides corrections, scope adjustments, or additional context: invoke Pathfinder using the Diagnostic Report handoff template, and **append** the user's corrections as an additional `## User-supplied scope adjustments` section after the verbatim Diagnostic Report and before the `[Rest of Pathfinder delegation as normal]` marker. Do not edit or rewrite the Diagnostic Report itself.
+      - If the user rejects the diagnosis outright (e.g., "this is wrong", "not the right area"): do not invoke Pathfinder. Ask the user whether to (i) re-invoke Tracebloom with a narrower or different focus, or (ii) abandon the investigative path and re-state the request. Act on their choice.
+
+**Premise Check template** (use this exact format when surfacing the disclosure to the user):
+
+~~~
+Tracebloom completed its investigation. Before I hand this off to Pathfinder for planning, please confirm the diagnosis matches your understanding of the problem.
+
+**Root cause:** {one-sentence root cause}
+
+**Affected files/components:**
+- {file or component 1}
+- {file or component 2}
+- {…}
+
+**Recommended next action:** {verbatim recommended next action}
+
+Reply with "proceed" to continue to planning, or describe any corrections or scope adjustments you would like Pathfinder to incorporate.
+~~~
 
 When not triggered: skip directly to the Intake Gate.
 

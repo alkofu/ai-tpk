@@ -9,7 +9,9 @@ Claude Code slash commands provide quick workflow shortcuts. Commands are instal
 | Command | Purpose |
 |---------|---------|
 | `/bug` | Report a bug or investigate unexpected behavior — routes directly to Tracebloom (Investigative Gate), bypassing heuristic task classification. |
+| `/bug-issue <issue-ref>` | Like `/bug`, but fetches the task description from a GitHub issue first. Accepts a bare issue number (e.g. `42`) or a full github.com issue URL (GitHub Enterprise URLs are not supported). Requires the `gh` CLI to be installed and authenticated. The DM runs `gh issue view` and constructs the task description from the returned title, body, and labels before routing to Tracebloom. |
 | `/feature` | Request a new feature or enhancement — routes directly to the constructive planning pipeline, bypassing the Investigative Gate. |
+| `/feature-issue <issue-ref>` | Like `/feature`, but fetches the task description from a GitHub issue first. Accepts a bare issue number or full github.com issue URL (GitHub Enterprise URLs are not supported). Requires the `gh` CLI to be installed and authenticated. The DM runs `gh issue view` and constructs the task description from the returned title, body, and labels before entering the Intake Gate (Askmaw or Pathfinder). |
 | `/ask` | Ask a question about the codebase, architecture, or approach — lightweight Q&A with no planning or implementation. Routes to the Advisory Workflow (Phases A-B-C) for read-only research and synthesis. |
 | `/ops` | Runs an advisory query and saves the synthesis output as a Markdown report to `reports/` in the current repo. Thin alias for `/ask --save-report`. |
 | `/open-pr` | Creates a pull request following the `open-pull-request` skill workflow: conventional branch naming, conventional title, draft mode, assigned to @me, and full pre-flight checklist. |

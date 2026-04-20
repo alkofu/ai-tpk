@@ -100,7 +100,7 @@ The wizard orchestration lives in `main.ts`. The summary screen gate (`promptSum
 - `mcp/gcp-observability.ts` — ADC credential check and project prompt
 - `mcp/kubernetes.ts` — `kubectx` context listing, selection prompt, and context switching
 
-Shared utilities are split across `utils.ts` (exports `errorMessage` and `tryLoad`) and `prompts.ts` (exports `handleCancel` and `selectMcps`). The `env.ts` module builds environment variables (using a private `writeDotfile` helper); `config.ts` handles persistence. Claude is launched inline in `main.ts` via `spawnSync`.
+Shared utilities are split across `utils.ts` (exports `errorMessage`, `tryLoad`, and `tryLoadOptional`) and `prompts.ts` (exports `handleCancel` and `selectMcps`). The `env.ts` module builds environment variables (using a private `writeDotfile` helper); `config.ts` handles persistence. Claude is launched inline in `main.ts` via `spawnSync`.
 
 ## Integration with install.sh
 
@@ -126,13 +126,13 @@ The launcher checks for ADC at startup in this order:
 1. `GOOGLE_APPLICATION_CREDENTIALS` env var (if set and the file exists, the check passes)
 2. `~/.config/gcloud/application_default_credentials.json` (the default ADC path)
 
-If neither source provides a valid credential file, the launcher exits with a descriptive error before prompting for a project ID.
+If neither source provides a valid credential file, the launcher logs a warning, skips the GCP Observability MCP, and continues launching Claude with the remaining selected MCPs. Run `gcloud auth application-default login` and re-launch to enable GCP.
 
 ### Project selection
 
-When "GCP Observability" is selected in the MCP multiselect, the launcher first runs `gcloud projects list --format=value(projectId) --sort-by=projectId` to fetch the set of accessible projects, then checks ADC credentials, then presents a `select()` prompt listing the available project IDs. If the previously used project is still in the list it is pre-selected; otherwise the first project in the list is selected.
+When 'GCP Observability' is selected in the MCP multiselect, the launcher first runs `gcloud projects list --format=value(projectId) --sort-by=projectId` to fetch the set of accessible projects, then performs an informational ADC credential check. If both succeed, the launcher presents a `select()` prompt listing the available project IDs. If either step fails, the launcher logs a warning, skips the GCP MCP, and continues with the remaining selected MCPs (no project prompt is shown). When the prompt does run and the previously used project is still in the list it is pre-selected; otherwise the first project in the list is selected.
 
-If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, a descriptive error is logged and the launcher exits before showing the ADC check or the prompt.
+If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, the launcher logs a warning, skips the GCP MCP, and continues with the rest of the session. Other MCP failures (Grafana, CloudWatch, Kubernetes) remain fatal.
 
 The selected project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/myclaude/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
 

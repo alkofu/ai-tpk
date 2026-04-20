@@ -1,6 +1,7 @@
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { errorMessage, tryLoad } from "./utils.js";
+import { log } from "@clack/prompts";
+import { errorMessage, tryLoad, tryLoadOptional } from "./utils.js";
 
 describe("errorMessage", () => {
   it("returns the message property when given an Error instance", () => {
@@ -33,5 +34,50 @@ describe("tryLoad", () => {
       tryLoad(() => [1, 2, 3], "test"),
       [1, 2, 3],
     );
+  });
+});
+
+describe("tryLoadOptional", () => {
+  it("returns the callback result and emits no warning on success", (t) => {
+    const warnMock = mock.method(log, "warn", () => {});
+    t.after(() => warnMock.mock.restore());
+
+    const result = tryLoadOptional(() => 42, "test-label");
+
+    assert.strictEqual(result, 42);
+    assert.strictEqual(warnMock.mock.calls.length, 0);
+  });
+
+  it("returns null and emits the default warning on failure", (t) => {
+    const warnMock = mock.method(log, "warn", () => {});
+    t.after(() => warnMock.mock.restore());
+
+    const result = tryLoadOptional(() => {
+      throw new Error("boom");
+    }, "test-label");
+
+    assert.strictEqual(result, null);
+    assert.strictEqual(warnMock.mock.calls.length, 1);
+    assert.strictEqual(
+      warnMock.mock.calls[0].arguments[0],
+      "[test-label] boom",
+    );
+  });
+
+  it("emits the custom warning (not the default) when warningMessage is provided", (t) => {
+    const warnMock = mock.method(log, "warn", () => {});
+    t.after(() => warnMock.mock.restore());
+
+    const result = tryLoadOptional(
+      () => {
+        throw new Error("boom");
+      },
+      "test-label",
+      "custom message",
+    );
+
+    assert.strictEqual(result, null);
+    assert.strictEqual(warnMock.mock.calls.length, 1);
+    assert.strictEqual(warnMock.mock.calls[0].arguments[0], "custom message");
   });
 });

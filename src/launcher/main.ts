@@ -15,7 +15,7 @@ import {
 } from "./mcp/kubernetes.js";
 import { selectMcps } from "./prompts.js";
 import { buildEnvVars } from "./env.js";
-import { tryLoad } from "./utils.js";
+import { tryLoad, tryLoadOptional } from "./utils.js";
 import { promptSummaryAction } from "./summary.js";
 import { buildResolvedFromSaved } from "./resolve.js";
 import type { ResolvedConfig, LauncherConfig } from "./types.js";
@@ -23,6 +23,7 @@ import type { ResolvedConfig, LauncherConfig } from "./types.js";
 function launchClaude(
   resolved: ResolvedConfig,
   savedConfig: LauncherConfig,
+  gcpSkipped: boolean = false,
 ): never {
   // Switch Kubernetes context AFTER config is persisted (avoids inconsistency if switchContext fails)
   if (resolved.kubernetes !== undefined) {
@@ -69,6 +70,9 @@ function launchClaude(
   const lines = summaryParts
     .filter((p) => p.config)
     .map((p) => `${p.label}: ${p.detail}`);
+  if (gcpSkipped) {
+    lines.push("GCP Observability: skipped (auth unavailable)");
+  }
   if (lines.length === 0) {
     lines.push("No MCPs configured — launching Claude with current env.");
   }
@@ -157,19 +161,33 @@ async function main(): Promise<void> {
   }
 
   // GCP Observability configuration
+  let gcpSkipped = false;
   if (selectedMcps.includes("gcp-observability")) {
-    const projects = tryLoad(() => loadGcpProjects(), "gcp");
-    tryLoad(() => checkAdcCredentials(), "gcp-adc");
-
-    const gcpConfig = await configureGcpObservability(
-      projects,
-      savedConfig.gcpObservability?.project,
+    const projects = tryLoadOptional(
+      () => loadGcpProjects(),
+      "gcp",
+      "GCP project list unavailable — skipping gcp-observability MCP. Run `gcloud auth login` and re-launch.",
     );
+    const adcOk =
+      tryLoadOptional(
+        () => checkAdcCredentials(),
+        "gcp-adc",
+        "GCP ADC credentials unavailable — skipping gcp-observability MCP. Run `gcloud auth application-default login` and re-launch.",
+      ) !== null;
 
-    resolved.gcpObservability = gcpConfig;
-    updatedConfig.gcpObservability = {
-      project: gcpConfig.project,
-    };
+    if (projects !== null && adcOk) {
+      const gcpConfig = await configureGcpObservability(
+        projects,
+        savedConfig.gcpObservability?.project,
+      );
+
+      resolved.gcpObservability = gcpConfig;
+      updatedConfig.gcpObservability = {
+        project: gcpConfig.project,
+      };
+    } else {
+      gcpSkipped = true;
+    }
   }
 
   // Kubernetes configuration
@@ -187,7 +205,7 @@ async function main(): Promise<void> {
 
   // Persist updated selections (configure path only -- user changed config)
   saveConfig(updatedConfig);
-  launchClaude(resolved, updatedConfig);
+  launchClaude(resolved, updatedConfig, gcpSkipped);
 }
 
 main().catch((err: unknown) => {

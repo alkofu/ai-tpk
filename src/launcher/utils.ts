@@ -12,3 +12,22 @@ export function tryLoad<T>(fn: () => T, label: string): T {
     process.exit(1);
   }
 }
+
+// Returns T on success or null on failure — avoids void | null by never
+// returning void; the caller must treat null as "unavailable".
+export function tryLoadOptional<T>(
+  fn: () => T,
+  label: string,
+  warningMessage?: string,
+): T | null {
+  try {
+    return fn();
+  } catch (err) {
+    if (warningMessage !== undefined) {
+      log.warn(warningMessage);
+    } else {
+      log.warn(`[${label}] ${errorMessage(err)}`);
+    }
+    return null;
+  }
+}

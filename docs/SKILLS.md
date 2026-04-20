@@ -49,4 +49,5 @@ Additional skills (non-mandatory):
 
 - **`write-reliable-tests`** — Guides authorship and review of deterministic, isolated, and idempotent automated tests across unit, integration, and e2e levels; applied automatically whenever test code is being written or evaluated
 - **`file-organization`** — Guide for file and module organization decisions
+- **`bash-code-quality`** — Defensive coding standards for bash scripts authored as deliverables: strict mode, safe quoting, error trapping, recurring patterns, and anti-patterns; applied automatically when writing or editing `.sh` files or scripts with a bash shebang
 - **`skill-creator`** — Creates and improves skills in this repository

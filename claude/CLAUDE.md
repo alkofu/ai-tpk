@@ -20,9 +20,7 @@ The `validate-before-pr` skill MUST be invoked before any PR creation. It runs l
 
 ## Bash Command Style
 
-- Never chain commands using `&&` or `;`, and never use process substitution (`<(...)` / `>(...)`). Pipes (`|`) are permitted only for data transformation — see `claude/references/bash-style.md` for full guidance.
-- Always issue each command as a separate, standalone Bash call.
-- Never use command substitution (`$(...)`) or heredoc temp-file patterns in git commit commands. Use multiple `-m` flags instead: `git commit -m "type(scope): subject" -m "Body paragraph."`. Each `-m` value becomes a separate paragraph. See `claude/references/bash-style.md` for details.
+All Bash tool usage is governed by `claude/references/bash-style.md`. The rules there are mandatory and enforced by the `permission-learn.sh` PermissionRequest hook in `claude/settings.json`. Read that reference before issuing any Bash command.
 
 ## Think Before Coding
 

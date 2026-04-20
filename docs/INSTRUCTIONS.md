@@ -14,7 +14,7 @@ This document explains how Claude Code loads instructions at two levels in this 
 
 **Behavioral constraints** — directives that govern how Claude Code behaves before and during execution:
 
-- **Bash Command Style** — prohibits command chaining (`&&`, `;`), process substitution, and command substitution (`$(...)`) or heredoc patterns in git commit commands; each command must be issued as a standalone Bash call; git commits must use multiple `-m` flags instead of shell constructs
+- **Bash Command Style** — mandatory rules for all Bash tool usage; full details in `claude/references/bash-style.md`
 - **Think Before Coding** — requires surfacing ambiguous interpretations before acting, disclosing non-obvious assumptions, proposing simpler alternatives when they exist, and stopping to ask rather than guessing when context is insufficient
 
 ## Project-Level Instructions (.claude/CLAUDE.md)

@@ -23,7 +23,7 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 2. Tracebloom produces a **Diagnostic Report**. For the authoritative report schema and the five required fields, see [`claude/agents/tracebloom.md`](/claude/agents/tracebloom.md#diagnostic-report).
 3. DM evaluates the report's recommendation and routes accordingly: For the authoritative routing logic for each of the four "Recommended next action" values, see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-1-planning) "Investigative Gate".
 
-**Key property:** Read-only investigation. Tracebloom never writes, edits, or runs write-bearing commands. The Diagnostic Report is structured to feed directly into Pathfinder's planning.
+**Key property:** Read-only investigation. Tracebloom never writes, edits, or runs write-bearing commands. The Diagnostic Report feeds into Pathfinder's planning after a user-facing Premise Check confirms the diagnosis.
 
 ---
 
@@ -57,14 +57,22 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 
 ## Diagnostic Report as a Planning Input
 
-When Tracebloom's investigation produces a report recommending "Route to Pathfinder for planning a fix," the Diagnostic Report itself becomes Pathfinder's requirements input. Pathfinder:
+When Tracebloom's investigation produces a report recommending "Route to Pathfinder for planning a fix," the DM runs a **Premise Check** before delegating to Pathfinder. The Premise Check surfaces three scope-bearing items to the user and waits for explicit confirmation:
+
+- **Root cause** — the one-sentence statement from Tracebloom's report
+- **Affected files/components** — file paths and component names from the Evidence field
+- **Recommended next action** — the verbatim routing recommendation
+
+The user may reply with "proceed" (DM passes the Diagnostic Report to Pathfinder unchanged), provide corrections or scope adjustments (DM appends them to the handoff), or reject the diagnosis outright (DM offers to re-invoke Tracebloom or abandon the investigative path).
+
+Once the user confirms, the Diagnostic Report becomes Pathfinder's requirements input. Pathfinder:
 
 - **Uses the root cause and evidence directly** from the report as the problem definition
 - **Does NOT re-investigate** facts already established in the report
 - **May ask follow-up questions** about priorities, scope, or how to handle multiple contributing factors
 - **Notes in the plan** if the fix is trivial (as flagged by Tracebloom)
 
-This eliminates redundant investigation and ensures that Pathfinder builds on Tracebloom's findings rather than starting from scratch.
+This eliminates redundant investigation and ensures that Pathfinder builds on Tracebloom's findings rather than starting from scratch. The premise check ensures the user has a chance to correct a misdiagnosis or adjust scope before planning begins.
 
 ---
 
@@ -78,7 +86,11 @@ User request received
     │  │
     │  ├─ YES → Tracebloom → Diagnostic Report
     │  │            │
-    │  │            ├─ "Route to Pathfinder" → Pathfinder (uses report as context)
+    │  │            ├─ "Route to Pathfinder" → Premise Check (user confirms diagnosis)
+    │  │            │                              │
+    │  │            │                              ├─ Proceed → Pathfinder (report as context)
+    │  │            │                              ├─ Corrections → Pathfinder (report + adjustments)
+    │  │            │                              └─ Reject → Re-invoke Tracebloom or abandon
     │  │            ├─ "Fix is trivial" → Bitsmith (uses report as context)
     │  │            ├─ "Inconclusive" → Ask user how to proceed
     │  │            └─ "No bug found" → Session ends
@@ -121,7 +133,7 @@ Tracebloom investigates config and git history; finds a merge conflict marker in
 
 ### Scenario: "Why are database queries timing out?"
 
-Tracebloom examines slow query logs and schema history; identifies missing indexes on frequently-filtered columns (`email`, `status`). Diagnostic Report recommends **"Route to Pathfinder for planning a fix"**. Pathfinder uses the root cause directly (no re-investigation), produces a plan to add the missing indexes with monitoring. Ruinor and Windwarden both ACCEPT. Bitsmith executes the plan; Quill updates documentation at completion.
+Tracebloom examines slow query logs and schema history; identifies missing indexes on frequently-filtered columns (`email`, `status`). Diagnostic Report recommends **"Route to Pathfinder for planning a fix"**. DM runs the Premise Check, surfacing the root cause, affected files (`src/db/schema.ts`, `src/users/repository.ts`), and recommended next action. User replies "proceed". Pathfinder uses the root cause directly (no re-investigation), produces a plan to add the missing indexes with monitoring. Ruinor and Windwarden both ACCEPT. Bitsmith executes the plan; Quill updates documentation at completion.
 
 ---
 

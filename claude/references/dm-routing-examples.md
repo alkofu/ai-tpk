@@ -162,6 +162,7 @@ Action:
 
 Example 11:
 User asks (via /ops): "What authentication patterns are used in this codebase?"
+
 Action:
 - **Intent override fires:** `INTENT: advisory --save-report`. Log: "Intent override: advisory. Heuristic classification skipped." Capture `--save-report` as active workflow flag. Strip `INTENT: advisory --save-report` from message.
 - **Session variables captured:** `SESSION_TS` = `20260413-110000`, `SESSION_SLUG` = `auth-patterns-codebase`
@@ -173,3 +174,28 @@ Action:
 - **`--save-report` post-synthesis:** DM runs `git rev-parse --show-toplevel` → succeeds, returns `/home/user/my-project`. Delegates to Bitsmith: write report to `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`. Bitsmith creates directory and writes file. DM logs: "Report saved to `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`"
 - Session complete — no review, no plan, no PR prompt
 - Output contract: Question, Agents consulted (Tracebloom), Answer summary, Sources, Report saved: `/home/user/my-project/reports/20260413-110000-auth-patterns-codebase.md`
+
+Example 12:
+User asks (via /bug): "Why are API responses slow for the search endpoint?"
+Action:
+- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine (`INTENT: investigative` from `/bug`), delegates to Bitsmith to create the worktree at `.worktrees/fix-api-responses-slow-search` on branch `fix/api-responses-slow-search`. Investigative Gate fires.
+- **Phase 1, step 1:** DM clarifies goal: "Determine why API responses are slow for the search endpoint."
+- **Investigative Gate triggers**
+- Invoke Tracebloom with symptom: "API responses slow for the search endpoint"
+- Tracebloom returns Diagnostic Report:
+  - Symptom: `GET /api/search` P95 latency > 4 s under normal load
+  - Root cause: Full-table scan on `items` table — the `tags` column used in the search filter has no index
+  - Evidence: `src/search/repository.ts` (query construction), `db/schema.sql` (no index on `tags`)
+  - Recommended next action: "Route to Pathfinder for planning a fix"
+- **Premise Check fires** (Pathfinder branch selected):
+  - DM extracts: Root cause (one sentence), Affected files (`src/search/repository.ts`, `db/schema.sql`), Recommended next action (verbatim)
+  - DM surfaces the Premise Check template to the user and waits
+
+  **Path A — user replies "proceed":**
+  - DM invokes Pathfinder with the Diagnostic Report handoff template, Diagnostic Report passed verbatim. Pathfinder skips Section 4 (Diagnostic Report present), writes plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260419-143000-api-responses-slow-search.md`. Continue with Phase 2 (Plan Review Gate), Phase 3, Phase 4, Phase 5 as normal.
+
+  **Path B — user provides corrections:** "The `name` column is also unindexed — please include that."
+  - DM invokes Pathfinder with the Diagnostic Report handoff template, appending a `## User-supplied scope adjustments` section: "Also add an index on the `name` column." Diagnostic Report itself is unchanged. Pathfinder incorporates the adjustment in the plan. Continue with Phase 2 onward.
+
+  **Path C — user rejects the diagnosis:** "That's not right — search is backed by Elasticsearch, not SQL."
+  - DM does not invoke Pathfinder. DM asks: "Would you like to (i) re-invoke Tracebloom with a narrower or different focus, or (ii) abandon the investigative path and re-state the request?" User selects (i). DM re-invokes Tracebloom with updated context targeting the Elasticsearch integration. Investigative Gate restarts from step 1 with the new Diagnostic Report.

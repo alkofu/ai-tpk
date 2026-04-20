@@ -132,16 +132,7 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 
 ### Worktree Context Block
 
-See `claude/references/worktree-protocol.md` for the shared protocol that sub-agents follow when this block is present.
-
-When a session worktree is active, prepend the following block to every Pathfinder, Bitsmith, Quill, and Tracebloom delegation prompt:
-
-```
-WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
-WORKTREE_BRANCH: feat/feature-name
-REPO_SLUG: {REPO_SLUG}
-All file operations and Bash commands must use this directory as the working root.
-```
+When a session worktree is active, prepend the Worktree Context Block — defined in `claude/references/worktree-protocol.md` under "The WORKING_DIRECTORY Context Block" — to every Pathfinder, Bitsmith, Quill, and Tracebloom delegation prompt. That reference is the canonical format definition and also defines the file-operation, bash, and git rules sub-agents apply when the block is present; this section does not reproduce either.
 
 Ruinor and other reviewer agents do not receive this block — instead, pass worktree-absolute file paths directly in their delegation prompts. Note: Ruinor does receive the separate Project Constitution Injection block — see the Project Constitution Injection section below.
 
@@ -383,6 +374,8 @@ When not triggered: skip directly to the Intake Gate.
 
 **Tracebloom delegation template:**
 
+(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+
 ~~~
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
@@ -401,6 +394,8 @@ Investigate the reported symptom. Produce a Diagnostic Report with all 5 require
 ~~~
 
 **Diagnostic Report handoff to Pathfinder template:**
+
+(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
 
 ~~~
 WORKING_DIRECTORY: {WORKTREE_PATH}
@@ -442,6 +437,9 @@ If the objective is clear and scope is bounded, return the completed "Intake Bri
 On round 6 (after 5 questions): append "You have reached the maximum number of questions. Produce a best-effort brief now, flagging any unresolved ambiguities as open questions."
 
 **Pathfinder handoff template (when brief is ready):**
+
+(The first three lines of the template below are a partial Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+
 ```
 WORKING_DIRECTORY: ...
 WORKTREE_BRANCH: ...
@@ -511,6 +509,9 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
    - **Stalled-loop termination:** If this is the 3rd or subsequent revision round for the same artifact, stop the loop and escalate to Pathfinder for a plan revision rather than requesting another revision cycle.
 
    **Revision delegation template** (use this every time DM re-delegates to Pathfinder from Phase 2 step 4, including subsequent revision rounds after repeated REVISE/REJECT verdicts — every iteration of the review-revise loop uses this same template with updated feedback):
+
+   (The Worktree Context Block lines below — `WORKING_DIRECTORY`, `WORKTREE_BRANCH`, `REPO_SLUG`, and the trailing scope sentence — follow the format defined in `claude/references/worktree-protocol.md`. `REVISION_MODE` and `USER_FLAGS` are revision-specific additions.)
+
    ```
    REVISION_MODE: true
    WORKING_DIRECTORY: {WORKTREE_PATH}

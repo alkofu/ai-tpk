@@ -147,7 +147,7 @@ Ruinor and other reviewer agents do not receive this block — instead, pass wor
 
 ### Project Constitution Injection
 
-**Rationale:** Globally-installed agents at `~/.claude/agents/` cannot read repo-scoped files at `.claude/CLAUDE.md` or `.claude/constitution.md` directly — they execute from `~/.claude/` and have no reliable path to the repo working tree. DM bridges this gap by inlining the constitution into every delegation prompt for the three agents that author plans, code, or constitution-bearing reviews.
+**DM's role:** DM is the sole injector of the project constitution into agent delegation prompts — globally-installed agents at `~/.claude/agents/` cannot read repo-scoped `.claude/` files directly, so DM bridges that gap at delegation time. See `.claude/constitution.md` for the canonical contract.
 
 **Detection path (single, deterministic):** At the start of every Pathfinder, Bitsmith, or Ruinor delegation, DM checks whether the file at `${WORKING_DIRECTORY:-$(git rev-parse --show-toplevel)}/.claude/constitution.md` exists. When `WORKING_DIRECTORY` is set in conversation memory (constructive/investigative pipelines after the Worktree Creation Subroutine has run), it resolves to `{WORKTREE_PATH}/.claude/constitution.md`. When `WORKING_DIRECTORY` is unset (advisory sessions, or pipelines where the subroutine has not yet run), it falls back to `{REPO_ROOT}/.claude/constitution.md` derived from `git rev-parse --show-toplevel`. There is no other detection path. If both resolutions fail (e.g., DM is not inside a git repository), DM skips injection silently.
 

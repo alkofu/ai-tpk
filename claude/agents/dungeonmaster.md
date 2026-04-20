@@ -821,4 +821,4 @@ Keep it concise and operational. Prefer facts over narration.
 
 ## Example internal routing behavior
 
-See `claude/references/dm-routing-examples.md` for 11 worked routing examples covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports.
+See `claude/references/dm-routing-examples.md` for worked routing examples covering each branch of the decision tree.

@@ -126,7 +126,7 @@ For the authoritative provides list and configuration, see [`claude/agents/ruino
 - User explicitly requests with `--review-security` flag, OR
 - Plan/code contains security keywords (heuristic fallback)
 
-For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/riskmancer.md`](/claude/agents/riskmancer.md).
+For the authoritative provides list and configuration metadata, see [`claude/agents/riskmancer.md`](/claude/agents/riskmancer.md). For trigger keywords, see [`claude/references/specialist-triggering.md`](/claude/references/specialist-triggering.md).
 
 #### Windwarden - Performance Specialist
 
@@ -135,7 +135,7 @@ For the authoritative provides list, configuration metadata, and trigger keyword
 - User explicitly requests with `--review-performance` flag, OR
 - Plan/code contains performance keywords (heuristic fallback)
 
-For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/windwarden.md`](/claude/agents/windwarden.md).
+For the authoritative provides list and configuration metadata, see [`claude/agents/windwarden.md`](/claude/agents/windwarden.md). For trigger keywords, see [`claude/references/specialist-triggering.md`](/claude/references/specialist-triggering.md).
 
 #### Knotcutter - Complexity Specialist
 
@@ -144,7 +144,7 @@ For the authoritative provides list, configuration metadata, and trigger keyword
 - User explicitly requests with `--review-complexity` flag, OR
 - Plan/code contains complexity keywords (heuristic fallback)
 
-For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/knotcutter.md`](/claude/agents/knotcutter.md).
+For the authoritative provides list and configuration metadata, see [`claude/agents/knotcutter.md`](/claude/agents/knotcutter.md). For trigger keywords, see [`claude/references/specialist-triggering.md`](/claude/references/specialist-triggering.md).
 
 #### Truthhammer - Factual Validation Specialist
 
@@ -153,7 +153,7 @@ For the authoritative provides list, configuration metadata, and trigger keyword
 - User explicitly requests with `--verify-facts` flag, OR
 - Plan/code contains factual-validation keywords (heuristic fallback)
 
-For the authoritative provides list, configuration metadata, and trigger keywords, see [`claude/agents/truthhammer.md`](/claude/agents/truthhammer.md).
+For the authoritative provides list and configuration metadata, see [`claude/agents/truthhammer.md`](/claude/agents/truthhammer.md). For trigger keywords, see [`claude/references/specialist-triggering.md`](/claude/references/specialist-triggering.md).
 
 ## Triggering Mechanisms
 
@@ -322,7 +322,7 @@ See `claude/agents/dungeonmaster.md` for the orchestrator implementation and `cl
 - Specialist triggering via Ruinor recommendations (primary)
 - User flags for explicit specialist requests
 - Keyword-based heuristic fallback
-- Agent metadata (`mandatory`, `trigger_keywords`, `invoke_when`)
+- Agent metadata (`mandatory`, `invoke_when`)
 
 **Unchanged:**
 - Review verdict taxonomy (REJECT/REVISE/ACCEPT-WITH-RESERVATIONS/ACCEPT)

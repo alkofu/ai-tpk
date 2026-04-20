@@ -71,38 +71,16 @@ Every PR must:
    - If the rebase exits with **zero** → proceed to step 7 (Push).
    - If the rebase exits **non-zero** → continue to 6c.2.
 
-   **6c.2** — Run: `git diff --name-only --diff-filter=U`
-
-   - If the output is **empty** (no conflicted files — this is a different rebase error): run `git rebase --abort` as a standalone call, stop, and tell the user: "Rebase failed for a reason other than merge conflicts. The rebase has been aborted. Check `git status` for details."
-   - If the output lists **more than 10 conflicted files**: run `git rebase --abort` as a standalone call, stop, and tell the user: "Too many conflicted files ({N}) for automated resolution. The rebase has been aborted. Resolve conflicts manually."
-   - If the output lists between **1 and 10 conflicted files** (inclusive) → continue to 6c.3.
-
-   **6c.3 — Resolve conflicts**
-
-   A "round" is defined as one attempt to resolve conflicts for the **current commit** being rebased. The 3-round limit is **per-commit**: each time `git rebase --continue` succeeds and moves on to the next commit (which then stops again with new conflicts), the round counter resets to 0. A round only increments when the same commit fails to be resolved and `git rebase --continue` exits non-zero again.
-
-   For each conflicted file listed:
-
-   1. Read the file contents and understand the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
-   2. Write a resolved version that **preserves the PR's original changes as the primary intent**. In a rebase, the PR's commits are being replayed onto main — so the PR's logic, behaviour, and scope must be kept intact. The resolution should do the minimum necessary to make the PR's changes apply cleanly against what has changed in main. Do not expand the PR's scope, introduce new behaviour, or favour main's version of a line unless the PR's version is genuinely incompatible. If in doubt, keep the PR's change and adjust only what is structurally required by the conflict.
-   3. After writing the resolved file, scan it for remaining conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`). If any remain, re-read and re-resolve.
-      - If markers still persist in the same file after a second attempt, run `git rebase --abort` as a standalone call and stop: "Unable to resolve all conflict markers in `{file}`. The rebase has been aborted. Resolve conflicts manually."
-   4. Stage each resolved file (confirmed marker-free) with a separate standalone call: `git add {file}`
-
-   **6c.4** — After all conflicted files are staged, run: `GIT_EDITOR=true git rebase --continue`
-
-   (The `GIT_EDITOR=true` env var skips the editor prompt for the commit message.)
-
-   - If `git rebase --continue` reports that the resulting commit is **empty**: run `git rebase --skip` as a standalone call (to skip the now-empty commit) and treat this as a successful continue — proceed to step 7 (Push).
-   - If `git rebase --continue` exits with **zero** → print "Conflicts resolved. Rebase completed successfully." and proceed to step 7 (Push).
-   - If `git rebase --continue` exits **non-zero** → run `git diff --name-only --diff-filter=U` as a standalone call.
-     - If the output is **empty** (no conflicted files): run `git rebase --abort` as a standalone call and stop: "Rebase failed during `--continue` for a reason other than merge conflicts. The rebase has been aborted."
-     - If there are still conflicted files and **fewer than 3 rounds** have been attempted for this commit → return to 6c.3 (incrementing the per-commit round counter).
-     - If **3 rounds** have been attempted for this commit without success → run `git rebase --abort` as a standalone call and stop: "Unable to fully resolve rebase conflicts after 3 attempts. The rebase has been aborted. Resolve manually by running `git rebase refs/remotes/origin/main`, fixing each conflict, and running `git rebase --continue`."
+   **6c.2** — Apply the procedure in `claude/references/conflict-resolution-rebase.md`. In this
+   skill's context, "incoming branch" is the PR's branch and "upstream" is `main`. The reference
+   handles detection, resolution, and the `git rebase --continue` cycle including all abort and
+   round-counter cases. After the procedure completes successfully (the reference reports the rebase
+   is complete), proceed to **6d** (re-validate). If the procedure aborts at any point, propagate
+   the abort and stop — do not proceed to 6d or push.
 
    **6d. Re-validate if conflicts were resolved**
 
-   If any conflicts were resolved during sub-steps 6c.3–6c.4 (i.e., the rebase did not complete cleanly in 6c.1), re-run the `validate-before-pr` skill before proceeding to step 7 (Push). Conflict resolution can modify file contents in ways that introduce lint or formatting violations that the earlier validation already cleared.
+   If any conflicts were resolved during sub-step 6c.2 (i.e., the rebase did not complete cleanly in 6c.1), re-run the `validate-before-pr` skill before proceeding to step 7 (Push). Conflict resolution can modify file contents in ways that introduce lint or formatting violations that the earlier validation already cleared.
 
    If `validate-before-pr` fails on re-run, stop — do not push or open a PR. Report the failures and request fixes.
 
@@ -230,5 +208,5 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 ## Relationship to other skills
 
 - **Commits**: Follow **commit-message-guide** for message bodies and footers. It also documents **WIP** and **fixup!** subject lines—pair fixup commits with `git rebase -i --autosquash` to merge them into the target commit.
-- **Sync with main**: Step 6 fetches remote refs and rebases the branch onto `refs/remotes/origin/main` with automated conflict resolution before pushing. The rebase logic is inlined from `sync-pr` semantics — no separate `sync-branch-to-main` skill exists. The `/sync-pr` command performs the same rebase logic independently for post-PR-creation syncing. If conflicts were resolved during the rebase, `validate-before-pr` is re-run before proceeding to push.
+- **Sync with main**: Step 6 fetches remote refs and rebases the branch onto `refs/remotes/origin/main` with automated conflict resolution before pushing. The conflict-resolution algorithm is defined in `claude/references/conflict-resolution-rebase.md`; step 6c.2 delegates to that reference. The `/sync-pr` command performs the same rebase logic independently for post-PR-creation syncing. If conflicts were resolved during the rebase, `validate-before-pr` is re-run before proceeding to push.
 - **MCP / automation**: Skills named like “open-pull-request” on catalogs (e.g. [MCP Market](https://mcpmarket.com/tools/skills/open-pull-request)) usually wrap the same steps; this document defines **naming** and **titles** so any tool or CLI you use stays consistent.

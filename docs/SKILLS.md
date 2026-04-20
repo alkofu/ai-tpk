@@ -35,6 +35,8 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 - **`quill-documentation-style.md`** — Documentation style guide used by Quill when authoring and updating documentation.
 
+- **`specialist-triggering.md`** — Canonical keyword list for the Dungeon Master's heuristic-fallback specialist-routing logic. Covers four keyword categories (security, performance, complexity, factual validation) and their corresponding specialist suggestions. DM consults this only when no user flag is present and Ruinor has not recommended specialists. Also documents why Truthhammer's keyword set is intentionally narrow. See [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the broader specialist-triggering decision model.
+
 When updating a reference file, changes apply automatically to all agents that load it — no individual agent files need modification.
 
 ## Skills (`claude/skills/`)

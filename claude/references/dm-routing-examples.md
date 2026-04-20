@@ -79,7 +79,7 @@ Action:
   - Three implementation options: (A) In-process queue with a database-backed jobs table, (B) Redis-backed queue with BullMQ, (C) Dedicated message broker (e.g., RabbitMQ); recommendation: Option B
 - Pathfinder returns scope + options output to DM (no plan written)
 - DM presents scope + options to user, user selects Option B (Redis + BullMQ)
-- DM re-invokes Pathfinder with `## Confirmed Scope` block (using re-invocation template above)
+- DM re-invokes Pathfinder with `## Confirmed Scope` block (using the Pathfinder re-invocation template defined in pathfinder.md Section 4)
 - Pathfinder sees `## Confirmed Scope` block, skips Section 4, proceeds directly to plan generation
 - Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-background-jobs.md`
 - Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal

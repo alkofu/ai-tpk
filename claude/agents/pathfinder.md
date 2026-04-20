@@ -154,8 +154,6 @@ Please confirm the scope above and, if multiple options were presented, select y
 
 **`## Confirmed Scope` re-invocation handling:** When the delegation prompt contains a `## Confirmed Scope` block, treat it as authoritative scope input and proceed directly to Section 5 (Generate Plan). Do not repeat scope confirmation.
 
-> **Note:** This template must match the re-invocation template in `dungeonmaster.md`. If either file is edited, update both to keep the handoff contract in sync.
-
 **Pathfinder re-invocation template (after scope confirmation):**
 
 ````

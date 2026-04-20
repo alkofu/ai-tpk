@@ -354,7 +354,7 @@ Existing workflows continue to work; they just run more efficiently now.
 - **Hard intermediate review gates** - After 2 consecutive Bitsmith invocations, a review gate is mandatory before continuing
 - **REJECT verdicts require remediation** - When Ruinor issues REJECT, Bitsmith must provide a written remediation brief before re-review to prevent rubber-stamp approvals
 - **Documentation follows implementation** - Quill is invoked only after implementation review is fully complete; any post-documentation code changes must re-enter the implementation review gate
-- **Constitution compliance is a mandatory review criterion** - Ruinor verifies every plan and implementation against the Project Constitution principles (see `.claude/constitution.md`) via its `#### Constitution Compliance Check` section. A demonstrable violation is at minimum MAJOR and blocks ACCEPT. The constitution is injected into Ruinor's delegation prompt by DM; see [`claude/agents/ruinor.md`](/claude/agents/ruinor.md) for the checklist and [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) for the injection logic.
+- **Constitution compliance is a mandatory review criterion** - Ruinor verifies every plan and implementation against the Project Constitution principles via its `#### Constitution Compliance Check` section. The constitution — including principle definitions, severity rules, and worked examples — is injected into Ruinor's delegation prompt by DM; see [`.claude/constitution.md`](/.claude/constitution.md) for the canonical contract, [`claude/agents/ruinor.md`](/claude/agents/ruinor.md) for the operational instruction, and [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) for the injection logic.
 
 ## Future Enhancements
 

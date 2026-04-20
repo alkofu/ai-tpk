@@ -4,7 +4,7 @@ This file defines repo-scoped invariants that govern all work in this repository
 
 ## Definitions
 
-**Session artifact:** any file written during a session that captures session-specific runtime state, output, or context. Canonical positive example (anti-pattern): `~/.ai-tpk/session-context/current.json` from PR #187. Session artifacts MUST be session-namespaced (e.g., prefixed with `SESSION_TS` or a session-unique identifier) and MUST NOT use fixed/singleton paths shared across sessions.
+**Session artifact:** any file written during a session that captures session-specific runtime state, output, or context. **Canonical anti-pattern (do not remove):** `~/.ai-tpk/session-context/current.json` from PR #187 — this example is the canonical reference for session-artifact violations across all agent definitions. Session artifacts MUST be session-namespaced (e.g., prefixed with `SESSION_TS` or a session-unique identifier) and MUST NOT use fixed/singleton paths shared across sessions.
 
 **Static artifact:** any file that is not a session artifact — including documentation (e.g., `.claude/constitution.md`, `.claude/CLAUDE.md`), agent definitions (e.g., `~/.claude/agents/*.md`), configuration files (e.g., `claude/settings.json`), and per-repo (not per-session) artifacts. Static artifacts MAY use fixed paths. The shared parent directory `~/.ai-tpk/plans/{REPO_SLUG}/` is itself static; the per-session files inside it are session artifacts and ARE session-namespaced (e.g., `{SESSION_TS}-{feature-slug}.md`).
 
@@ -13,7 +13,7 @@ This file defines repo-scoped invariants that govern all work in this repository
 ai-tpk is designed to support multiple sessions running concurrently. Every design, plan, and implementation must respect this invariant.
 
 - Each session runs in its own isolated worktree — no two sessions share a working directory.
-- No agent, hook, or artifact may write to a fixed/singleton path shared across sessions. "Session artifact" means any file written during a session that captures session-specific runtime state, output, or context (e.g., `~/.ai-tpk/session-context/current.json` from PR #187 is the canonical anti-pattern). Static documentation, agent definitions, configuration files, and per-repo (not per-session) artifacts are NOT session artifacts and may use fixed paths.
+- No agent, hook, or artifact may write to a fixed/singleton path shared across sessions. (See Definitions above for what counts as a session artifact and the canonical anti-pattern.)
 - All session artifacts (plan files, sidecar files, open-questions files) must be session-namespaced (e.g., prefixed with `SESSION_TS` or a session-unique identifier).
 - No agent definition may assume it is the only active session.
 
@@ -26,5 +26,9 @@ All artifacts in `claude/` (agents, skills, commands, hooks, references, setting
 Three mechanisms enforce these principles across all work in this repository:
 
 - **(a) `.claude/CLAUDE.md` summary** — the project-scope CLAUDE.md includes a `## Project Constitution` section that names both principles, summarises them, and points here as the canonical source. Any reader of the project-scope instructions sees the principles without needing the DM injection path.
-- **(b) DM injection** — `claude/agents/dungeonmaster.md`'s `### Project Constitution Injection` section specifies how DM inlines this file's contents into every Pathfinder, Bitsmith, and Ruinor delegation prompt. This is the primary enforcement path for globally-installed agents that cannot read repo-scoped files directly.
-- **(c) Agent-level hooks** — `claude/agents/ruinor.md`'s `### Constitution Compliance Check` section (in Phase 3) makes both principles explicit checklist items on every plan and implementation review. `claude/agents/bitsmith.md`'s "What Bitsmith Does NOT Touch" list names constitutional violations as a halt-and-escalate condition so conflicts surface before implementation rather than at review time.
+- **(b) DM injection** — `claude/agents/dungeonmaster.md`'s `### Project Constitution Injection` section specifies how DM inlines this file's contents into every Pathfinder, Bitsmith, and Ruinor delegation prompt. This is the primary enforcement path — see the preamble above for why.
+- **(c) Agent-level hooks** — `claude/agents/ruinor.md`'s `#### Constitution Compliance Check` section (in Phase 3) makes both principles explicit checklist items on every plan and implementation review. `claude/agents/bitsmith.md`'s "What Bitsmith Does NOT Touch" list names constitutional violations as a halt-and-escalate condition so conflicts surface before implementation rather than at review time.
+
+**Severity rule.** A demonstrable violation of either principle is at minimum a MAJOR finding and may be CRITICAL depending on impact. The verdict for an artifact containing an unresolved constitutional violation must not be ACCEPT.
+
+**Worked example.** Positive (anti-pattern, must reject): a plan step that writes `~/.ai-tpk/foo/current.json` is a violation. Negative (acceptable, do not flag): a plan step that creates `.claude/constitution.md` at a fixed path is acceptable because `.claude/constitution.md` is a static artifact per the Definitions section above.

@@ -44,4 +44,4 @@ This self-containment constraint applies to everything `install.sh` installs —
 
 ## Project Constitution
 
-This repository has a Project Constitution defining repo-scoped invariants that govern all work here. See `.claude/constitution.md` for the full text, definitions, and enforcement details. All plans, implementations, and reviews are evaluated against these principles; Ruinor enforces them as a mandatory checklist.
+This repository has a Project Constitution defining repo-scoped invariants that govern all work here. See `.claude/constitution.md` for the full text, definitions, severity rules, and the canonical enumeration of how these principles are enforced.

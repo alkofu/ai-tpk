@@ -100,11 +100,7 @@ Verify factual claims and assumptions:
 
 #### Constitution Compliance Check
 
-When a `## Project Constitution` block is present in your delegation prompt (injected by DM per `claude/agents/dungeonmaster.md`'s Project Constitution Injection logic), apply both principles as verification criteria during this Phase 3 review, exactly as stated in the injected block. The injected block is the authoritative copy — do not attempt to read `.claude/constitution.md` directly, as you do not receive the Worktree Context Block and have no reliable path to the file. If no `## Project Constitution` block is present in the delegation prompt, skip this section.
-
-**Severity rule:** A demonstrable violation of either principle is at minimum a MAJOR finding and may be CRITICAL depending on impact. The verdict for an artifact containing an unresolved constitutional violation must not be ACCEPT.
-
-**Worked example:** Positive (anti-pattern, must reject): a plan step that writes `~/.ai-tpk/foo/current.json` is a violation. Negative (acceptable, do not flag): a plan step that creates `.claude/constitution.md` at a fixed path is acceptable because `.claude/constitution.md` is a static artifact per the injected Definitions section.
+**Ruinor's role:** When a `## Project Constitution` block is present in your delegation prompt, apply both principles as verification criteria during this Phase 3 review using the severity rule, definitions, and worked example stated in the injected block. The injected block is the authoritative copy — do not attempt to read `.claude/constitution.md` directly, as you do not receive the Worktree Context Block and have no reliable path to the file. If no `## Project Constitution` block is present, do not skip this check — apply this fallback rule instead: treat any demonstrable violation of session isolation or install-time self-containment as at minimum a MAJOR finding — never ACCEPT.
 
 Evaluate from multiple angles:
 

@@ -1,15 +1,9 @@
 ---
 name: bash-code-quality
 description: >
-  Defensive coding standards for bash scripts authored as deliverables. Self-apply
-  when writing or editing any file whose path ends in `.sh` or whose first line is
-  a bash shebang (`#!/bin/bash` or `#!/usr/bin/env bash`). Use when writing a shell
-  script, editing install.sh, creating a CI helper script, adding a setup script,
-  refactoring a bash function, authoring a post-commit utility, or building any
-  hook helper. Apply this skill even when the user does not ask for "best practices"
-  — the trigger is the file type, not the request wording. This skill does NOT
-  govern Bash tool invocations issued during a Claude session — those are covered by
-  the bash-style reference.
+  Defensive coding standards for bash scripts authored as deliverables. Apply when
+  writing or editing any `.sh` file or a script whose first line is a bash shebang
+  — even when the user does not ask for best practices explicitly.
 ---
 
 # Bash Code Quality

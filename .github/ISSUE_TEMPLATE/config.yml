@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/alkofu/ai-tpk/security/advisories/new
+    about: Use GitHub's Private Vulnerability Reporting for security issues. Do not open a public issue. See .github/SECURITY.md for the full policy.

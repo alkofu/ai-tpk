@@ -51,8 +51,13 @@ _tab_rename_set_title() {
   local TITLE="$1"
   if [ "$TERMINAL" = "tmux" ]; then
     tmux rename-window "$TITLE" 2>/dev/null
+  # OSC writes go to /dev/tty (not stdout) so they reach the terminal even when
+  # this hook runs as `async: true` and Claude's hook-runner captures stdout.
+  # If /dev/tty cannot be opened (non-interactive / CI), any Bash diagnostic goes
+  # to the inherited stderr, which the hook-runner discards; printf returns non-zero
+  # and is ignored by the caller (no set -e in either hook entry point).
   elif [ "$TERMINAL" = "iterm2" ]; then
-    printf '\033]0;%s\007' "$TITLE" 2>/dev/null
+    printf '\033]0;%s\007' "$TITLE" >/dev/tty 2>/dev/null
   elif [ "$TERMINAL" = "cmux" ]; then
     if command -v cmux >/dev/null 2>&1; then
       if ! cmux rename-workspace "$TITLE" 2>/dev/null; then
@@ -60,7 +65,7 @@ _tab_rename_set_title() {
       fi
     else
       printf 'tab-rename: cmux not found in PATH — falling back to OSC escape sequence\n' >&2
-      printf '\033]0;%s\007' "$TITLE"
+      printf '\033]0;%s\007' "$TITLE" >/dev/tty 2>/dev/null
     fi
   fi
 }

@@ -16,59 +16,44 @@ import {
 import { selectMcps } from "./prompts.js";
 import { buildEnvVars } from "./env.js";
 import { tryLoad } from "./utils.js";
+import { buildOutroLines } from "./outro.js";
 import { promptSummaryAction } from "./summary.js";
 import { buildResolvedFromSaved } from "./resolve.js";
-import type { ResolvedConfig, LauncherConfig } from "./types.js";
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from "./types.js";
 
 function launchClaude(
   resolved: ResolvedConfig,
   savedConfig: LauncherConfig,
+  skipped: SkippedMap = {},
 ): never {
   // Switch Kubernetes context AFTER config is persisted (avoids inconsistency if switchContext fails)
+  let switchAttempted = false;
+  let switchResult: void | null | undefined;
   if (resolved.kubernetes !== undefined) {
-    tryLoad(
+    switchAttempted = true;
+    switchResult = tryLoad(
       () =>
         switchContext(
           resolved.kubernetes!.context,
           savedConfig.kubernetes?.context,
         ),
       "kubernetes-switch",
+      `Failed to switch Kubernetes context to "${resolved.kubernetes!.context}" — launching with the previously active context.`,
     );
   }
 
+  const switchFailed = switchAttempted && switchResult === null;
+  const effectiveSkipped: SkippedMap = {
+    ...skipped,
+    kubernetes: switchFailed ? "switch-failed" : (skipped.kubernetes ?? false),
+  };
+  const outroResolved: ResolvedConfig = switchFailed
+    ? { ...resolved, kubernetes: undefined }
+    : resolved;
+
   // Build env vars summary for outro
-  const envVars = buildEnvVars(resolved);
-  const summaryParts: Array<{
-    config: unknown;
-    label: string;
-    detail: string;
-  }> = [
-    {
-      config: resolved.grafana,
-      label: "Grafana",
-      detail: resolved.grafana
-        ? `${resolved.grafana.cluster.name} (${resolved.grafana.role})`
-        : "",
-    },
-    {
-      config: resolved.cloudwatch,
-      label: "CloudWatch",
-      detail: resolved.cloudwatch?.profile ?? "",
-    },
-    {
-      config: resolved.gcpObservability,
-      label: "GCP Observability",
-      detail: resolved.gcpObservability?.project ?? "",
-    },
-    {
-      config: resolved.kubernetes,
-      label: "Kubernetes",
-      detail: resolved.kubernetes?.context ?? "",
-    },
-  ];
-  const lines = summaryParts
-    .filter((p) => p.config)
-    .map((p) => `${p.label}: ${p.detail}`);
+  const envVars = buildEnvVars(outroResolved);
+  const lines = buildOutroLines(outroResolved, effectiveSkipped);
   if (lines.length === 0) {
     lines.push("No MCPs configured — launching Claude with current env.");
   }
@@ -125,69 +110,104 @@ async function main(): Promise<void> {
   };
 
   // Grafana configuration
+  let grafanaSkipped: false | "loader-failed" = false;
   if (selectedMcps.includes("grafana")) {
     const clusters = tryLoad(() => loadGrafanaClusters(), "grafana");
 
-    const grafanaConfig = await configureGrafana(
-      clusters,
-      savedConfig.grafana?.clusterId,
-      savedConfig.grafana?.role,
-    );
+    if (clusters !== null) {
+      const grafanaConfig = await configureGrafana(
+        clusters,
+        savedConfig.grafana?.clusterId,
+        savedConfig.grafana?.role,
+      );
 
-    resolved.grafana = grafanaConfig;
-    updatedConfig.grafana = {
-      clusterId: grafanaConfig.cluster.id,
-      role: grafanaConfig.role,
-    };
+      resolved.grafana = grafanaConfig;
+      updatedConfig.grafana = {
+        clusterId: grafanaConfig.cluster.id,
+        role: grafanaConfig.role,
+      };
+    } else {
+      grafanaSkipped = "loader-failed";
+    }
   }
 
   // CloudWatch configuration
+  let cloudwatchSkipped: false | "loader-failed" = false;
   if (selectedMcps.includes("cloudwatch")) {
     const profiles = tryLoad(() => loadAwsProfiles(), "cloudwatch");
 
-    const cwConfig = await configureCloudWatch(
-      profiles,
-      savedConfig.cloudwatch?.profile,
-    );
+    if (profiles !== null) {
+      const cwConfig = await configureCloudWatch(
+        profiles,
+        savedConfig.cloudwatch?.profile,
+      );
 
-    resolved.cloudwatch = cwConfig;
-    updatedConfig.cloudwatch = {
-      profile: cwConfig.profile,
-    };
+      resolved.cloudwatch = cwConfig;
+      updatedConfig.cloudwatch = {
+        profile: cwConfig.profile,
+      };
+    } else {
+      cloudwatchSkipped = "loader-failed";
+    }
   }
 
   // GCP Observability configuration
+  let gcpSkipped: false | "loader-failed" = false;
   if (selectedMcps.includes("gcp-observability")) {
-    const projects = tryLoad(() => loadGcpProjects(), "gcp");
-    tryLoad(() => checkAdcCredentials(), "gcp-adc");
-
-    const gcpConfig = await configureGcpObservability(
-      projects,
-      savedConfig.gcpObservability?.project,
+    const projects = tryLoad(
+      () => loadGcpProjects(),
+      "gcp",
+      "GCP project list unavailable — skipping gcp-observability MCP. Run `gcloud auth login` and re-launch.",
     );
+    const adcOk =
+      projects !== null &&
+      tryLoad(
+        () => checkAdcCredentials(),
+        "gcp-adc",
+        "GCP ADC credentials unavailable — skipping gcp-observability MCP. Run `gcloud auth application-default login` and re-launch.",
+      ) !== null;
 
-    resolved.gcpObservability = gcpConfig;
-    updatedConfig.gcpObservability = {
-      project: gcpConfig.project,
-    };
+    if (projects !== null && adcOk) {
+      const gcpConfig = await configureGcpObservability(
+        projects,
+        savedConfig.gcpObservability?.project,
+      );
+
+      resolved.gcpObservability = gcpConfig;
+      updatedConfig.gcpObservability = {
+        project: gcpConfig.project,
+      };
+    } else {
+      gcpSkipped = "loader-failed";
+    }
   }
 
   // Kubernetes configuration
+  let kubernetesSkipped: false | "loader-failed" = false;
   if (selectedMcps.includes("kubernetes")) {
     const contexts = tryLoad(() => loadKubectxContexts(), "kubernetes");
 
-    const k8sConfig = await configureKubernetes(
-      contexts,
-      savedConfig.kubernetes?.context,
-    );
+    if (contexts !== null) {
+      const k8sConfig = await configureKubernetes(
+        contexts,
+        savedConfig.kubernetes?.context,
+      );
 
-    resolved.kubernetes = k8sConfig;
-    updatedConfig.kubernetes = { context: k8sConfig.context };
+      resolved.kubernetes = k8sConfig;
+      updatedConfig.kubernetes = { context: k8sConfig.context };
+    } else {
+      kubernetesSkipped = "loader-failed";
+    }
   }
 
   // Persist updated selections (configure path only -- user changed config)
   saveConfig(updatedConfig);
-  launchClaude(resolved, updatedConfig);
+  launchClaude(resolved, updatedConfig, {
+    grafana: grafanaSkipped,
+    cloudwatch: cloudwatchSkipped,
+    gcp: gcpSkipped,
+    kubernetes: kubernetesSkipped,
+  });
 }
 
 main().catch((err: unknown) => {

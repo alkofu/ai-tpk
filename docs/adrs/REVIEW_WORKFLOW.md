@@ -27,27 +27,66 @@ Result: 3 out of 4 reviews provided no value, wasting time and tokens.
 
 #### High-Level Overview
 
+This diagram shows the full DM orchestration pipeline at phase granularity — from session setup through completion — including the two top-level pipeline branches. Intra-phase gates (Investigative Gate, Intake Gate, Scope Confirmation, intermediate review gates, Phase 5 sub-steps) are intentionally omitted here and appear in the Planning Phase and Implementation Phase detail diagrams below. Note: the Investigative Gate inside Phase 1 has four possible terminal outcomes (route to Pathfinder, route to Bitsmith directly, Inconclusive, No-bug-found); two of these bypass Phase 2 Planning entirely and are detailed in the Planning Phase diagram.
+
 ```mermaid
 flowchart LR
-    Start([User Request]) --> DM[Dungeon Master<br/>Orchestrator]
-    DM --> Phase1[📋 Planning Phase]
-    Phase1 --> Phase2[⚙️ Implementation Phase]
-    Phase2 --> Complete([✅ Complete])
+    Request([User Request]) --> Phase0[Phase 0<br/>Session Setup]
+    Phase0 --> DM[Dungeon Master<br/>Orchestrator]
 
+    DM -->|"INTENT: constructive<br/>or investigative"| Phase1[Phase 1<br/>Planning]
+    DM -->|INTENT: advisory| AdvisoryPhases[Phases A-B-C<br/>Q&A Advisory]
+
+    Phase1 --> Phase2[Phase 2<br/>Plan Review]
+    Phase2 --> Phase3[Phase 3<br/>Implementation]
+    Phase3 --> Phase4[Phase 4<br/>Implementation Review]
+    Phase4 --> Phase5[Phase 5<br/>Completion]
+    Phase5 --> Complete([Complete])
+    AdvisoryPhases --> Complete
+
+    style Phase0 fill:#ede7f6
     style DM fill:#e1f5ff
     style Phase1 fill:#fff4e6
-    style Phase2 fill:#e8f5e9
+    style Phase2 fill:#ffeedd
+    style Phase3 fill:#e8f5e9
+    style Phase4 fill:#dcedc8
+    style Phase5 fill:#e0f2f1
+    style AdvisoryPhases fill:#fce4ec
     style Complete fill:#d4edda
 ```
 
 #### Planning Phase Detail
 
+This diagram covers the constructive and investigative planning pipeline (Phase 1 + Phase 2). Advisory sessions follow a separate path shown only in the High-Level Overview above. The Investigative Gate has four possible outcomes; two of them (Bitsmith-direct and No-bug-found) exit the planning pipeline entirely and are labeled on the diagram.
+
 ```mermaid
 flowchart TD
-    Start([DM: Need Planning?]) --> DelegateP[DM Delegates to<br/>Pathfinder]
-    DelegateP --> PF[Pathfinder<br/>Creates Plan]
-    PF --> Checklist[Pre-Submission<br/>Checklist ×8]
-    Checklist --> SavePlan[Save to<br/>~/.ai-tpk/plans]
+    Start([DM: Need Planning?]) --> InvGate{Investigative<br/>Gate}
+
+    InvGate -->|"investigative task"| Tracebloom[Tracebloom<br/>Diagnostic Report]
+    InvGate -->|"constructive task"| IntakeGate{Intake Gate<br/>ambiguous?}
+
+    Tracebloom -->|"routes per<br/>Recommended next action"| TBDecision{Tracebloom<br/>Outcome}
+    TBDecision -->|"Route to Pathfinder<br/>for planning a fix"| IntakeGate
+    TBDecision -->|"Fix is trivial —<br/>route to Bitsmith directly"| SkipPlanning([Exit to Phase 3<br/>Bitsmith-direct])
+    TBDecision -->|"Inconclusive"| UserChoice([Present to user<br/>for direction])
+    TBDecision -->|"No bug found"| NoBug([Session ends or<br/>user re-states request])
+
+    IntakeGate -->|"ambiguous / underspecified"| Askmaw["Askmaw<br/>interview loop<br/>(max 5 rounds)<br/>→ Intake Brief"]
+    IntakeGate -->|"clear request"| ExploreGate{Explore-Options<br/>Gate}
+    Askmaw --> ExploreGate
+
+    ExploreGate -->|"--explore-options flag"| PFExplore["Pathfinder<br/>STOP_AFTER_SCOPE: true<br/>→ scope + options<br/>→ user selects"]
+    ExploreGate -->|"no flag"| PF[Pathfinder<br/>first invocation]
+    PFExplore -->|"user selects option<br/>and asks to proceed"| PF
+
+    PF --> ScopeConf{Scope<br/>Confirmation<br/>skip conditions met?}
+    ScopeConf -->|"yes — Askmaw brief,<br/>Tracebloom report,<br/>or revision mode"| Checklist
+    ScopeConf -->|"no — surface scope<br/>to user, wait"| UserConfirm[User confirms scope]
+    UserConfirm -->|"re-invoke Pathfinder<br/>with Confirmed Scope"| PF2[Pathfinder<br/>second invocation]
+    PF2 --> Checklist
+
+    Checklist[Pre-Submission<br/>Checklist ×9] --> SavePlan[Save to<br/>~/.ai-tpk/plans]
     SavePlan --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
 
     MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
@@ -73,40 +112,79 @@ flowchart TD
     style MandatoryR fill:#ffebcc
     style Specialists fill:#e6f3ff
     style Next fill:#e8f5e9
+    style Tracebloom fill:#f3e5f5
+    style Askmaw fill:#e8eaf6
+    style Checklist fill:#fff4e6
 ```
 
 #### Implementation Phase Detail
 
+This diagram covers Phase 3 (Execution) through Phase 5 (Completion) for the constructive and investigative pipelines, including the plan-type routing decision, the intermediate review gate, and the Resolution Gate loop. The advisory pipeline does not pass through this diagram.
+
 ```mermaid
 flowchart TD
-    Start([Approved Plan]) --> DelegateE[DM Delegates to<br/>Bitsmith]
-    DelegateE --> Impl[Bitsmith<br/>Implements Code]
-    Impl --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
+    ApprovedPlan([Approved Plan]) --> Routing{Phase 3 Routing<br/>documentation-primary?}
 
-    MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
+    Routing -->|"yes — plan-type.sh → quill"| Quill[Quill<br/>Mode A primary writer]
+    Routing -->|"no — plan-type.sh → bitsmith"| Bitsmith[Bitsmith<br/>Implements]
 
-    Decision -->|No Flags| Assess1{Ruinor<br/>Pass?}
-    Decision -->|Flags Present| Specialists
+    Quill --> IntGate{2 unreviewed<br/>execution calls?}
+    Bitsmith --> IntGate
 
-    subgraph Specialists["🎯 Specialist Reviews (Conditional)"]
+    IntGate -->|"yes — invoke Ruinor,<br/>reset counter"| InterimR[Ruinor<br/>Intermediate Review]
+    IntGate -->|"no — continue"| MoreSteps{More plan<br/>steps?}
+    InterimR --> MoreSteps
+
+    MoreSteps -->|"yes — same agent,<br/>no re-route"| Routing
+    MoreSteps -->|"no — all steps done"| Phase4
+
+    Phase4[DM → Ruinor<br/>Phase 4 Mandatory Review] --> P4Decision{Ruinor Flags<br/>Specialists?}
+
+    P4Decision -->|No Flags| P4Assess1{Ruinor<br/>Pass?}
+    P4Decision -->|Flags Present| P4Specialists
+
+    subgraph P4Specialists["🎯 Specialist Reviews (Conditional)"]
         RS2[Riskmancer<br/>Security Vulnerabilities]
         W2[Windwarden<br/>Performance Optimization]
         K2[Knotcutter<br/>Simplification]
         TH2[Truthhammer<br/>Factual Validation]
     end
 
-    Specialists --> Assess2{All Reviews<br/>Pass?}
+    P4Specialists --> P4Assess2{All Reviews<br/>Pass?}
 
-    Assess1 -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
-    Assess2 -->|REJECT/REVISE| Feedback
-    Feedback --> Fix[Bitsmith<br/>Fixes Issues]
-    Fix --> MandatoryR
-    Assess1 -->|ACCEPT| Complete([✅ Complete])
-    Assess2 -->|ACCEPT| Complete
+    P4Assess1 -->|REJECT/REVISE| P4Feedback[DM Sends<br/>Consolidated Feedback]
+    P4Assess2 -->|REJECT/REVISE| P4Feedback
+    P4Feedback --> P4Fix[Bitsmith<br/>Fixes Issues]
+    P4Fix --> Phase4
+    P4Assess1 -->|ACCEPT / ACCEPT-WITH-RESERVATIONS| Phase5
+    P4Assess2 -->|ACCEPT / ACCEPT-WITH-RESERVATIONS| Phase5
 
-    style MandatoryR fill:#ffebcc
-    style Specialists fill:#e6f3ff
+    subgraph Phase5["Phase 5: Completion"]
+        Step5a["5a — Reservations Logging<br/>(if any ACCEPT-WITH-RESERVATIONS)"]
+        Step5b["5b — Documentation Update<br/>Branch 1: skip (no planning session)<br/>Branch 2: skip (Quill already ran Phase 3)<br/>Branch 3: invoke Quill meta-update"]
+        Step5c{5c — Resolution Gate<br/>reservations logged?}
+        Step5d["5d — Completion Summary"]
+        Step5e["5e — Worktree Log"]
+
+        Step5a --> Step5b
+        Step5b --> Step5c
+        Step5c -->|"no reservations"| Step5d
+        Step5c -->|"ALL MINOR — auto-fix"| AutoFix["Bitsmith fixes<br/>MINOR issues"]
+        Step5c -->|"any MAJOR/CRITICAL<br/>— prompt user"| UserPrompt["Present options:<br/>Fix now / Proceed"]
+        AutoFix -.->|"→ Phase 4 re-review<br/>→ Quill re-invoke (Branch 3)<br/>→ 5a log new reservations<br/>logged only — no re-trigger"| Step5a
+        UserPrompt -->|"user: Fix now"| AutoFix
+        UserPrompt -->|"user: Proceed"| Step5d
+        Step5d --> Step5e
+    end
+
+    Phase5 --> Complete([Complete])
+
+    style Phase4 fill:#ffebcc
+    style P4Specialists fill:#e6f3ff
     style Complete fill:#d4edda
+    style Quill fill:#fce4ec
+    style InterimR fill:#fff3e0
+    style Phase5 fill:#e0f2f1
 ```
 
 ### Review Agents
@@ -351,9 +429,9 @@ Existing workflows continue to work; they just run more efficiently now.
 - **Intelligent triage** - Ruinor provides mandatory baseline, specialists handle deep expertise
 - **Revision loops** - Plans and code iterate until all reviewers accept
 - **DM never implements** - All work is delegated to specialized agents
-- **Hard intermediate review gates** - After 2 consecutive Bitsmith invocations, a review gate is mandatory before continuing
+- **Hard intermediate review gates** - After 2 consecutive execution-agent invocations (Bitsmith or Quill), a Ruinor review gate is mandatory before continuing; the counter resets after each intermediate or Phase 4 review
 - **REJECT verdicts require remediation** - When Ruinor issues REJECT, Bitsmith must provide a written remediation brief before re-review to prevent rubber-stamp approvals
-- **Documentation follows implementation** - Quill is invoked only after implementation review is fully complete; any post-documentation code changes must re-enter the implementation review gate
+- **Documentation follows implementation** - Quill is invoked as Phase 3 primary writer for documentation-primary plans (Mode A), or as a Phase 5b meta-updater for standard plans (Mode B); any post-documentation code changes must re-enter the implementation review gate and Quill must be re-invoked
 - **Constitution compliance is a mandatory review criterion** - Ruinor verifies every plan and implementation against the Project Constitution principles via its `#### Constitution Compliance Check` section. The constitution — including principle definitions, severity rules, and worked examples — is injected into Ruinor's delegation prompt by DM; see [`.claude/constitution.md`](/.claude/constitution.md) for the canonical contract, [`claude/agents/ruinor.md`](/claude/agents/ruinor.md) for the operational instruction, and [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) for the injection logic.
 
 ## Future Enhancements

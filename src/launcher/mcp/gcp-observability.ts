@@ -4,7 +4,11 @@ import * as os from "node:os";
 import { spawnSync } from "node:child_process";
 import { select } from "@clack/prompts";
 import type { GcpObservabilityConfig } from "../types.js";
-import { handleCancel } from "../prompts.js";
+import { handleCancel } from "../cancel.js";
+import type { McpCommand } from "../mcp-command-types.js";
+import { tryLoad } from "../utils.js";
+import { writeDotfile } from "../dotfile.js";
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
 
 export interface GcloudResult {
   status: number | null;
@@ -124,3 +128,78 @@ export async function configureGcpObservability(
 
   return { project: projectValue as string };
 }
+
+export const gcpObservabilityCommand: McpCommand = {
+  id: "gcp-observability",
+  skippedKey: "gcp",
+  multiselectOption: {
+    value: "gcp-observability",
+    label: "GCP Observability",
+    hint: "GCP project",
+  },
+
+  async configureInteractive(savedConfig: LauncherConfig): Promise<{
+    resolved: Partial<ResolvedConfig>;
+    persistable: Partial<LauncherConfig>;
+  } | null> {
+    const projects = tryLoad(
+      () => loadGcpProjects(),
+      "gcp",
+      "GCP project list unavailable — skipping gcp-observability MCP. Run `gcloud auth login` and re-launch.",
+    );
+    if (projects === null) return null;
+
+    const adcResult = tryLoad(
+      () => checkAdcCredentials(),
+      "gcp-adc",
+      "GCP ADC credentials unavailable — skipping gcp-observability MCP. Run `gcloud auth application-default login` and re-launch.",
+    );
+    // checkAdcCredentials returns void on success; tryLoad propagates void as undefined, not null.
+    // Use !== null (not falsy !) to distinguish success (undefined) from failure (null).
+    if (adcResult === null) return null;
+
+    const result = await configureGcpObservability(
+      projects,
+      savedConfig.gcpObservability?.project,
+    );
+    return {
+      resolved: { gcpObservability: result },
+      persistable: { gcpObservability: { project: result.project } },
+    };
+  },
+
+  resolveFromSaved(config: LauncherConfig): Partial<ResolvedConfig> | null {
+    if (config.gcpObservability === undefined) return null;
+    return { gcpObservability: { project: config.gcpObservability.project } };
+  },
+
+  emitEnvVars(resolved: ResolvedConfig, env: Record<string, string>): void {
+    if (!resolved.gcpObservability) return;
+    const project = resolved.gcpObservability.project;
+    env["GOOGLE_CLOUD_PROJECT"] = project;
+    // mcp-gcp-observability.sh reads ~/.claude/.current-gcp-project and overrides GOOGLE_CLOUD_PROJECT.
+    // Write the dotfile so both paths agree.
+    // Note: GOOGLE_CLOUD_PROJECT is used by google-auth-library's getProjectId() for project ID resolution.
+    // getProjectId() checks the GCLOUD_PROJECT / GOOGLE_CLOUD_PROJECT env var group (GCLOUD_PROJECT first,
+    // then GOOGLE_CLOUD_PROJECT), before credential files or the metadata server.
+    // It does NOT auto-populate tool call parameters.
+    writeDotfile("current-gcp-project", project);
+  },
+
+  buildOutroSuccessLine(resolved: ResolvedConfig): string | null {
+    if (!resolved.gcpObservability) return null;
+    return `GCP Observability: ${resolved.gcpObservability.project}`;
+  },
+
+  buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
+    if (!skipped) return null;
+    return "GCP Observability: skipped (auth unavailable)";
+  },
+
+  buildSummaryLine(config: LauncherConfig): string {
+    if (config.gcpObservability === undefined) {
+      return "GCP Observability: (not yet configured)";
+    }
+    return `GCP Observability: project ${config.gcpObservability.project}`;
+  },
+};

@@ -3,7 +3,11 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { select } from "@clack/prompts";
 import type { CloudWatchConfig } from "../types.js";
-import { handleCancel } from "../prompts.js";
+import { handleCancel } from "../cancel.js";
+import type { McpCommand } from "../mcp-command-types.js";
+import { tryLoad } from "../utils.js";
+import { writeDotfile } from "../dotfile.js";
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
 
 const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".aws", "config");
 const DEFAULT_CREDENTIALS_PATH = path.join(os.homedir(), ".aws", "credentials");
@@ -122,3 +126,60 @@ export async function configureCloudWatch(
 
   return { profile: profileValue as string };
 }
+
+export const cloudwatchCommand: McpCommand = {
+  id: "cloudwatch",
+  skippedKey: "cloudwatch",
+  multiselectOption: {
+    value: "cloudwatch",
+    label: "CloudWatch",
+    hint: "AWS profile",
+  },
+
+  async configureInteractive(savedConfig: LauncherConfig): Promise<{
+    resolved: Partial<ResolvedConfig>;
+    persistable: Partial<LauncherConfig>;
+  } | null> {
+    const profiles = tryLoad(() => loadAwsProfiles(), "cloudwatch");
+    if (profiles === null) return null;
+    const result = await configureCloudWatch(
+      profiles,
+      savedConfig.cloudwatch?.profile,
+    );
+    return {
+      resolved: { cloudwatch: result },
+      persistable: { cloudwatch: { profile: result.profile } },
+    };
+  },
+
+  resolveFromSaved(config: LauncherConfig): Partial<ResolvedConfig> | null {
+    if (config.cloudwatch === undefined) return null;
+    return { cloudwatch: { profile: config.cloudwatch.profile } };
+  },
+
+  emitEnvVars(resolved: ResolvedConfig, env: Record<string, string>): void {
+    if (!resolved.cloudwatch) return;
+    const profile = resolved.cloudwatch.profile;
+    env["AWS_PROFILE"] = profile;
+    // mcp-cloudwatch.sh reads ~/.claude/.current-aws-profile and overrides AWS_PROFILE.
+    // Write the dotfile so both paths agree — same behaviour as /set-aws-profile command.
+    writeDotfile("current-aws-profile", profile);
+  },
+
+  buildOutroSuccessLine(resolved: ResolvedConfig): string | null {
+    if (!resolved.cloudwatch) return null;
+    return `CloudWatch: ${resolved.cloudwatch.profile}`;
+  },
+
+  buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
+    if (!skipped) return null;
+    return "CloudWatch: skipped (profiles unavailable)";
+  },
+
+  buildSummaryLine(config: LauncherConfig): string {
+    if (config.cloudwatch === undefined) {
+      return "CloudWatch: (not yet configured)";
+    }
+    return `CloudWatch: profile ${config.cloudwatch.profile}`;
+  },
+};

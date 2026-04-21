@@ -4,7 +4,11 @@ import * as os from "node:os";
 import { parse as parseYaml } from "yaml";
 import { log, select, cancel } from "@clack/prompts";
 import type { GrafanaCluster, GrafanaConfig, GrafanaRole } from "../types.js";
-import { handleCancel } from "../prompts.js";
+import { handleCancel } from "../cancel.js";
+import type { McpCommand } from "../mcp-command-types.js";
+import { StaleResourceError } from "../mcp-command-types.js";
+import { tryLoad } from "../utils.js";
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
 
 const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
@@ -150,3 +154,92 @@ export async function configureGrafana(
     role: roleValue as GrafanaRole,
   };
 }
+
+export const grafanaCommand: McpCommand = {
+  id: "grafana",
+  skippedKey: "grafana",
+  multiselectOption: {
+    value: "grafana",
+    label: "Grafana",
+    hint: "cluster + role",
+  },
+
+  async configureInteractive(savedConfig: LauncherConfig): Promise<{
+    resolved: Partial<ResolvedConfig>;
+    persistable: Partial<LauncherConfig>;
+  } | null> {
+    const clusters = tryLoad(() => loadGrafanaClusters(), "grafana");
+    if (clusters === null) return null;
+    const result = await configureGrafana(
+      clusters,
+      savedConfig.grafana?.clusterId,
+      savedConfig.grafana?.role,
+    );
+    return {
+      resolved: { grafana: result },
+      persistable: {
+        grafana: { clusterId: result.cluster.id, role: result.role },
+      },
+    };
+  },
+
+  resolveFromSaved(
+    config: LauncherConfig,
+    grafanaClustersPath?: string,
+  ): Partial<ResolvedConfig> | null {
+    if (config.grafana === undefined) {
+      return null;
+    }
+    let clusters: GrafanaCluster[];
+    try {
+      clusters = loadGrafanaClusters(grafanaClustersPath);
+    } catch (err) {
+      log.warn(
+        `Could not load Grafana clusters: ${err instanceof Error ? err.message : String(err)}. Falling through to configure flow.`,
+      );
+      // Message arg is for diagnostic use only; user warning is emitted above.
+      throw new StaleResourceError("Grafana clusters file unavailable");
+    }
+    const cluster = clusters.find((c) => c.id === config.grafana!.clusterId);
+    if (cluster === undefined) {
+      log.warn(
+        `Grafana cluster "${config.grafana.clusterId}" not found in clusters file. Falling through to configure flow.`,
+      );
+      // Message arg is for diagnostic use only; user warning is emitted above.
+      throw new StaleResourceError(
+        `Grafana cluster ${config.grafana.clusterId} no longer exists`,
+      );
+    }
+    return { grafana: { cluster, role: config.grafana.role } };
+  },
+
+  emitEnvVars(resolved: ResolvedConfig, env: Record<string, string>): void {
+    if (!resolved.grafana) return;
+    const { cluster, role } = resolved.grafana;
+    env["GRAFANA_URL"] = cluster.url;
+    if (role === "viewer") {
+      env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = cluster.viewer_token;
+      env["GRAFANA_DISABLE_WRITE"] = "true";
+    } else {
+      // editor role — no GRAFANA_DISABLE_WRITE
+      env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = cluster.editor_token;
+    }
+  },
+
+  buildOutroSuccessLine(resolved: ResolvedConfig): string | null {
+    if (!resolved.grafana) return null;
+    return `Grafana: ${resolved.grafana.cluster.name} (${resolved.grafana.role})`;
+  },
+
+  buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
+    if (!skipped) return null;
+    return "Grafana: skipped (clusters unavailable)";
+  },
+
+  buildSummaryLine(config: LauncherConfig): string {
+    if (config.grafana === undefined) {
+      return "Grafana: (not yet configured)";
+    }
+    return `Grafana: cluster ${config.grafana.clusterId}, role ${config.grafana.role}`;
+  },
+};

@@ -1,29 +1,13 @@
-import { multiselect, isCancel, cancel } from "@clack/prompts";
-
-export function handleCancel(
-  value: unknown,
-): asserts value is NonNullable<unknown> {
-  if (isCancel(value)) {
-    cancel("Operation cancelled.");
-    process.exit(0);
-  }
-}
+import { multiselect } from "@clack/prompts";
+import { registry } from "./mcp-command.js";
+import { handleCancel } from "./cancel.js";
 
 export async function selectMcps(
   previousSelections: string[],
 ): Promise<string[]> {
   const value = await multiselect({
     message: "Select MCPs to configure for this session:",
-    options: [
-      { value: "grafana", label: "Grafana", hint: "cluster + role" },
-      { value: "cloudwatch", label: "CloudWatch", hint: "AWS profile" },
-      {
-        value: "gcp-observability",
-        label: "GCP Observability",
-        hint: "GCP project",
-      },
-      { value: "kubernetes", label: "Kubernetes", hint: "cluster context" },
-    ],
+    options: registry.map((c) => c.multiselectOption),
     initialValues: previousSelections,
     required: false,
   });

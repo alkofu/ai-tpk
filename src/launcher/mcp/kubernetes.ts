@@ -1,7 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { select } from "@clack/prompts";
 import type { KubernetesConfig } from "../types.js";
-import { handleCancel } from "../prompts.js";
+import { handleCancel } from "../cancel.js";
+import type { McpCommand } from "../mcp-command-types.js";
+import { tryLoad } from "../utils.js";
+import { writeDotfile } from "../dotfile.js";
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
 
 /**
  * Parses stdout from `kubectx` (no args) into a list of context names.
@@ -100,4 +104,116 @@ export async function configureKubernetes(
   handleCancel(selected);
 
   return { context: selected as string };
+}
+
+export const kubernetesCommand: McpCommand = {
+  id: "kubernetes",
+  skippedKey: "kubernetes",
+  multiselectOption: {
+    value: "kubernetes",
+    label: "Kubernetes",
+    hint: "cluster context",
+  },
+
+  async configureInteractive(savedConfig: LauncherConfig): Promise<{
+    resolved: Partial<ResolvedConfig>;
+    persistable: Partial<LauncherConfig>;
+  } | null> {
+    const contexts = tryLoad(() => loadKubectxContexts(), "kubernetes");
+    if (contexts === null) return null;
+    const result = await configureKubernetes(
+      contexts,
+      savedConfig.kubernetes?.context,
+    );
+    return {
+      resolved: { kubernetes: result },
+      persistable: { kubernetes: { context: result.context } },
+    };
+  },
+
+  resolveFromSaved(config: LauncherConfig): Partial<ResolvedConfig> | null {
+    if (config.kubernetes === undefined) return null;
+    return { kubernetes: { context: config.kubernetes.context } };
+  },
+
+  emitEnvVars(resolved: ResolvedConfig, env: Record<string, string>): void {
+    if (!resolved.kubernetes) return;
+    const context = resolved.kubernetes.context;
+    // K8S_CONTEXT: explicit context override for mcp-server-kubernetes.
+    // Takes higher priority than ~/.kube/config active context, ensuring the
+    // selected context is respected even when other kubeconfig env vars
+    // (KUBECONFIG, K8S_SERVER, etc.) are present in the environment.
+    env["K8S_CONTEXT"] = context;
+    // Write dotfile for symmetry with cloudwatch/gcp patterns and potential
+    // future use by wrapper scripts or slash commands.
+    writeDotfile("current-kube-context", context);
+  },
+
+  buildOutroSuccessLine(resolved: ResolvedConfig): string | null {
+    if (!resolved.kubernetes) return null;
+    return `Kubernetes: ${resolved.kubernetes.context}`;
+  },
+
+  buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
+    if (skipped === "loader-failed")
+      return "Kubernetes: skipped (contexts unavailable)";
+    if (skipped === "switch-failed")
+      return "Kubernetes: skipped (context switch failed)";
+    return null;
+  },
+
+  buildSummaryLine(config: LauncherConfig): string {
+    if (config.kubernetes === undefined) {
+      return "Kubernetes: (not yet configured)";
+    }
+    return `Kubernetes: context ${config.kubernetes.context}`;
+  },
+};
+
+/**
+ * Apply the post-save Kubernetes context switch. Called from launchClaude
+ * AFTER saveConfig has persisted the user's choice but BEFORE buildEnvVars
+ * is called. Returns a new (effectiveSkipped, outroResolved) pair reflecting
+ * whether the switch succeeded.
+ *
+ * If resolved.kubernetes is undefined (Kubernetes not selected, or already
+ * skipped at load time), this is a no-op: returns the inputs unchanged.
+ *
+ * If the switch fails, sets effectiveSkipped.kubernetes = "switch-failed"
+ * and clears outroResolved.kubernetes so downstream callers (buildEnvVars,
+ * buildOutroLines) do not emit Kubernetes data.
+ */
+export function applyKubernetesContextSwitch(
+  resolved: ResolvedConfig,
+  savedConfig: LauncherConfig,
+  skipped: SkippedMap,
+): { effectiveSkipped: SkippedMap; outroResolved: ResolvedConfig } {
+  if (resolved.kubernetes === undefined) {
+    // Preserve byte-equivalence with old launchClaude: always set kubernetes key explicitly
+    return {
+      effectiveSkipped: { ...skipped, kubernetes: skipped.kubernetes ?? false },
+      outroResolved: resolved,
+    };
+  }
+  const switchResult = tryLoad(
+    () =>
+      switchContext(
+        resolved.kubernetes!.context,
+        savedConfig.kubernetes?.context,
+      ),
+    "kubernetes-switch",
+    `Failed to switch Kubernetes context to "${resolved.kubernetes!.context}" — launching with the previously active context.`,
+  );
+  const switchFailed = switchResult === null;
+  return {
+    effectiveSkipped: {
+      ...skipped,
+      kubernetes: switchFailed
+        ? "switch-failed"
+        : (skipped.kubernetes ?? false),
+    },
+    outroResolved: switchFailed
+      ? { ...resolved, kubernetes: undefined }
+      : resolved,
+  };
 }

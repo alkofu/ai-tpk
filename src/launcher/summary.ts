@@ -1,6 +1,7 @@
 import { note, select } from "@clack/prompts";
-import { handleCancel } from "./prompts.js";
+import { handleCancel } from "./cancel.js";
 import type { LauncherConfig } from "./types.js";
+import { registry } from "./mcp-command.js";
 
 export function formatSummaryLines(config: LauncherConfig): string[] {
   if (config.selectedMcps.length === 0) {
@@ -8,34 +9,9 @@ export function formatSummaryLines(config: LauncherConfig): string[] {
   }
 
   return config.selectedMcps.map((name) => {
-    switch (name) {
-      case "grafana":
-        if (config.grafana === undefined) {
-          return "Grafana: (not yet configured)";
-        }
-        return `Grafana: cluster ${config.grafana.clusterId}, role ${config.grafana.role}`;
-
-      case "cloudwatch":
-        if (config.cloudwatch === undefined) {
-          return "CloudWatch: (not yet configured)";
-        }
-        return `CloudWatch: profile ${config.cloudwatch.profile}`;
-
-      case "gcp-observability":
-        if (config.gcpObservability === undefined) {
-          return "GCP Observability: (not yet configured)";
-        }
-        return `GCP Observability: project ${config.gcpObservability.project}`;
-
-      case "kubernetes":
-        if (config.kubernetes === undefined) {
-          return "Kubernetes: (not yet configured)";
-        }
-        return `Kubernetes: context ${config.kubernetes.context}`;
-
-      default:
-        return `${name}: (unknown MCP)`;
-    }
+    const cmd = registry.find((c) => c.id === name);
+    if (cmd === undefined) return `${name}: (unknown MCP)`;
+    return cmd.buildSummaryLine(config);
   });
 }
 

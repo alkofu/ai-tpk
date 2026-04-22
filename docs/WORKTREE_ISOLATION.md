@@ -67,7 +67,7 @@ The subroutine is invoked **only by routing branches that require implementation
 |---|---|
 | Constructive (`/feature`, free-form feature request) | Yes — subroutine invoked in Phase 1 |
 | Investigative (`/bug`, free-form "why is X broken?") | Yes — subroutine invoked in Phase 1 |
-| Advisory (`/ask`, `/ops`, free-form questions) | No — advisory branches do not invoke the subroutine |
+| Advisory (`/ask`, `/ops`, `/do`, free-form questions) | No — advisory branches do not invoke the subroutine |
 
 Advisory sessions (`INTENT: advisory`) bypass the constructive/investigative pipeline entirely. They capture session variables in Phase 0 but never proceed to a routing branch that invokes the subroutine. No worktree, no plan file, no code changes.
 
@@ -211,7 +211,7 @@ Branch `fix/db-perf-issue-42` is ready at `.worktrees/fix-db-perf-issue-42`. Run
 
 ## Advisory Sessions: No Worktree
 
-Advisory sessions (triggered via `/ask`, `/ops`, or any free-form question classified as advisory) never create a worktree:
+Advisory sessions (triggered via `/ask`, `/ops`, `/do`, or any free-form question classified as advisory) never create a worktree:
 
 ```bash
 $ claude --agent dungeonmaster

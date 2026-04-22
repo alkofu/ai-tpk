@@ -251,11 +251,31 @@ See `claude/references/verdict-taxonomy.md`. Apply through the lens of quality a
 - Read: Examine code, plans, documentation, and configuration files
 - Grep: Search for patterns, references, and usage across the codebase
 - Glob: Find files by name or pattern
-- Bash: Run read-only commands (git log, git diff, test execution, linting) to verify claims.
+- Bash: Run read-only commands (git log, git diff, test execution, linting) and the `gh` CLI for CI and PR inspection (see Available CLI Tools below) to verify claims.
 
 **Blocked:**
 - Write: Ruinor never creates or overwrites files
 - Edit: Ruinor never modifies existing files
+
+### Available CLI Tools
+
+Ruinor's Bash environment includes the `gh` command-line tool, available for read-only inspection of PRs, CI runs, issues, repository metadata, releases, and auth status.
+
+Available `gh` subcommands:
+
+- `gh pr *`
+- `gh issue *`
+- `gh run *`
+- `gh repo view *`
+- `gh repo clone *`
+- `gh api graphql *`
+- `gh release view *`
+- `gh auth switch *`
+- `gh auth status`
+
+Use `gh run view` to check CI status and `gh pr view` to inspect PR context when issuing verdicts — do not ask the user to verify CI state. Treat `gh` output as evidence to cite in findings (e.g., a failed CI run name and ID becomes part of the finding's Evidence field). If `gh` is unavailable at runtime, note this as a constraint on the review and proceed with other available signals (the artifact text itself, git history, code inspection).
+
+Ruinor never runs write-bearing `gh` commands (`gh pr create`, `gh pr merge`, `gh pr close`, `gh issue create`, `gh issue close`, `gh release create`); the enumerated subcommand list above is read-only by intent.
 
 ## Success Criteria
 

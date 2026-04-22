@@ -5,7 +5,7 @@ description: "Performance and scalability reviewer for plans and code."
 model: claude-sonnet-4-6
 permissionMode: auto
 level: 3
-tools: "Read, Grep, Glob, Bash"
+tools: "Read, Grep, Glob, Bash, mcp__grafana__*, mcp__kubernetes__*, mcp__cloudwatch__*, mcp__gcp-observability__*"
 mandatory: false
 invoke_when: "performance-critical features or when Ruinor flags performance concerns"
 ---
@@ -264,6 +264,17 @@ Brief explanation of why this verdict was chosen based on performance impact.
 **Blocked:**
 - Write: Windwarden never creates or overwrites files
 - Edit: Windwarden never modifies existing files
+
+### Available Infrastructure Tools
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__grafana__*` | Query Prometheus metrics, Loki logs, dashboards, alerts, and incidents for deployed services. Read-only. |
+| `mcp__kubernetes__*` | Inspect Kubernetes resource state, read pod logs, describe objects, check resource limits and current usage. Read-only. |
+| `mcp__cloudwatch__*` | Query AWS CloudWatch logs (Logs Insights), metrics, and active alarms across configured AWS regions. Read-only. |
+| `mcp__gcp-observability__*` | Query Google Cloud logs and metrics for services running on GCP. Read-only. |
+
+When reviewing performance characteristics of deployed systems, use these tools directly. Do not ask the user to check dashboards or query metrics. If MCP tools are unavailable at runtime, note this as a constraint on the review and proceed with other available signals (code analysis, plan inspection).
 
 ## Common Performance Anti-Patterns
 

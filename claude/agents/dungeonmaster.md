@@ -129,6 +129,7 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 |------|--------|
 | `--explore-options` | Scope-exploration mode: invoke Pathfinder to surface scope and implementation options, then stop. No plan is written, no execution follows. Use when you want to evaluate approaches before committing. This is a constructive-pipeline flag — it has no effect when `INTENT: advisory` is active. |
 | `--save-report` | Report-persistence mode: after Phase C synthesis in the Advisory Workflow, delegate to Bitsmith to write the synthesis output to `{REPO_ROOT}/reports/{SESSION_TS}-{SESSION_SLUG}.md`. The inline answer is always delivered first; the report file is additive. If `git rev-parse --show-toplevel` fails (not in a git repo), warn the user and skip the file write. This is an advisory-pipeline flag — it has no effect outside `INTENT: advisory`. |
+| `--execute` | Advisory-pipeline flag (no effect outside `INTENT: advisory`). After Phase C synthesis, DM presents the proposed action to the user for explicit confirmation. On affirmative confirmation, DM delegates execution to Bitsmith via its existing Bash tool. On rejection or absent confirmation, DM does not execute and the session ends after the inline answer. No review gate is run — the user confirmation is the gate. Restricted to single `gh` CLI commands with no shell metacharacters. DM validates the command against this allowlist before delegation. Commands failing validation are rejected with an explanation. Note: commands using `\|` inside `--jq` filter expressions are not supported — `/do` blocks all pipe characters. Use the constructive pipeline or run such commands directly in a terminal. |
 
 ### Worktree Context Block
 
@@ -309,13 +310,13 @@ This subroutine is **invoked explicitly** by routing branches in this section th
 If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, or `INTENT: advisory`, skip heuristic classification and route directly:
 - `INTENT: investigative` → **invoke the Worktree Creation Subroutine first** (so `WORKTREE_PATH` is populated before Tracebloom delegation), then fire the Investigative Gate immediately (skip the Mutual Exclusivity classification below).
 - `INTENT: constructive` → **invoke the Worktree Creation Subroutine first**, then skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly).
-- `INTENT: advisory` → **do not invoke the Worktree Creation Subroutine** — advisory sessions never create a worktree. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report`), capture it as an active workflow flag for this session before stripping.
+- `INTENT: advisory` → **do not invoke the Worktree Creation Subroutine** — advisory sessions never create a worktree. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` or `--execute` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report` or `INTENT: advisory --execute`), capture it as an active workflow flag for this session before stripping.
 
 The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`, `/ask`, `/ops`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
 
 When an intent override fires, log it: "Intent override: {investigative|constructive|advisory}. Heuristic classification skipped."
 
-Strip the `INTENT:` line (including any flags on it, such as `--save-report`) from the message before passing the remaining text to downstream agents. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. Exception: when `INTENT: advisory` is active, constructive-pipeline workflow flags (e.g., `--explore-options`) are not applicable — advisory sessions bypass the constructive pipeline. The `--save-report` flag is the sole exception: it is an advisory-pipeline flag and remains active when `INTENT: advisory` is set.
+Strip the `INTENT:` line (including any flags on it, such as `--save-report` or `--execute`) from the message before passing the remaining text to downstream agents. Workflow flags captured before stripping (`--save-report`, `--execute`) remain active for the session. Constructive-pipeline workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. Exception: when `INTENT: advisory` is active, constructive-pipeline workflow flags (e.g., `--explore-options`) are not applicable — advisory sessions bypass the constructive pipeline.
 
 When not triggered: proceed to the Mutual Exclusivity Note below.
 
@@ -704,13 +705,15 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
 
 This workflow fires when `INTENT: advisory` is detected (typically via the `/ask` or `/ops` command). It is a lightweight, read-only Q&A path that bypasses the entire constructive/investigative pipeline.
 
-**What is skipped:** Worktree creation (the Phase 1 Worktree Creation Subroutine is not invoked by the advisory branches), Pathfinder, Bitsmith (unless `--save-report` is active), Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written — except when `--save-report` is active, in which case Bitsmith is invoked solely to write the report file after Phase C synthesis.
+**What is skipped:** Worktree creation (the Phase 1 Worktree Creation Subroutine is not invoked by the advisory branches), Pathfinder, Bitsmith (unless `--save-report` or `--execute` is active), Ruinor, Quill, all review gates, completion steps (summary and worktree log). No plan file is written. No code is changed. No files are written — except when `--save-report` is active, in which case Bitsmith is invoked solely to write the report file after Phase C synthesis.
 
 **What is NOT skipped:** Session variable capture (`SESSION_TS`, `SESSION_SLUG`) — these are lightweight conversational memory and are retained for logging and potential pipeline transitions.
 
 **Relationship to `--explore-options`:** The `--explore-options` workflow flag is a constructive-pipeline flag that invokes Pathfinder for scope and options discovery. It has no effect when `INTENT: advisory` is active. These are distinct concepts: `INTENT: advisory` is a Q&A mode; `--explore-options` is a scope-exploration mode within the constructive pipeline.
 
 **Relationship to `--save-report`:** The `--save-report` workflow flag is an advisory-pipeline flag that persists the Phase C synthesis output to disk. It is only meaningful when `INTENT: advisory` is active. When set, Phase C delegates a single write operation to Bitsmith after delivering the inline answer. The `/ops` command pre-sets this flag.
+
+**Relationship to `--execute`:** The `--execute` workflow flag is an advisory-pipeline flag that triggers an execution step after Phase C synthesis. It is only meaningful when `INTENT: advisory` is active. When set, Phase C surfaces a user-confirmation prompt after delivering the inline answer, and on affirmative confirmation delegates a single execution step to Bitsmith via its existing Bash tool. The `/do` command pre-sets this flag. The flag is restricted to single `gh` CLI commands validated by DM before delegation (no shell metacharacters, no command chaining).
 
 **Phase A — Question Classification:**
 
@@ -726,6 +729,7 @@ Read the user's question and classify it into one of the following types. Select
 | "What does library/tool X support?" | Truthhammer |
 | "What are my options for...?" | DM synthesises directly, or Tracebloom for codebase context |
 | Simple conversational / general | DM answers directly — no agents |
+| Operational write action requested via /do | DM resolves the action directly using Phase C synthesis; no research agents needed |
 
 If the question spans multiple concerns (e.g., "Is this approach secure and will it scale?"), select all relevant agents (e.g., Riskmancer + Windwarden). Maximum 3 agents per advisory session.
 
@@ -795,6 +799,47 @@ Write the advisory report to disk. This is a single file write — no code chang
 
 4. After Bitsmith confirms the write, log the report path to the user: "Report saved to `{report path}`"
 
+**`--execute` post-synthesis step (conditional):**
+
+When `--execute` is active, execute the following after delivering the inline Phase C answer:
+
+1. DM produces the proposed command from Phase C synthesis. If Phase C did not produce a concrete command (the user's prose was too vague to render as a single CLI invocation), DM asks a one-line clarifying question before continuing.
+
+1a. **DM validates the proposed command before showing any confirmation prompt:**
+    - The command MUST start with one of the following approved command prefixes (after trimming leading whitespace):
+      - `gh ` — GitHub CLI
+
+      Any other prefix is rejected. To add a new tool in a future session, append its prefix to this list and add corresponding entries to the destructive-subcommand classification in step 2.
+    - The command MUST NOT contain any of the following characters or sequences that introduce new statements, substitutions, redirections, or background execution: `&` (covers both `&` background and `&&` chaining), `|` (pipe), `;`, `$(`, `` ` `` (backtick), `>`, `<`, `${`, or a literal newline character.
+    - If either check fails: DM does NOT show a confirmation prompt and does NOT delegate to Bitsmith. Instead, DM informs the user: "The command `{cmd}` is outside the `/do` allowlist. `/do` is restricted to single `gh` CLI commands with no shell chaining. For other operations, use the standard constructive pipeline." The session ends.
+    - If both checks pass: proceed to step 2.
+
+2. DM classifies the (now-validated) command:
+- **Destructive subcommands** (require typed confirmation): any command matching `gh pr close`, `gh pr merge`, `gh issue close`, `gh issue delete`, `gh release delete`, `gh repo delete`, or any `gh api` invocation whose command string contains any of the tokens `DELETE`, `PUT`, or `PATCH` (case-insensitive, as standalone tokens — covers `--method DELETE`, `--method=DELETE`, `-X DELETE`, and any other flag position).
+- **Non-destructive subcommands**: all other validated `gh` commands (e.g., `gh issue label`, `gh issue edit --add-label`, `gh issue comment`, `gh pr edit --add-label`).
+
+3. DM presents the confirmation prompt to the user. The prompt reads exactly: "You asked: \"{user's original prose action request, verbatim}\"\nI will run: `{proposed command}`\n\nThese should describe the same action. Reply to proceed, adjust the command, or cancel."
+
+For destructive subcommands, DM appends to the prompt: "⚠️ This is a destructive action. Type `CONFIRM` (exact, case-insensitive) to proceed. Any other response will cancel." DM accepts ONLY the literal token `CONFIRM` (case-insensitive). Any other response — including "yes", "ok", "proceed" — is treated as rejection. DM states clearly: "Confirmation required: type `CONFIRM` to proceed, or anything else to cancel."
+
+For non-destructive subcommands, DM uses the standard natural-language interpretation described below.
+
+4. DM waits for explicit user response. There is no implicit timeout. DM interprets the user's response as affirmative (proceed), revision (apply adjustments and re-validate the updated command per step 1a before re-prompting), or rejection (acknowledge and end the session). Ambiguous responses are clarified with a one-line follow-up question.
+
+5. On affirmative confirmation, DM delegates a single execution step to Bitsmith using the following template:
+
+~~~
+## Operational Execution Task
+
+The following action was requested by the user and confirmed by the user before delegation. It is a single `gh` CLI command that has passed DM's allowlist validation. This is a single-shot execution with no plan, no review gate, and no follow-up work. Bitsmith executes this via its Bash tool, which already supports arbitrary CLI commands — no plan file or Phase 4 review will follow this delegation.
+
+**Command to run:** `{proposed command}`
+
+Run the command, capture stdout, stderr, and exit code. Return the result. Do not produce a plan, write any files, or take any additional action beyond running this command and reporting the result.
+~~~
+
+6. After Bitsmith returns, DM logs the outcome inline to the user (e.g., "Action executed: `{command}` — exit code 0. Output: ..."). On non-zero exit code, surface the command, exit code, and stderr to the user inline. Do not silently swallow failures. The session ends; the user may issue a new `/do` if they wish to retry.
+
 **Follow-up handling:** If the user asks follow-up questions in the same session, repeat Phases A-B-C for each follow-up. The session remains in advisory mode until the user explicitly requests a constructive or investigative action (e.g., "OK, let's fix that" or "Create a plan for this"), at which point DM transitions to the standard pipeline starting from Phase 0.
 
 ## Output contract
@@ -817,6 +862,7 @@ For advisory sessions (`INTENT: advisory`), use this simplified structure instea
 - Answer summary (1-3 sentences)
 - Sources (files, agent findings, or external references cited)
 - Report saved: `{path}` (only when `--save-report` is active; omit this line otherwise)
+- Action: `{command}` — exit {N} (only when `--execute` is active and the user confirmed; if the user rejected, write `Action: skipped — user did not confirm`; omit this line otherwise). On non-zero exit, append stderr summary inline.
 
 Keep it concise and operational. Prefer facts over narration.
 

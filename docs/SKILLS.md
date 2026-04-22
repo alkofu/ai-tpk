@@ -27,7 +27,7 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 - **`completion-templates.md`** — Four rigid per-command completion report templates and a shared Common Fields block. Defines what the DM must emit at the end of each pipeline: Template A (Constructive, `/feature`), Template B (Investigative, `/bug`), Template C (Operational PR, `/open-pr`), and Template D (Post-Merge, `/merged` and `/merge-pr`). The DM output contract references this file; templates are verbatim formats with no formatting discretion left to the model.
 
-- **`dm-routing-examples.md`** — Worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, and ops reports.
+- **`dm-routing-examples.md`** — Worked routing examples for the Dungeon Master, covering multi-step plans, trivial changes, user flags, explore-options, worktrees, intake, investigation, scope confirmation, advisory queries, ops reports, and operational write actions via `/do`.
 
 - **`github-auth-probe.md`** — Canonical procedure for verifying GitHub account access before pushing or committing. Referenced by the `commit-message-guide` and `open-pull-request` skills.
 

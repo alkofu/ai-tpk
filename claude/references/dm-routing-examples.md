@@ -199,3 +199,19 @@ Action:
 
   **Path C — user rejects the diagnosis:** "That's not right — search is backed by Elasticsearch, not SQL."
   - DM does not invoke Pathfinder. DM asks: "Would you like to (i) re-invoke Tracebloom with a narrower or different focus, or (ii) abandon the investigative path and re-state the request?" User selects (i). DM re-invokes Tracebloom with updated context targeting the Elasticsearch integration. Investigative Gate restarts from step 1 with the new Diagnostic Report.
+
+Example 13:
+User asks (via /do): "label issue 42 as bug"
+Action:
+- **Intent override fires:** `INTENT: advisory --execute`. Log: "Intent override: advisory. Heuristic classification skipped." Capture `--execute` as active workflow flag. Strip `INTENT: advisory --execute` from message.
+- **Session variables captured:** `SESSION_TS` = `20260421-165000`, `SESSION_SLUG` = `label-issue-42-bug`
+- **Phase 1 Worktree Creation Subroutine not invoked** — advisory branches do not invoke the subroutine, so no worktree or plan is created
+- **Phase A:** Question classified as "Operational write action requested via /do" → DM resolves the action directly using Phase C synthesis; no research agents needed
+- **Phase B:** Skipped — no research agents required for this question type
+- **Phase C:** DM synthesises the user's prose into a concrete command: `gh issue label 42 bug`. DM delivers an inline answer explaining the proposed command.
+- **`--execute` post-synthesis:** DM presents the proposed action for confirmation: "I will run: `gh issue label 42 bug`. Reply to proceed, adjust the command, or cancel."
+  - **User replies affirmatively:** DM delegates to Bitsmith using the inline execution template (single-shot execution, no plan, no Phase 4 review). Bitsmith runs the command, captures stdout/stderr/exit code, returns the result. DM logs outcome inline: "Action executed: `gh issue label 42 bug` — exit code 0."
+  - **User requests a revision:** "Use the label 'bug-report' instead." DM updates the command to `gh issue label 42 bug-report` and re-prompts with the updated confirmation: "I will run: `gh issue label 42 bug-report`. Reply to proceed, adjust the command, or cancel."
+  - **User cancels:** DM acknowledges and ends the session. No execution occurs. Output contract: `Action: skipped — user did not confirm`.
+- Session complete — no review, no plan, no PR prompt
+- Output contract: Question, Agents consulted (none — DM resolved directly), Answer summary, Sources, Action: `gh issue label 42 bug` — exit 0 (only when `--execute` is active and the user confirmed)

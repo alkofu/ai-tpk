@@ -29,6 +29,11 @@ function launchClaude(
     lines.push("No MCPs configured — launching Claude with current env.");
   }
 
+  // Clear terminal so the Claude session starts on a clean screen.
+  // The return value is intentionally ignored: if `clear` is missing from PATH
+  // or exits non-zero, the launch must still proceed.
+  // stderr is suppressed to silence noise from a potentially misconfigured binary.
+  spawnSync("clear", [], { stdio: ["inherit", "inherit", "ignore"] });
   outro(`Launching: ${lines.join(" · ")}`);
 
   // Launch Claude with merged env vars

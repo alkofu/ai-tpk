@@ -5,9 +5,6 @@
 
 REPO_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
 LOG_DIR="$HOME/.ai-tpk/logs/$REPO_SLUG"
-LOG_FILE="$LOG_DIR/talekeeper-raw.jsonl"
-
-mkdir -p "$LOG_DIR"
 
 # Read stdin (hook event JSON) with a timeout to avoid hanging
 # Use bash built-in read with -t for macOS compatibility (not `timeout` command)
@@ -18,6 +15,18 @@ read -r -t 2 STDIN_DATA 2>/dev/null || true
 if [ -z "$STDIN_DATA" ]; then
   STDIN_DATA='{}'
 fi
+
+# Extract SESSION_ID from stdin; fall back to a unique unknown-session name
+if command -v jq &>/dev/null; then
+  SESSION_ID=$(echo "$STDIN_DATA" | jq -r '.session_id // ""' 2>/dev/null)
+fi
+if [ -z "$SESSION_ID" ]; then
+  SESSION_ID="unknown-$(date -u +%s)-$$"
+fi
+
+LOG_FILE="$LOG_DIR/talekeeper-raw-${SESSION_ID}.jsonl"
+
+mkdir -p "$LOG_DIR"
 
 # Skip hook-agent self-capture events (Stop hook agents, not real subagents)
 if command -v jq &>/dev/null; then

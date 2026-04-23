@@ -33,9 +33,10 @@ Only invoke Talekeeper after a session has fully ended and the Stop hook has had
 Talekeeper does not have a Bash tool and cannot run shell commands. To discover which repositories have chronicle files, use this procedure:
 
 1. Use `Glob` with the pattern `~/.ai-tpk/logs/*/talekeeper-*.jsonl`.
-2. From the returned paths, extract the directory name immediately after `logs/` — this is the REPO_SLUG for each file (e.g., from `~/.ai-tpk/logs/my-project/talekeeper-abc123.jsonl`, the REPO_SLUG is `my-project`).
-3. Group discovered chronicle files by REPO_SLUG.
-4. If only one REPO_SLUG exists, use it. If multiple REPO_SLUGs are found, process all of them and organize narrative output per repo. Alternatively, if the user specifies a project name, filter to that REPO_SLUG only.
+2. **Filter staging files:** From the glob results, discard any path whose basename matches the pattern `talekeeper-raw-[^/]*\.jsonl` — these are per-session staging files, not chronicles. Processing them would produce a bogus session ID like `raw-abc123` when the `talekeeper-` prefix is stripped.
+3. From the remaining paths, extract the directory name immediately after `logs/` — this is the REPO_SLUG for each file (e.g., from `~/.ai-tpk/logs/my-project/talekeeper-abc123.jsonl`, the REPO_SLUG is `my-project`).
+4. Group discovered chronicle files by REPO_SLUG.
+5. If only one REPO_SLUG exists, use it. If multiple REPO_SLUGs are found, process all of them and organize narrative output per repo. Alternatively, if the user specifies a project name, filter to that REPO_SLUG only.
 
 All subsequent references to log paths use `~/.ai-tpk/logs/{REPO_SLUG}/` as the base directory, where `{REPO_SLUG}` is the value discovered above.
 
@@ -58,6 +59,8 @@ Skip any JSONL entry where the `agent_type` field is `"talekeeper"`. Do not incl
 
 Use `Glob` with the pattern `~/.ai-tpk/logs/*/talekeeper-*.jsonl` to find all enriched session chronicle files. Each file follows the naming convention `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-{session_id}.jsonl`.
 
+**Filter staging files immediately after globbing:** Discard any returned path whose basename matches the pattern `talekeeper-raw-[^/]*\.jsonl` — these are per-session staging files written by `talekeeper-capture.sh`, not enriched chronicles. They must not be parsed as chronicle entries.
+
 ### Tracking File
 
 Talekeeper tracks which sessions have been narrated in `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrated-sessions.json`.
@@ -76,7 +79,8 @@ Each line records one narrated session:
 
 ### Filtering Logic
 
-1. Glob `~/.ai-tpk/logs/*/talekeeper-*.jsonl` to get the list of all chronicle files.
+0. **Filter staging files first (defence in depth):** Before any other filtering, discard any glob result whose basename matches `talekeeper-raw-[^/]*\.jsonl`. After stripping the `talekeeper-` prefix, also reject any result that starts with `raw-` — this catches any staging file that may have slipped through the basename filter.
+1. Glob `~/.ai-tpk/logs/*/talekeeper-*.jsonl` to get the list of all chronicle files. Apply the staging-file filter from step 0 immediately.
 2. Read `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrated-sessions.json` to get the set of already-narrated session IDs (full UUIDs).
 3. Extract the session ID from each chronicle filename by stripping the `talekeeper-` prefix and the `.jsonl` suffix.
 4. Compute the difference: chronicle files whose session ID is not in the narrated set.
@@ -169,7 +173,7 @@ graph LR
 
 Follow these steps in order. Do not skip steps. Do not proceed to writing before completing discovery and filtering.
 
-1. Use `Glob` with pattern `~/.ai-tpk/logs/*/talekeeper-*.jsonl` to discover all chronicle files across all repositories. Extract REPO_SLUG from each path (the directory name immediately after `logs/`). Group files by REPO_SLUG.
+1. Use `Glob` with pattern `~/.ai-tpk/logs/*/talekeeper-*.jsonl` to discover all chronicle files across all repositories. **Immediately discard any path whose basename matches `talekeeper-raw-[^/]*\.jsonl`** — these are staging files, not chronicles. Extract REPO_SLUG from each remaining path (the directory name immediately after `logs/`). Group files by REPO_SLUG.
 2. Use `Read` to load `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrated-sessions.json`. If the file does not exist, treat the narrated set as empty.
 3. Parse the tracking file contents natively (no Bash). Each non-empty line is a JSON object; extract the `session_id` field from each line to build the set of already-narrated IDs.
 4. For each chronicle file, extract the session ID from the filename. Exclude any session ID already in the narrated set.
@@ -205,7 +209,7 @@ Unlike the old hook-based Talekeeper, this agent is user-facing. Errors should b
 
 | Tool | Purpose |
 |------|---------|
-| `Glob` | Discover all `~/.ai-tpk/logs/*/talekeeper-*.jsonl` chronicle files |
+| `Glob` | Discover all `~/.ai-tpk/logs/*/talekeeper-*.jsonl` chronicle files; filter results to exclude staging files matching `talekeeper-raw-[^/]*\.jsonl` before processing |
 | `Read` | Load chronicle files, tracking file, and narrative file for native parsing |
 | `Write` | Append to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrative.md` and `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrated-sessions.json` |
 

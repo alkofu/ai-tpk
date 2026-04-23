@@ -22,6 +22,8 @@ Run the installation script:
 
 The installer copies the whitelisted paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `hooks/`, `references/`, `scripts/`) from `claude/` into `~/.claude/` and, when present, into `~/.cursor/`. Anything else in the repo or on disk under those destinations is left untouched except where those paths are replaced (after a timestamped backup).
 
+When `sqlite3` is available in PATH, the installer also initializes the optional token tracking database at `~/.ai-tpk/tokens.db` (the `token_events` table schema). Re-running the installer with an existing database is non-destructive — `CREATE TABLE IF NOT EXISTS` leaves existing data intact. When `sqlite3` is absent, the installer prints a one-line notice and continues; the database can be created later by running `~/.claude/scripts/talekeeper-index.sh`. For the database schema, query examples, and the `talekeeper-index.sh` indexer, see [docs/HOOKS.md — Optional SQLite Token Index](/docs/HOOKS.md).
+
 The `.claude/` directory is never synced by the installer — it remains project-local.
 
 ## Development Setup

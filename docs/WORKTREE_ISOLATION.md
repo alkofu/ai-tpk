@@ -66,7 +66,7 @@ The subroutine is invoked **only by routing branches that require implementation
 | Session type | Worktree created? |
 |---|---|
 | Constructive (`/feature`, free-form feature request) | Yes — subroutine invoked in Phase 1 |
-| Investigative (`/bug`, free-form "why is X broken?") | Yes — subroutine invoked in Phase 1 |
+| Investigative (`/bug`, free-form "why is X broken?") | Conditional — subroutine is **deferred** until after Tracebloom's Diagnostic Report. Created only when the report routes to a fix (Pathfinder or Bitsmith); skipped entirely on "Inconclusive" (and user does not proceed) or "No bug found." |
 | Advisory (`/ask`, `/ops`, `/do`, free-form questions) | No — advisory branches do not invoke the subroutine |
 
 Advisory sessions (`INTENT: advisory`) bypass the constructive/investigative pipeline entirely. They capture session variables in Phase 0 but never proceed to a routing branch that invokes the subroutine. No worktree, no plan file, no code changes.
@@ -195,7 +195,11 @@ $ claude --agent dungeonmaster
 > Fix slow database queries on issue #42
 ...
 [Phase 0: session variables captured]
-[Phase 1: Worktree Creation Subroutine creates .worktrees/fix-db-perf-issue-42/ on branch fix/db-perf-issue-42]
+[Phase 1: Investigative Gate fires — Tracebloom investigates against main repo root (no worktree yet)]
+[Tracebloom returns Diagnostic Report — root cause: missing index on frequently-filtered column]
+[Premise Check surfaced to user — user confirms diagnosis]
+[Phase 1: Worktree Creation Subroutine invoked now (post-investigation) — branch named from root cause fix-essence]
+[Worktree created at .worktrees/fix-db-perf-issue-42/ on branch fix/db-perf-issue-42]
 [Pathfinder creates plan at ~/.ai-tpk/plans/{repo-slug}/20260401-144500-fix-db-perf-issue-42.md]
 [Bitsmith implements query fixes in the worktree]
 [Ruinor and Windwarden review in the worktree context]

@@ -7,6 +7,7 @@ Install AI TPK to your home directory.
 Claude Code:
   - Whitelisted paths: settings.json, CLAUDE.md, skills/, agents/, references/
   - MCP servers: kubernetes, cloudwatch (user scope, via claude mcp add)
+  - Optional SQLite token DB at ~/.ai-tpk/tokens.db (when sqlite3 is available)
 
 Options:
   --help    Show this help message`;

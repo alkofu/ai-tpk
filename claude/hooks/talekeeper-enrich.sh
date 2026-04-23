@@ -2,19 +2,39 @@
 # Talekeeper enrichment: process raw SubagentStop events into session chronicles
 # Runs as an async Stop hook command — has full filesystem access (unlike agent hooks)
 # Never blocks the session; exits 0 in all cases
+# Stop event schema verified: session_id present in stdin JSON (see tab-rename-stop.sh lines 16-19 for evidence)
 
 REPO_SLUG="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
 LOG_DIR="$HOME/.ai-tpk/logs/$REPO_SLUG"
 mkdir -p "$LOG_DIR"
-RAW_LOG="$LOG_DIR/talekeeper-raw.jsonl"
 
-# Exit immediately if raw log is missing or empty
-if [ ! -s "$RAW_LOG" ]; then
-  exit 0
+# Read Stop event payload from stdin (2-second timeout, same pattern as tab-rename-stop.sh)
+STDIN_DATA=""
+read -r -t 2 STDIN_DATA 2>/dev/null || true
+if [ -z "$STDIN_DATA" ]; then
+  STDIN_DATA='{}'
 fi
 
 # Require jq — without it we cannot safely process JSON
 if ! command -v jq &>/dev/null; then
+  exit 0
+fi
+
+# Extract SESSION_ID from Stop event stdin.
+# Constitution Principle 1: if SESSION_ID is absent, exit silently — do NOT scan or
+# touch any other session's talekeeper-raw-*.jsonl file.
+SESSION_ID=$(echo "$STDIN_DATA" | jq -r '.session_id // ""' 2>/dev/null)
+if [ -z "$SESSION_ID" ] || [ "$SESSION_ID" = "null" ]; then
+  TIMESTAMP=$(date -u +%Y%m%d-%H%M%S)
+  printf 'talekeeper-enrich: missing session_id in Stop event stdin at %s\n' "$TIMESTAMP" \
+    >> "$LOG_DIR/talekeeper-enrich-error-${TIMESTAMP}.log" 2>/dev/null || true
+  exit 0
+fi
+
+RAW_LOG="$LOG_DIR/talekeeper-raw-${SESSION_ID}.jsonl"
+
+# Exit immediately if this session's raw log is missing or empty
+if [ ! -s "$RAW_LOG" ]; then
   exit 0
 fi
 
@@ -27,18 +47,16 @@ VALID_ENTRIES=$(jq -c 'select(
 )' "$RAW_LOG" 2>/dev/null)
 
 if [ -z "$VALID_ENTRIES" ]; then
-  # No valid entries — still clear the raw log
-  truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' > "$RAW_LOG"
+  # No valid entries — remove this session's staging file (only filtered noise)
+  rm -f "$RAW_LOG"
   exit 0
 fi
 
-# Extract session_id from first valid entry; fallback to timestamp
-SESSION_ID=$(echo "$VALID_ENTRIES" | head -1 | jq -r '.session_id // ""' 2>/dev/null)
-if [ -z "$SESSION_ID" ] || [ "$SESSION_ID" = "null" ]; then
-  SESSION_ID=$(date -u +"%Y-%m-%d-%H%M%S")
-fi
-
 OUTPUT_FILE="$LOG_DIR/talekeeper-${SESSION_ID}.jsonl"
+# Single-writer assumption: each session has its own chronicle and staging file.
+# A concurrent write from this session's hook is not possible (Stop fires once per session).
+# Therefore, cat >> is safe here — no other writer races on this chronicle file.
+TMP_OUTPUT="${OUTPUT_FILE}.tmp.$$"
 
 # Reviewer agent types that may contain verdicts
 REVIEWER_TYPES="ruinor|knotcutter|riskmancer|windwarden"
@@ -113,19 +131,31 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
     --argjson cache_read_input_tokens "$cache_read_input_tokens" \
     '{timestamp: $ts, event_type: $event_type, agent_type: $agent_type, agent_id: $agent_id, session_id: $session_id, summary: $summary, verdict: $verdict, agent_transcript_path: $agent_transcript_path, input_tokens: $input_tokens, output_tokens: $output_tokens, cache_creation_input_tokens: $cache_creation_input_tokens, cache_read_input_tokens: $cache_read_input_tokens}'
 
-done >> "$OUTPUT_FILE" 2>/dev/null
+done >> "$TMP_OUTPUT" 2>/dev/null
 
-# Only clear the raw log if output was actually written
-if [ -s "$OUTPUT_FILE" ]; then
-  truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' > "$RAW_LOG"
+# Append temp output to chronicle if non-empty, then clean up
+if [ -s "$TMP_OUTPUT" ]; then
+  # Single-writer assumption: each session has its own chronicle and staging file.
+  # A concurrent write from this session's hook is not possible (Stop fires once per session).
+  # Therefore, cat >> is safe here — no other writer races on this chronicle file.
+  cat "$TMP_OUTPUT" >> "$OUTPUT_FILE" 2>/dev/null
+  rm -f "$TMP_OUTPUT"
+  # Remove this session's staging file now that enrichment succeeded
+  rm -f "$RAW_LOG"
+else
+  rm -f "$TMP_OUTPUT"
+  # No entries written — still remove the staging file (only filtered noise)
+  rm -f "$RAW_LOG"
 fi
 
 # Pre-compute token summary for fast-path reads by token-summary.sh
 # Reads from the just-written chronicle, not the (now-cleared) raw log.
+# Writes to both the per-session cache and the shared last-writer-wins cache.
 # Any failure here is silently swallowed — hook must always exit 0.
 if [ -s "$OUTPUT_FILE" ] && command -v jq &>/dev/null; then
   TOKEN_SUMMARY=$(jq -rs '[.[] | select(has("input_tokens"))] | reduce .[] as $r ({input:0,output:0,cw:0,cr:0}; .input += ($r.input_tokens // 0) | .output += ($r.output_tokens // 0) | .cw += ($r.cache_creation_input_tokens // 0) | .cr += ($r.cache_read_input_tokens // 0)) | "\(.input/1000 | floor)k in / \(.output/1000 | floor)k out / \(.cw/1000 | floor)k cache-write / \(.cr/1000 | floor)k cache-read"' "$OUTPUT_FILE" 2>/dev/null || true)
   if [ -n "$TOKEN_SUMMARY" ]; then
+    printf '%s\n' "$TOKEN_SUMMARY" > "$LOG_DIR/latest-token-summary-${SESSION_ID}.txt" 2>/dev/null || true
     printf '%s\n' "$TOKEN_SUMMARY" > "$LOG_DIR/latest-token-summary.txt" 2>/dev/null || true
   fi
 fi

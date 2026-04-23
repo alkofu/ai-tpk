@@ -123,9 +123,11 @@ Runs at the start of every Claude Code session. For resumed sessions, restores t
 
 Runs after every sub-agent completion to capture raw session event data.
 
-**Purpose:** Appends raw sub-agent completion events to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw.jsonl` for later enrichment. Script: `claude/hooks/talekeeper-capture.sh`.
+**Purpose:** Appends raw sub-agent completion events to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw-{session_id}.jsonl` for later enrichment. Script: `~/.claude/hooks/talekeeper-capture.sh`.
 
-**Non-obvious behavior:** Filters out `hook-agent-*` events — Stop hook agents are not real sub-agents and must not pollute the log. Always exits 0; logging must never block the session.
+Each session writes to its own staging file — see Constitution Principle 1 for the rationale.
+
+**Non-obvious behavior:** Filters out `hook-agent-*` events — Stop hook agents are not real sub-agents and must not pollute the log. Always exits 0; logging must never block the session. When `session_id` is absent from the SubagentStop event (or `jq` is unavailable), falls back to a unique `unknown-$(date +%s)-$$` filename so concurrent captures from unknown sessions cannot collide.
 
 #### Stop Hook - Session Enrichment
 
@@ -135,9 +137,20 @@ Note: A second Stop hook (`tab-rename-stop.sh`) also fires asynchronously for te
 
 **Session enrichment (async):**
 
-Processes the raw sub-agent event log captured during the session into a structured enriched JSONL chronicle. Script: `claude/hooks/talekeeper-enrich.sh`.
+Processes the raw sub-agent event log captured during the session into a structured enriched JSONL chronicle. Script: `~/.claude/hooks/talekeeper-enrich.sh`.
 
-**Non-obvious behaviors:** Filters out `hook-agent-*` events and `talekeeper` self-captures. Reads each agent's transcript file (`agent_transcript_path`) and sums token usage across all assistant turns. Clears the raw log on success.
+**Behavior:**
+1. Reads `session_id` from the Stop event payload on stdin (2-second timeout).
+2. If `session_id` is absent or empty, exits 0 silently — the hook **must not** scan or touch any other session's `talekeeper-raw-*.jsonl` file (Constitution Principle 1).
+3. Reads only this session's own staging file: `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-raw-{session_id}.jsonl`.
+4. Filters out `hook-agent-*` events and `talekeeper` self-captures. Reads each agent's transcript file (`agent_transcript_path`) and sums token usage across all assistant turns.
+5. Writes enriched entries to a PID-suffixed temp file, then appends the temp file to the per-session chronicle using `cat >>`. Because each session is the sole writer of its own chronicle file, plain append is safe — there is no concurrent writer to race against.
+6. Removes the per-session staging file on success. On failure (temp file empty or write error), the staging file is left in place for retry or debugging.
+7. Writes the session token summary to two cache files:
+   - `~/.ai-tpk/logs/{REPO_SLUG}/latest-token-summary-{session_id}.txt` — per-session cache.
+   - `~/.ai-tpk/logs/{REPO_SLUG}/latest-token-summary.txt` — shared, last-writer-wins convenience copy for backward compatibility with single-session consumers.
+
+**Non-obvious behaviors:** When the Stop event has no `session_id`, the hook exits 0 immediately without reading any file — this is a deliberate Constitution Principle 1 invariant. The capture hook already assigns `unknown-$(date +%s)-$$` filenames when `session_id` is missing at SubagentStop time, so a missing Stop-event `session_id` means there is no matching staging file anyway, making silent exit correct and safe.
 
 **Enriched Chronicle Schema:**
 
@@ -175,3 +188,77 @@ Runs after every Claude turn (Stop hook) to generate and store an AI-derived ter
 **Supported terminals and detection:** Same table as the SessionStart hook above.
 
 **Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title generation does not block the user between turns.
+
+---
+
+### Optional SQLite Token Index
+
+`~/.claude/scripts/talekeeper-index.sh` is a user-invoked script (not a hook) that reads all Talekeeper chronicle files and upserts their rows into a queryable SQLite database. It is never run automatically from a hook — invoke it manually when you want to query historical token data.
+
+**Usage:**
+
+```
+bash ~/.claude/scripts/talekeeper-index.sh [--verbose] [--help]
+```
+
+**Database location:** `~/.ai-tpk/tokens.db`
+
+The script creates the parent directory of `TALEKEEPER_DB` automatically (`mkdir -p`) before opening the database, so custom paths via the environment override do not require the directory to exist beforehand.
+
+**Environment overrides:**
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TALEKEEPER_DB` | `~/.ai-tpk/tokens.db` | Override the database path (e.g., for testing) |
+| `TALEKEEPER_LOGS_ROOT` | `~/.ai-tpk/logs` | Override the logs root path (e.g., for testing) |
+
+**Schema (`token_events` table):**
+
+```sql
+CREATE TABLE IF NOT EXISTS token_events (
+  session_id              TEXT    NOT NULL,
+  agent_id                TEXT    NOT NULL,
+  timestamp               TEXT    NOT NULL,
+  repo_slug               TEXT    NOT NULL,
+  agent_type              TEXT,
+  event_type              TEXT,
+  verdict                 TEXT,
+  input_tokens            INTEGER NOT NULL DEFAULT 0,
+  output_tokens           INTEGER NOT NULL DEFAULT 0,
+  cache_creation_tokens   INTEGER NOT NULL DEFAULT 0,
+  cache_read_tokens       INTEGER NOT NULL DEFAULT 0,
+  indexed_at              TEXT    NOT NULL,
+  PRIMARY KEY (session_id, agent_id, timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_token_events_repo_session
+  ON token_events (repo_slug, session_id);
+```
+
+**Key behaviors:**
+
+- **Silent no-op when `sqlite3` is absent:** the script exits 0 with no output when `sqlite3` is not in PATH. `jq` absence also triggers a silent exit 0. The installer prints a one-line notice if `sqlite3` is missing at install time, but the script itself is always silent in this case. When `jq` fails on a specific chronicle file during indexing, the file is skipped; in `--verbose` mode a warning is printed to stderr (`warn: jq failed on <file>, skipping`) so failures are visible without being fatal.
+- **Idempotent:** re-running over the same chronicle files produces the same database state. `INSERT OR REPLACE` keyed on `(session_id, agent_id, timestamp)` ensures no duplicate rows; `indexed_at` is updated to the latest run timestamp, which is acceptable.
+- **Concurrent-safe:** `PRAGMA busy_timeout = 5000` is set before every transaction so concurrent indexer invocations serialise rather than fail with `SQLITE_BUSY`. If `sqlite3` still exits non-zero after the timeout, the script exits 1 with a one-line stderr message — this is the correct behaviour for a user-invoked tool.
+- **Staging files excluded:** chronicle files whose basename matches `talekeeper-raw-*.jsonl` are skipped. Only fully-enriched chronicle files (`talekeeper-{session_id}.jsonl`) are indexed.
+- **Legacy mixed-session chronicles handled correctly:** each row's own `session_id` field is used as the natural key, not the chronicle filename. This means existing chronicle files that contain rows from multiple session IDs (produced before per-session staging was introduced) are indexed correctly — each row lands in `token_events` under its own `session_id`.
+- **Orphaned temp file cleanup:** the script removes any `talekeeper-*.jsonl.tmp.*` files older than 60 minutes from the logs directory. These are temp files left behind by crashed enrichment runs. This cleanup is deliberate here (not in the hook) to avoid a per-Stop filesystem walk in the hook hot path.
+
+#### `token-summary.sh` — formatted token total helper
+
+`~/.claude/scripts/token-summary.sh` is a companion script that reads session token totals and emits a single formatted line. It is called by the `/merged` command to include token usage in the post-merge summary.
+
+**Usage:**
+
+```
+bash ~/.claude/scripts/token-summary.sh <repo-slug> [<session-id>]
+```
+
+**Output format:** `<N>k in / <N>k out / <N>k cache-write / <N>k cache-read`, or `unavailable` when no data can be found. Always exits 0.
+
+**Lookup order:**
+
+1. Per-session cache: `~/.ai-tpk/logs/<repo-slug>/latest-token-summary-<session-id>.txt` (only when `session-id` is provided and non-empty).
+2. Shared cache: `~/.ai-tpk/logs/<repo-slug>/latest-token-summary.txt`.
+3. `jq` fallback: sums token fields from the most-recent enriched chronicle file in the repo's log directory (staging files excluded).
+
+Both cache files are written by the Stop hook enrichment script (`talekeeper-enrich.sh`) — see "Stop Hook - Session Enrichment" above.

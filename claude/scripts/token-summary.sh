@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # token-summary.sh — emit formatted session token totals for a repo
-# Usage: token-summary.sh <repo-slug>
+# Usage: token-summary.sh <repo-slug> [<session-id>]
 # Output: "<N>k in / <N>k out / <N>k cache-write / <N>k cache-read"  or "unavailable"
 # Always exits 0.
 
@@ -12,10 +12,23 @@ if [[ -z "$REPO_SLUG" ]]; then
   exit 0
 fi
 
+SESSION_ID="${2:-}"
 LOG_DIR="$HOME/.ai-tpk/logs/$REPO_SLUG"
 CACHE_FILE="$LOG_DIR/latest-token-summary.txt"
 
-# Fast path: read pre-computed cache written by talekeeper-enrich.sh Stop hook
+# Fast path: prefer the per-session cache when SESSION_ID is provided;
+# fall back to the shared cache.
+if [[ -n "$SESSION_ID" ]]; then
+  SESSION_CACHE="$LOG_DIR/latest-token-summary-${SESSION_ID}.txt"
+  if [[ -s "$SESSION_CACHE" ]]; then
+    RESULT=$(cat "$SESSION_CACHE" 2>/dev/null || true)
+    if [[ -n "$RESULT" ]]; then
+      printf '%s\n' "$RESULT"
+      exit 0
+    fi
+  fi
+fi
+
 if [[ -s "$CACHE_FILE" ]]; then
   RESULT=$(cat "$CACHE_FILE" 2>/dev/null || true)
   if [[ -n "$RESULT" ]]; then
@@ -31,7 +44,7 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-LATEST=$(ls -t "$LOG_DIR"/talekeeper-*.jsonl 2>/dev/null | grep -v '/talekeeper-raw\.jsonl$' | head -n1 || true)
+LATEST=$(ls -t "$LOG_DIR"/talekeeper-*.jsonl 2>/dev/null | grep -E -v '/talekeeper-raw-[^/]*\.jsonl$' | head -n1 || true)
 if [[ -z "$LATEST" ]]; then
   printf 'unavailable\n'
   exit 0

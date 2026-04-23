@@ -3,6 +3,7 @@ import { installDir } from "./fs-utils.js";
 import { installClaudeWhitelist } from "./claude.js";
 import { installMcpServers } from "./mcp.js";
 import { installLauncherScript } from "./launcher-install.js";
+import { initTokenDb, removeLegacySingletonStagingFiles } from "./token-db.js";
 import { c } from "./colors.js";
 import { fileURLToPath } from "node:url";
 import * as path from "node:path";
@@ -37,6 +38,15 @@ try {
       `✓ Created artifact directories: ${aiTpkDir}/plans/, ${aiTpkDir}/lessons/`,
     ),
   );
+
+  // Optional: initialize the SQLite token DB schema when sqlite3 is available.
+  // The installer surfaces a one-line notice when sqlite3 is absent; the
+  // indexer script (talekeeper-index.sh) is fully silent in the same case.
+  initTokenDb(os.homedir(), (msg) => console.log(msg));
+
+  // Remove legacy singleton staging files left over from before per-session
+  // staging was introduced.
+  removeLegacySingletonStagingFiles(os.homedir(), (msg) => console.log(msg));
 
   console.log("");
   installMcpServers(scriptDir);

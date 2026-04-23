@@ -116,7 +116,7 @@ Action:
 Example 8:
 User asks: "Why is the background job queue dropping tasks silently?"
 Action:
-- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine (because `/bug` sets `INTENT: investigative`), which delegates to Bitsmith to create the worktree at `.worktrees/fix-job-queue-drops` on branch `fix/job-queue-drops`. The Investigative Gate then fires per the Intent Override
+- **Phase 1: Investigative Gate fires immediately** (because `/bug` sets `INTENT: investigative`). The Worktree Creation Subroutine is **deferred**. Tracebloom is delegated with `WORKING_DIRECTORY` set to the main repository root.
 - **Phase 1, step 1:** DM clarifies goal: "Determine why enqueued background jobs are silently dropped."
 - **Investigative Gate triggers** (investigative question: "why is X happening?", no known cause, no plan; Intake and Explore-Options gates do not fire)
 - Invoke Tracebloom with symptom: "background job queue dropping tasks silently"
@@ -124,8 +124,9 @@ Action:
   - Symptom: Jobs enqueued via `enqueue()` in `src/jobs/queue.ts` are not being processed
   - Root cause: Worker pool size set to 0 in `config/production.yaml` due to a merge conflict marker left in the file
   - Recommended next action: "Fix is trivial -- route to Bitsmith directly"
+- **Worktree Creation Subroutine fires now** (post-investigation, trivial-fix branch). DM extracts a fix-essence string from the root cause: 'Worker pool size set to 0 in `config/production.yaml` due to a merge conflict marker' → fix-essence `worker pool size zero` → slugified to `fix/worker-pool-size-zero` (or whatever the slugify script produces, well within the 60-char cap). DM delegates to Bitsmith to create the worktree at `.worktrees/worker-pool-size-zero` on that branch.
 - DM presents summary to user: "Tracebloom identified a merge conflict marker in `config/production.yaml` setting worker pool to 0. Routing to Bitsmith for the fix."
-- Skip Pathfinder (trivial fix). Delegate to Bitsmith with Diagnostic Report as context.
+- Skip Pathfinder (trivial fix). Delegate to Bitsmith using the trivial-fix delegation template, with the Diagnostic Report passed inline (no on-disk persistence). The template includes a path-translation note instructing Bitsmith to substitute `{WORKTREE_PATH}` for the main-repo prefix when reading evidence-listed files.
 - **Implementation Review:** Run Ruinor (mandatory baseline). Skip specialist reviewers.
 - **Phase 5:** Offer PR/merge/keep options.
 
@@ -178,7 +179,7 @@ Action:
 Example 12:
 User asks (via /bug): "Why are API responses slow for the search endpoint?"
 Action:
-- **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine (`INTENT: investigative` from `/bug`), delegates to Bitsmith to create the worktree at `.worktrees/fix-api-responses-slow-search` on branch `fix/api-responses-slow-search`. Investigative Gate fires.
+- **Phase 1: Investigative Gate fires immediately** (`INTENT: investigative` from `/bug`). The Worktree Creation Subroutine is **deferred**. Tracebloom is delegated with `WORKING_DIRECTORY` set to the main repository root.
 - **Phase 1, step 1:** DM clarifies goal: "Determine why API responses are slow for the search endpoint."
 - **Investigative Gate triggers**
 - Invoke Tracebloom with symptom: "API responses slow for the search endpoint"
@@ -190,15 +191,16 @@ Action:
 - **Premise Check fires** (Pathfinder branch selected):
   - DM extracts: Root cause (one sentence), Affected files (`src/search/repository.ts`, `db/schema.sql`), Recommended next action (verbatim)
   - DM surfaces the Premise Check template to the user and waits
+  - If the user proceeds (Path A or Path B below), DM **then** invokes the Worktree Creation Subroutine. DM extracts a fix-essence from the root cause: 'Full-table scan on `items` table — the `tags` column used in the search filter has no index' → fix-essence `items tags column missing index` → slugified to `fix/items-tags-column-missing-index` (or whatever the slugify script produces). The Diagnostic Report is held in DM's conversation memory and passed inline to Pathfinder; no on-disk persistence is performed.
 
   **Path A — user replies "proceed":**
-  - DM invokes Pathfinder with the Diagnostic Report handoff template, Diagnostic Report passed verbatim. Pathfinder skips Section 4 (Diagnostic Report present), writes plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260419-143000-api-responses-slow-search.md`. Continue with Phase 2 (Plan Review Gate), Phase 3, Phase 4, Phase 5 as normal.
+  - DM invokes Pathfinder with the Diagnostic Report handoff template (Worktree Context Block populated with the newly created worktree's path and branch), Diagnostic Report passed verbatim. The handoff template's path-translation note instructs Pathfinder to substitute `{WORKTREE_PATH}` for the main-repo prefix when reading any file paths cited in the Diagnostic Report's `Evidence` section. Pathfinder skips Section 4 (Diagnostic Report present), writes plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260419-143000-api-responses-slow-search.md`. Continue with Phase 2 (Plan Review Gate), Phase 3, Phase 4, Phase 5 as normal.
 
   **Path B — user provides corrections:** "The `name` column is also unindexed — please include that."
   - DM invokes Pathfinder with the Diagnostic Report handoff template, appending a `## User-supplied scope adjustments` section: "Also add an index on the `name` column." Diagnostic Report itself is unchanged. Pathfinder incorporates the adjustment in the plan. Continue with Phase 2 onward.
 
   **Path C — user rejects the diagnosis:** "That's not right — search is backed by Elasticsearch, not SQL."
-  - DM does not invoke Pathfinder. DM asks: "Would you like to (i) re-invoke Tracebloom with a narrower or different focus, or (ii) abandon the investigative path and re-state the request?" User selects (i). DM re-invokes Tracebloom with updated context targeting the Elasticsearch integration. Investigative Gate restarts from step 1 with the new Diagnostic Report.
+  - DM does not invoke Pathfinder. DM asks: "Would you like to (i) re-invoke Tracebloom with a narrower or different focus, or (ii) abandon the investigative path and re-state the request?" User selects (i). DM re-invokes Tracebloom with updated context targeting the Elasticsearch integration. Investigative Gate restarts from step 1 with the new Diagnostic Report. Because no worktree was created (the Premise Check was rejected before subroutine invocation), no cleanup is needed. DM re-invokes Tracebloom with `WORKING_DIRECTORY` again set to the main repository root.
 
 Example 13:
 User asks (via /do): "label issue 42 as bug"

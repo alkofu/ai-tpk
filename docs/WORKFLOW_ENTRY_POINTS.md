@@ -151,8 +151,10 @@ In these cases, go directly to Pathfinder (if constructive) or Bitsmith (if with
 
 ## Integration with Worktrees
 
-When using the Dungeon Master's worktree feature:
-- Both Tracebloom and Pathfinder receive the `WORKING_DIRECTORY` context block
-- All file paths in the Diagnostic Report are absolute paths within the worktree
-- The Diagnostic Report is passed verbatim to Pathfinder in the worktree's context
-- Plans reference the same worktree for consistency
+In the investigative pipeline, worktree creation is deferred until after investigation completes:
+
+- **Tracebloom** receives the **main repository root** as its `WORKING_DIRECTORY` — no worktree exists yet when it investigates.
+- **All file paths in the Diagnostic Report** are absolute paths rooted at the main repository, not the worktree.
+- The **Worktree Creation Subroutine** fires only after the Diagnostic Report routes to a fix: after the user confirms the Premise Check (Pathfinder branch), or immediately before Bitsmith delegation (trivial-fix branch). It is skipped entirely on "Inconclusive" (and the user does not choose to proceed) and "No bug found" outcomes.
+- **Pathfinder and Bitsmith** receive the worktree context block (`WORKING_DIRECTORY` pointing at the newly created worktree) along with the Diagnostic Report and a path-translation note instructing them to substitute the worktree path for the main-repo prefix when reading any evidence-listed files.
+- Plans reference the worktree for consistency once it exists.

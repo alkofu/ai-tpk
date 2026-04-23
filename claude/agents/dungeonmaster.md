@@ -253,9 +253,9 @@ This overview is a navigation aid, not a substitute for the gate-by-gate detail 
 1. **Session re-entry check.** If the current message is a continuation of an established session per the Phase 0 re-entry guard, Phase 1 was already in progress — resume at the point the prior message left off. Do not restart Phase 1 from step 1.
 2. **Clarify the user goal in one sentence** (step 1 below).
 3. **Intent override detection.** If the message begins with `INTENT: investigative`, `INTENT: constructive`, or `INTENT: advisory`, route per the Intent Override block below and skip the Mutual Exclusivity classification. Otherwise, classify into exactly one of the four Mutual Exclusivity branches (investigative, ambiguous, ready-for-planning, advisory).
-4. **Worktree Creation Subroutine** — invoked explicitly by the investigative, ambiguous, and ready-for-planning branches; **not** invoked by the advisory branch. Advisory sessions never create a worktree.
+4. **Worktree Creation Subroutine** — invoked explicitly by the ambiguous (Intake) and ready-for-planning branches before their respective gates fire. **Investigative branches defer the subroutine until after Tracebloom investigates**: it is invoked from within the Investigative Gate's fix-bound routing branches (Pathfinder or Bitsmith), and skipped entirely when the report is 'Inconclusive' (and the user does not choose to proceed) or 'No bug found.' The advisory branch never invokes the subroutine.
 5. **Gate sequence (constructive/investigative pipelines only — skipped entirely for advisory):**
-   a. **Investigative Gate** — fires when the task is investigative; delegates to Tracebloom and routes the Diagnostic Report to Pathfinder, Bitsmith, the user, or session end depending on the "Recommended next action" field.
+   a. **Investigative Gate** — fires when the task is investigative; delegates to Tracebloom (with the main repository root as Tracebloom's working directory, since no worktree exists yet) and routes the Diagnostic Report to Pathfinder, Bitsmith, the user, or session end depending on the "Recommended next action" field. The Worktree Creation Subroutine is invoked from within this gate, immediately before Pathfinder or Bitsmith delegation.
    b. **Intake Gate** — fires when the task is ambiguous or underspecified; runs the Askmaw interview loop (max 5 rounds) and produces an intake brief for Pathfinder.
    c. **Explore-Options Gate** — fires only when the `--explore-options` flag is present; invokes Pathfinder with `STOP_AFTER_SCOPE: true` and waits for user selection before proceeding.
    d. **Scope Confirmation** — handled internally by Pathfinder's Section 4 on its first invocation when no skip condition applies; DM surfaces the output to the user, collects confirmation, and re-invokes Pathfinder with the `## Confirmed Scope` block.
@@ -308,7 +308,7 @@ This subroutine is **invoked explicitly** by routing branches in this section th
 **Intent Override** (before classification):
 
 If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, or `INTENT: advisory`, skip heuristic classification and route directly:
-- `INTENT: investigative` → **invoke the Worktree Creation Subroutine first** (so `WORKTREE_PATH` is populated before Tracebloom delegation), then fire the Investigative Gate immediately (skip the Mutual Exclusivity classification below).
+- `INTENT: investigative` → **do not invoke the Worktree Creation Subroutine yet**. Fire the Investigative Gate immediately; the Worktree Creation Subroutine is invoked later within the gate's routing branches that proceed to a fix (Pathfinder or Bitsmith). Skip the Mutual Exclusivity classification below.
 - `INTENT: constructive` → **invoke the Worktree Creation Subroutine first**, then skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly).
 - `INTENT: advisory` → **do not invoke the Worktree Creation Subroutine** — advisory sessions never create a worktree. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` or `--execute` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report` or `INTENT: advisory --execute`), capture it as an active workflow flag for this session before stripping.
 
@@ -321,7 +321,7 @@ Strip the `INTENT:` line (including any flags on it, such as `--save-report` or 
 When not triggered: proceed to the Mutual Exclusivity Note below.
 
 **Mutual exclusivity note:** When no explicit `INTENT:` override is present, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:
-- **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → **invoke the Worktree Creation Subroutine** → Investigative Gate → Tracebloom
+- **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → Investigative Gate → Tracebloom (the Worktree Creation Subroutine is **deferred** and invoked later within the gate's fix-bound routing branches)
 - **(b) Ambiguous or underspecified** (the task needs clarification before planning) → **invoke the Worktree Creation Subroutine** → Intake Gate → Askmaw
 - **(c) Ready for planning** (clear, bounded, constructive task) → **invoke the Worktree Creation Subroutine** → proceed to Pathfinder (which will internally handle scope confirmation and options discovery in its Section 4)
 - **(d) Advisory** (the task is a question — "how does X work?", "is this a good approach?", "what are my options?") → **do not invoke the Worktree Creation Subroutine** → Advisory Workflow (Phases A-B-C)
@@ -330,14 +330,14 @@ When not triggered: proceed to the Mutual Exclusivity Note below.
 
 If the task was classified as investigative (see "When to call Tracebloom" routing rules):
 
-**Precondition:** The Worktree Creation Subroutine must have been invoked by the routing branch that selected the Investigative Gate (either `INTENT: investigative` per the Intent Override, or Mutual Exclusivity branch (a)). `WORKTREE_PATH` and `WORKTREE_BRANCH` must be populated in conversation memory before this gate runs, because the Tracebloom delegation template below requires them.
+**Precondition:** No worktree exists at the moment this gate fires — the Worktree Creation Subroutine is **deferred** until a fix-bound routing branch within this gate invokes it. Tracebloom is delegated with the **main repository root** (resolved via `REPO_ROOT=$(git rev-parse --show-toplevel)`) as its `WORKING_DIRECTORY`, and `WORKTREE_BRANCH` is set to the literal value `(none — pre-worktree investigation)` in the Tracebloom delegation prompt. If `git rev-parse --show-toplevel` fails (e.g., `/bug` was invoked outside a git repository), warn the user with the message *'`/bug` requires a git repository — please re-run from inside a git checkout'* and abort the session. Tracebloom's behavior is otherwise unchanged. Because Tracebloom is a read-only investigator, concurrent investigative sessions that share the main repository root before their respective worktrees are created do not violate Principle 1's write-isolation intent. Read consistency is best-effort during concurrent investigative sessions; the worktree's HEAD-snapshot at creation time is the authoritative view for any fix.
 
-1. Delegate to Tracebloom with the user's reported symptom and any error messages or context using the delegation template below
+1. Delegate to Tracebloom with the user's reported symptom and any error messages or context using the (updated) delegation template below. Tracebloom's working directory is the main repository root.
 2. When Tracebloom returns a Diagnostic Report, evaluate the "Recommended next action" field:
-   - **"Route to Pathfinder for planning a fix"**: Run the **Premise Check** in step 3 below before delegating. Once the user confirms (or adjusts) the premise, proceed to step 2 (Planning), passing the Diagnostic Report to Pathfinder as context using the handoff template below.
-   - **"Fix is trivial -- route to Bitsmith directly"**: Skip Pathfinder. Delegate the fix directly to Bitsmith with the Diagnostic Report as context. Proceed to Phase 4 (Implementation Review) after Bitsmith completes.
-   - **"Inconclusive"**: Present the Diagnostic Report findings to the user. Ask: "Tracebloom's investigation was inconclusive. Would you like to (a) investigate further with a narrower focus, (b) proceed to planning based on what we know, or (c) provide additional context?" Act on the user's choice.
-   - **"No bug found"**: Present the explanation to the user. Session ends unless the user disagrees and wants further investigation.
+   - **"Route to Pathfinder for planning a fix"**: Run the **Premise Check** in step 3 below first. Only after the user confirms (or adjusts) the premise, **invoke the Worktree Creation Subroutine** (deriving the branch name from the Diagnostic Report's root cause via the rule in step 4 below, not from the original reported symptom). Then proceed to step 3 (Pathfinder invocation), passing the Diagnostic Report to Pathfinder as context using the handoff template below.
+   - **"Fix is trivial -- route to Bitsmith directly"**: Skip Pathfinder. **Invoke the Worktree Creation Subroutine** first (deriving the branch name per step 4 below), then delegate the fix to Bitsmith using the trivial-fix delegation template below, with the Diagnostic Report passed inline. Proceed to Phase 4 (Implementation Review) after Bitsmith completes.
+   - **"Inconclusive"**: Present the Diagnostic Report findings to the user. Ask: "Tracebloom's investigation was inconclusive. Would you like to (a) investigate further with a narrower focus, (b) proceed to planning based on what we know, or (c) provide additional context?" Act on the user's choice. **Do not invoke the Worktree Creation Subroutine** unless the user selects (b), in which case treat the choice as the 'Route to Pathfinder' branch and run the Premise Check first.
+   - **"No bug found"**: Present the explanation to the user. **Do not invoke the Worktree Creation Subroutine.** Session ends unless the user disagrees and wants further investigation.
 3. **Premise Check** (fires only when step 2 selected the "Route to Pathfinder for planning a fix" branch — skip this step for the other three branches):
 
    a. Extract three scope-bearing items from the Diagnostic Report:
@@ -371,6 +371,21 @@ Tracebloom completed its investigation. Before I hand this off to Pathfinder for
 Reply with "proceed" to continue to planning, or describe any corrections or scope adjustments you would like Pathfinder to incorporate.
 ~~~
 
+4. **Branch name derivation for the deferred subroutine** (used by the two fix-bound routing branches in step 2 above): when invoking the Worktree Creation Subroutine post-investigation, derive `{branch-name}` from the Diagnostic Report's root cause rather than the user's original reported symptom. Specifically:
+
+   a. **Extract a short fix-essence string** from the Diagnostic Report's `Root cause` field. The fix-essence is the noun phrase or short clause describing the *thing being fixed*, stripped of clarifying clauses, file paths, and explanatory context. Aim for 4–8 words that capture what is wrong. Examples:
+   - Root cause: *'Worker pool size set to 0 in `config/production.yaml` due to a merge conflict marker'* → fix-essence: *'worker pool size zero'*
+   - Root cause: *'Full-table scan on `items` table — the `tags` column used in the search filter has no index'* → fix-essence: *'items tags column missing index'*
+   - Root cause: *'Race condition in session token refresh causes intermittent 401s'* → fix-essence: *'session token refresh race'*
+
+   Pre-extracting the fix-essence avoids relying on the slugify script's 60-character cap to truncate long root-cause sentences (which would produce noisy or misleading branch names). If a clean fix-essence cannot be extracted in 4–8 words, fall back to the conventional `chore/session-{YYYYMMDD-HHmmss}` slug used elsewhere in the Worktree Creation Subroutine.
+
+   b. **Slugify the fix-essence.** Pass the fix-essence string as the `<description>` argument to `bash ~/.claude/scripts/slugify.sh` and infer the `<prefix>` as `fix/` (the investigative pipeline always produces a fix). The 60-character cap still applies but should not be hit for a well-formed 4–8-word fix-essence.
+
+   c. **All other steps of the Worktree Creation Subroutine (collision handling, session context, log message) apply unchanged.**
+
+   d. **User scope adjustments do not alter the branch name.** If the user supplied scope adjustments at the Premise Check, those adjustments are appended to the Pathfinder handoff (per step 3d) but the branch is named from the original root cause's fix-essence.
+
 When not triggered: skip directly to the Intake Gate.
 
 **Tracebloom delegation template:**
@@ -378,10 +393,11 @@ When not triggered: skip directly to the Intake Gate.
 (The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
 
 ~~~
-WORKING_DIRECTORY: {WORKTREE_PATH}
-WORKTREE_BRANCH: {WORKTREE_BRANCH}
+WORKING_DIRECTORY: {REPO_ROOT}
+WORKTREE_BRANCH: (none — pre-worktree investigation)
 REPO_SLUG: {REPO_SLUG}
 All file operations and Bash commands must use this directory as the working root.
+Note: this investigation runs **before** any session worktree is created. `{REPO_ROOT}` is the main repository root (`git rev-parse --show-toplevel`); `WORKTREE_BRANCH` is the literal string `(none — pre-worktree investigation)`.
 
 ## Investigation Request
 
@@ -406,9 +422,31 @@ All file operations and Bash commands must use this directory as the working roo
 
 The following Diagnostic Report was produced by Tracebloom after investigating a user-reported issue. Use it as your problem definition input. Do not re-investigate facts already established in this report.
 
+**Path translation note:** the Diagnostic Report below was produced before this worktree existed. Any absolute file paths in the report's `Evidence` section are rooted at the main repository (`{REPO_ROOT}`). When you read those files, substitute `{WORKTREE_PATH}` for the `{REPO_ROOT}` prefix — the file contents are byte-identical between the main repo at `HEAD` and this worktree's initial commit, assuming a clean main-repo working tree at investigation time; if the main repo had uncommitted changes when Tracebloom ran, some evidence paths may reflect those changes rather than HEAD. Do not attempt to read or write files at the original main-repo paths.
+
 {Tracebloom's Diagnostic Report, verbatim}
 
 [Rest of Pathfinder delegation as normal]
+~~~
+
+**Diagnostic Report handoff to Bitsmith (trivial-fix branch) template:**
+
+(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+
+~~~
+WORKING_DIRECTORY: {WORKTREE_PATH}
+WORKTREE_BRANCH: {WORKTREE_BRANCH}
+REPO_SLUG: {REPO_SLUG}
+All file operations and Bash commands must use this directory as the working root.
+
+The following Diagnostic Report was produced by Tracebloom after investigating a user-reported issue. Tracebloom's `Recommended next action` field marked the fix as trivial; you are being delegated directly (Pathfinder is skipped). Use the report as your problem definition input. Do not re-investigate facts already established in this report.
+
+**Path translation note:** the Diagnostic Report below was produced before this worktree existed. Any absolute file paths in the report's `Evidence` section are rooted at the main repository (`{REPO_ROOT}`). When you read those files, substitute `{WORKTREE_PATH}` for the `{REPO_ROOT}` prefix — the file contents are byte-identical between the main repo at `HEAD` and this worktree's initial commit, assuming a clean main-repo working tree at investigation time; if the main repo had uncommitted changes when Tracebloom ran, some evidence paths may reflect those changes rather than HEAD. Do not attempt to read or write files at the original main-repo paths.
+
+{Tracebloom's Diagnostic Report, verbatim}
+
+## Instructions
+Implement the trivial fix described in the report's `Recommended next action`. Follow the standard Bitsmith implementation protocol. Do not modify scope beyond what the report identifies.
 ~~~
 
 **Intake Gate** (between the Investigative Gate and step 2):

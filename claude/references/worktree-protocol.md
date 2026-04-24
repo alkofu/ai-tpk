@@ -17,6 +17,8 @@ REPO_SLUG: {repo-name}
 All file operations and Bash commands must use this directory as the working root.
 ```
 
+Bitsmith delegations may include an additional `SKIP_TREE_AUDIT: true` line outside this canonical block — see `claude/agents/bitsmith.md` § Working-Tree Audit for the audit semantics and `claude/agents/dungeonmaster.md` § SKIP_TREE_AUDIT Choice Rule for when DM emits it.
+
 This block signals that all work for this task must be scoped to the specified directory. It is not a suggestion — it is a hard scope boundary.
 
 ## File Operation Rules

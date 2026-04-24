@@ -136,6 +136,16 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 
 When a session worktree is active, prepend the Worktree Context Block — defined in `claude/references/worktree-protocol.md` under "The WORKING_DIRECTORY Context Block" — to every Pathfinder, Bitsmith, Quill, and Tracebloom delegation prompt. That reference is the canonical format definition and also defines the file-operation, bash, and git rules sub-agents apply when the block is present; this section does not reproduce either.
 
+#### SKIP_TREE_AUDIT Choice Rule (Bitsmith delegations)
+
+When emitting a Bitsmith delegation prompt that includes a `WORKING_DIRECTORY:` line, DM may also emit a `SKIP_TREE_AUDIT: true` line. Bitsmith uses this to skip the one-shot working-tree audit it would otherwise run before its first file write — see `bitsmith.md` § Working-Tree Audit for the audit semantics.
+
+This field applies only to Bitsmith delegations. Pathfinder, Quill, and Tracebloom delegations do not run the audit and never need the field.
+
+Apply this rule at delegation time: *Has Bitsmith written to this worktree earlier in this session?* If **yes**, emit `SKIP_TREE_AUDIT: true` (the worktree is intentionally dirty with prior in-session work). If **no**, omit the line entirely (Bitsmith's default is to run the audit).
+
+If Bitsmith returns a halt report whose first line is the literal header `## Working-Tree Audit Halt`, surface it to the user verbatim and ask for direction. Do not auto-decide between reset, retrying with `SKIP_TREE_AUDIT: true`, or scope adjustment — the user owns this choice because it concerns their working state.
+
 Ruinor and other reviewer agents do not receive this block — instead, pass worktree-absolute file paths directly in their delegation prompts. Note: Ruinor does receive the separate Project Constitution Injection block — see the Project Constitution Injection section below.
 
 ### Project Constitution Injection
@@ -697,7 +707,7 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
 
     Reservations logged after a post-gate Phase 4 re-review proceed directly to step 5d; they do not re-trigger the Resolution Gate.
 
-    Evaluate each reservation's severity:
+    Evaluate each reservation's severity.
 
     **Auto-fix path** (fires when ALL reservations are MINOR severity):
     - Delegate the fixes to Bitsmith

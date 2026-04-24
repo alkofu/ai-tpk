@@ -132,8 +132,12 @@ When a DungeonMaster session has an active worktree, Pathfinder, Bitsmith, Quill
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/feat-add-oauth-login
 WORKTREE_BRANCH: feat/add-oauth-login
+REPO_SLUG: my-repo
+EXPECTED_TREE_STATE: clean
 All file operations and Bash commands must use this directory as the working root.
 ```
+
+(`EXPECTED_TREE_STATE:` appears on Bitsmith delegations only — see "Bitsmith's Working-Tree Audit" below. `REPO_SLUG:` is always present.)
 
 Sub-agents respect this context:
 
@@ -144,9 +148,13 @@ Sub-agents respect this context:
 
 Ruinor does not receive the worktree context block. Instead, DM inserts a `## Project Constitution` block at the top of every Ruinor delegation prompt. For the full injection logic — detection path, bootstrap exception, and placement rules — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md) (Project Constitution Injection section).
 
-### Bitsmith's Path Mismatch Guard
+### Bitsmith's Worktree Safeguards
 
-Bitsmith includes a safeguard that prevents silent writes to the main working tree when a session worktree is active. For the authoritative Path Mismatch Guard specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#path-mismatch-guard). This ensures changes land on the correct branch in the correct worktree, preventing accidental main-tree modifications during isolated sessions.
+Bitsmith has two complementary safeguards that enforce write isolation when a session worktree is active.
+
+**Path Mismatch Guard** fires before every Write, Edit, or file-modifying Bash command and verifies that the target path sits under `WORKING_DIRECTORY`. It prevents silent writes to the main working tree. For the authoritative specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#path-mismatch-guard).
+
+**Working-Tree Audit** fires once per invocation, immediately before the first write. It reads the `EXPECTED_TREE_STATE:` field from the delegation prompt and checks the actual worktree state — running `git status --porcelain` when the expected state is `clean`. If the worktree is unexpectedly dirty (e.g., a stale prior session left uncommitted changes), Bitsmith halts and surfaces a structured `## Working-Tree Audit Halt` report to DM rather than silently writing into a contaminated worktree. DM emits `clean` on first delegations into a fresh worktree and `dirty-continuing` on re-delegations where prior writes are expected. For the authoritative specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#working-tree-audit).
 
 ## Phase 5 Completion Log
 

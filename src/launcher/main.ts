@@ -8,6 +8,7 @@ import { promptSummaryAction } from "./summary.js";
 import { buildResolvedFromSaved } from "./resolve.js";
 import { registry } from "./mcp-command.js";
 import { applyKubernetesContextSwitch } from "./mcp/kubernetes.js";
+import { parseArgs, UnknownFlagError } from "./argv.js";
 import type { ResolvedConfig, LauncherConfig, SkippedMap } from "./types.js";
 
 function launchClaude(
@@ -45,10 +46,43 @@ function launchClaude(
   process.exit(result.status ?? 1);
 }
 
+function runSkipLaunch(savedConfig: LauncherConfig): never {
+  if (savedConfig.selectedMcps.length === 0) {
+    console.error(
+      "No saved config found — run myclaude without --skip first to configure.",
+    );
+    process.exit(1);
+  }
+  const resolved = buildResolvedFromSaved(savedConfig);
+  if (resolved === null) {
+    console.error(
+      "Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run myclaude without --skip to reconfigure.",
+    );
+    process.exit(1);
+  }
+  // Direct launch: no config was modified, so do NOT call saveConfig.
+  launchClaude(resolved, savedConfig);
+}
+
 async function main(): Promise<void> {
   intro("myclaude — Session Launcher");
 
+  let skip = false;
+  try {
+    ({ skip } = parseArgs(process.argv.slice(2)));
+  } catch (err) {
+    if (err instanceof UnknownFlagError) {
+      console.error(err.message);
+      process.exit(2);
+    }
+    throw err;
+  }
+
   const savedConfig = loadConfig();
+
+  if (skip) {
+    runSkipLaunch(savedConfig);
+  }
 
   // Summary screen: show current config and let user choose to launch or configure
   const hasExistingConfig = savedConfig.selectedMcps.length > 0;

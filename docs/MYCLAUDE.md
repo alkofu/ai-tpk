@@ -22,6 +22,31 @@ The wizard will present a multi-step flow:
 
 **Persistence:** Your last-used selections are saved to `~/.config/myclaude/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
 
+### `--skip`: launch immediately with saved config
+
+Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/myclaude/config.json`:
+
+```bash
+myclaude --skip
+```
+
+This is useful for scripts, hot-key launches, and users who never want to see the summary screen.
+
+**Strict failure behaviour** — `--skip` never falls back to the interactive flow. Instead it exits non-zero with a clear error message in two cases:
+
+- **No saved config:** If `~/.config/myclaude/config.json` contains no MCP selections, the launcher prints to stderr and exits with code 1:
+  ```
+  No saved config found — run myclaude without --skip first to configure.
+  ```
+- **Stale saved config:** If the saved config cannot be resolved (e.g. the saved Grafana cluster ID no longer exists in `~/.config/grafana-clusters.yaml`), the launcher prints to stderr and exits with code 1:
+  ```
+  Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run myclaude without --skip to reconfigure.
+  ```
+
+In both cases, run `myclaude` without `--skip` to (re)configure.
+
+**Unknown flags** are rejected with exit code 2. Any token other than `--skip` prints `Unknown flag: <flag>. Usage: myclaude [--skip]` to stderr and exits immediately.
+
 ## Grafana Configuration
 
 Create `~/.config/grafana-clusters.yaml` with your cluster definitions. The file must use this YAML schema:

@@ -153,15 +153,16 @@ Every Truthhammer review must include the following footer disclaimer verbatim:
 
 **Graceful degradation**: If WebSearch or WebFetch tools are unavailable in the current environment, mark all claims as UNVERIFIABLE and issue ACCEPT-WITH-RESERVATIONS with a clear note that web verification was unavailable. Do not fail entirely — surface what was found and flag the limitation.
 
-## Claim Severity Levels
+## Claim Severity Application
 
-**CRITICAL** - A CONTRADICTED claim that will cause runtime failure if the plan or code is executed as written. The external system will reject, error on, or behave fundamentally differently than the claim asserts. Blocks progress.
+Truthhammer uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/references/verdict-taxonomy.md`. The shared file defines what each level means. The mapping below specifies how Truthhammer's claim classifications (CONTRADICTED / UNVERIFIABLE) translate into Scale B severity in this domain.
 
-**HIGH** - A CONTRADICTED claim with a workaround, or partial incorrectness that degrades behavior without complete failure. Requires revision.
+- **CONTRADICTED claim that will cause runtime failure** → CRITICAL
+- **CONTRADICTED claim with a workaround, or partial incorrectness that degrades behavior** → HIGH
+- **UNVERIFIABLE claim in a critical code path** → MEDIUM
+- **UNVERIFIABLE claim in a non-critical context** → LOW (worth verifying before production, but not blocking)
 
-**MEDIUM** - An UNVERIFIABLE claim in a critical code path. Cannot be confirmed against official docs, and the path is important enough that an incorrect assumption would cause significant problems.
-
-**LOW** - An UNVERIFIABLE claim in a non-critical context. Could be wrong without catastrophic consequences, but should be verified before production.
+See `claude/references/verdict-taxonomy.md` for the level definitions and the rationale for using Scale B (CVE/security-scoring alignment).
 
 ## Tool Usage
 

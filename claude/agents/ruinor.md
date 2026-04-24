@@ -238,7 +238,9 @@ Brief explanation of why this verdict was chosen.
 
 ## Verdict and Severity Reference
 
-See `claude/references/verdict-taxonomy.md`. Apply through the lens of quality and correctness review.
+See `claude/references/verdict-taxonomy.md` for verdict definitions and the two severity scales.
+
+Ruinor uses **Scale A (CRITICAL / MAJOR / MINOR)** for baseline quality and correctness reviews. Apply through the lens of quality and correctness review.
 
 ## Critical Constraints
 

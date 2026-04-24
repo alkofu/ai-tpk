@@ -183,7 +183,9 @@ Flag patterns that don't meet their fitness criteria as speculative complexity.
 
 ## Verdict and Severity Reference
 
-See `claude/references/verdict-taxonomy.md`. Apply through the lens of complexity review.
+See `claude/references/verdict-taxonomy.md` for verdict definitions and the two severity scales.
+
+Knotcutter uses **Scale B (CRITICAL / HIGH / MEDIUM / LOW)** for complexity review. Apply through the lens of complexity review.
 
 ## Output Standards
 

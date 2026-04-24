@@ -444,6 +444,10 @@ The following Diagnostic Report was produced by Tracebloom after investigating a
 
 (The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
 
+When invoking Bitsmith with this template, pass `model: haiku` as the per-invocation model parameter on the Agent tool call. The trivial-fix branch is the one delegation path where the DM has independent confirmation — from Tracebloom's `Recommended next action` field — that the work fits the Trivial tier. For all other Bitsmith delegation call sites, omit the per-invocation model parameter entirely and let Bitsmith's frontmatter (`model: inherit`) and her Phase 1 self-classification govern.
+
+Use only the aliases `haiku`, `sonnet`, `opus` as the per-invocation model value — full model IDs (e.g., `claude-haiku-4-5`) are not accepted by the per-invocation parameter.
+
 ~~~
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
@@ -621,7 +625,7 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
 
     a. **Log the escalation** — include the escalation in session tracking for the completion summary.
 
-    b. **Assess the failure report** — evaluate all five fields from Bitsmith's structured report: Task reference (which plan step failed), Attempts summary (what was tried and how each attempt ended), Failure diagnosis (what failed and why), Codebase discoveries (what the plan did not account for), and Recommended action (Bitsmith's suggested next step).
+    b. **Assess the failure report** — evaluate all six fields from Bitsmith's structured report: Task reference (which plan step failed), Attempts summary (what was tried and how each attempt ended), Failure diagnosis (what failed and why), Codebase discoveries (what the plan did not account for), Recommended action (Bitsmith's suggested next step), and Model tier in effect (the model alias — `haiku`, `sonnet`, or `opus` — Bitsmith was running under; if this signals a degraded tier, prefer `Replan` (which lets Pathfinder re-scope and re-route Phase 3 with the tier context in mind) over `Abort` as the first response).
 
     c. **Decide one of four actions:**
        - **Replan:** Delegate to Pathfinder with the full failure report as context, requesting a revised plan for the failed step(s). The revised plan re-enters Phase 2 (Plan Review) before re-entering Phase 3.

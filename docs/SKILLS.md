@@ -35,6 +35,8 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 - **`quill-documentation-style.md`** — Documentation style guide used by Quill when authoring and updating documentation.
 
+- **`agent-model-policy.md`** — Documents the three-priority model resolution chain, why Bitsmith uses `model: inherit` while all other 13 agents remain pinned, the exhaustive per-tier pinning enumeration (Opus=4, Sonnet=8, Haiku=1, Inherit=1), the alias-only constraint on per-invocation overrides, and the discipline for adding future override call sites.
+
 - **`specialist-triggering.md`** — Canonical keyword list for the Dungeon Master's heuristic-fallback specialist-routing logic. Covers four keyword categories (security, performance, complexity, factual validation) and their corresponding specialist suggestions. DM consults this only when no user flag is present and Ruinor has not recommended specialists. Also documents why Truthhammer's keyword set is intentionally narrow. See [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the broader specialist-triggering decision model.
 
 - **`conflict-resolution-rebase.md`** — Canonical algorithm for resolving merge conflicts during a `git rebase`. Covers conflict detection, per-file resolution strategy (preserving the incoming branch's intent), round-limit guardrails, abort conditions, and the rebase-continue loop. Consumed by the `open-pull-request` skill (sub-step 6c) and the `/resolve-conflicts` command as thin pointers to this single authoritative source.

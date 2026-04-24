@@ -52,9 +52,11 @@ myclaude
 
 If the saved Grafana cluster ID no longer exists in `~/.config/grafana-clusters.yaml`, the launch path is skipped and the configure flow starts automatically with a warning.
 
+**`--skip` flag:** Pass `--skip` on the command line to bypass the summary screen entirely and launch Claude immediately with the saved config. The flag is parsed by `argv.ts` before `loadConfig` is called. If the saved config is unusable, the launcher exits non-zero with one of two stderr messages (no saved config, or stale/unresolvable config) — it never falls back to the interactive flow. Any unknown flag causes exit code 2. Example: `pnpm exec tsx src/launcher/main.ts --skip`.
+
 ## Testing
 
-Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -116,16 +118,16 @@ The `McpCommand` interface captures every per-MCP responsibility:
 
 ### Orchestration files
 
-| File         | Responsibility                                                                                                                                                                                     |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `main.ts`    | Entry point. Configure flow iterates `registry` to call `configureInteractive` for each selected MCP. Calls `applyKubernetesContextSwitch` explicitly after `saveConfig` and before `buildEnvVars` |
-| `resolve.ts` | `buildResolvedFromSaved` — iterates `config.selectedMcps`, calls `cmd.resolveFromSaved`, catches `StaleResourceError`                                                                              |
-| `env.ts`     | `buildEnvVars` — iterates `registry`, calls `cmd.emitEnvVars`                                                                                                                                      |
-| `outro.ts`   | `buildOutroLines` — two registry passes: success lines first, then skip lines, both in registry order                                                                                              |
-| `summary.ts` | `formatSummaryLines` + `promptSummaryAction` — looks up each selected MCP in the registry by id                                                                                                    |
-| `prompts.ts` | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`                                                                                                           |
-| `config.ts`  | Persistence: load/save `~/.config/myclaude/config.json`                                                                                                                                            |
-| `types.ts`   | All shared TypeScript types (`ResolvedConfig`, `LauncherConfig`, `SkippedMap`, per-MCP config interfaces)                                                                                          |
+| File         | Responsibility                                                                                                                                                                                                                                                                                     |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main.ts`    | Entry point. Parses argv via `argv.ts` and short-circuits to a saved-config launch when `--skip` is present. Configure flow iterates `registry` to call `configureInteractive` for each selected MCP. Calls `applyKubernetesContextSwitch` explicitly after `saveConfig` and before `buildEnvVars` |
+| `resolve.ts` | `buildResolvedFromSaved` — iterates `config.selectedMcps`, calls `cmd.resolveFromSaved`, catches `StaleResourceError`                                                                                                                                                                              |
+| `env.ts`     | `buildEnvVars` — iterates `registry`, calls `cmd.emitEnvVars`                                                                                                                                                                                                                                      |
+| `outro.ts`   | `buildOutroLines` — two registry passes: success lines first, then skip lines, both in registry order                                                                                                                                                                                              |
+| `summary.ts` | `formatSummaryLines` + `promptSummaryAction` — looks up each selected MCP in the registry by id                                                                                                                                                                                                    |
+| `prompts.ts` | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`                                                                                                                                                                                                           |
+| `config.ts`  | Persistence: load/save `~/.config/myclaude/config.json`                                                                                                                                                                                                                                            |
+| `types.ts`   | All shared TypeScript types (`ResolvedConfig`, `LauncherConfig`, `SkippedMap`, per-MCP config interfaces)                                                                                                                                                                                          |
 
 ### Shared helpers
 
@@ -229,6 +231,7 @@ The selected context is saved under `kubernetes.context` in `~/.config/myclaude/
 
 ## See Also
 
+- **`src/launcher/argv.ts`** — Argv parser used by `main.ts`; exports `parseArgs` and `UnknownFlagError`
 - **`src/mcp/wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
 - **`src/mcp/wrappers/mcp-gcp-observability.sh`** — Bash wrapper that resolves the GCP project from the dotfile and launches the Observability MCP server
 - **`src/launcher/mcp-command-types.ts`** — `McpCommand` interface and `StaleResourceError` class

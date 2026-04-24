@@ -8,13 +8,19 @@ import { promptSummaryAction } from "./summary.js";
 import { buildResolvedFromSaved } from "./resolve.js";
 import { registry } from "./mcp-command.js";
 import { applyKubernetesContextSwitch } from "./mcp/kubernetes.js";
-import { parseArgs, UnknownFlagError } from "./argv.js";
+import {
+  parseArgs,
+  UnknownFlagError,
+  TooManyPositionalsError,
+} from "./argv.js";
+import { buildClaudeArgs } from "./claude-args.js";
 import type { ResolvedConfig, LauncherConfig, SkippedMap } from "./types.js";
 
 function launchClaude(
   resolved: ResolvedConfig,
   savedConfig: LauncherConfig,
   skipped: SkippedMap = {},
+  initialMessage: string | undefined = undefined,
 ): never {
   // Switch Kubernetes context AFTER config is persisted (avoids inconsistency if switchContext fails)
   const { effectiveSkipped, outroResolved } = applyKubernetesContextSwitch(
@@ -39,14 +45,18 @@ function launchClaude(
 
   // Launch Claude with merged env vars
   const env = { ...process.env, ...envVars };
-  const result = spawnSync("claude", ["--agent", "dungeonmaster"], {
+  const claudeArgs = buildClaudeArgs(initialMessage);
+  const result = spawnSync("claude", claudeArgs, {
     stdio: "inherit",
     env,
   });
   process.exit(result.status ?? 1);
 }
 
-function runSkipLaunch(savedConfig: LauncherConfig): never {
+function runSkipLaunch(
+  savedConfig: LauncherConfig,
+  initialMessage: string | undefined,
+): never {
   if (savedConfig.selectedMcps.length === 0) {
     console.error(
       "No saved config found — run myclaude without --skip first to configure.",
@@ -61,27 +71,39 @@ function runSkipLaunch(savedConfig: LauncherConfig): never {
     process.exit(1);
   }
   // Direct launch: no config was modified, so do NOT call saveConfig.
-  launchClaude(resolved, savedConfig);
+  launchClaude(resolved, savedConfig, undefined, initialMessage);
 }
 
 async function main(): Promise<void> {
-  intro("myclaude — Session Launcher");
-
   let skip = false;
+  let initialMessage: string | undefined = undefined;
   try {
-    ({ skip } = parseArgs(process.argv.slice(2)));
+    ({ skip, initialMessage } = parseArgs(process.argv.slice(2)));
   } catch (err) {
     if (err instanceof UnknownFlagError) {
+      console.error(err.message);
+      process.exit(2);
+    }
+    if (err instanceof TooManyPositionalsError) {
       console.error(err.message);
       process.exit(2);
     }
     throw err;
   }
 
+  if (initialMessage !== undefined && !skip) {
+    console.error(
+      "Initial message requires --skip. Usage: myclaude --skip <initial-message>",
+    );
+    process.exit(2);
+  }
+
+  intro("myclaude — Session Launcher");
+
   const savedConfig = loadConfig();
 
   if (skip) {
-    runSkipLaunch(savedConfig);
+    runSkipLaunch(savedConfig, initialMessage);
   }
 
   // Summary screen: show current config and let user choose to launch or configure

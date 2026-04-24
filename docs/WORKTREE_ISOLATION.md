@@ -132,7 +132,7 @@ When a DungeonMaster session has an active worktree, Pathfinder, Bitsmith, Quill
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/feat-add-oauth-login
 WORKTREE_BRANCH: feat/add-oauth-login
-REPO_SLUG: my-repo
+REPO_SLUG: my-project
 All file operations and Bash commands must use this directory as the working root.
 ```
 

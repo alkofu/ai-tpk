@@ -8,7 +8,11 @@ When a delegation prompt contains a `WORKING_DIRECTORY:` context line, agents mu
 
 ## The WORKING_DIRECTORY Context Block
 
-When the Dungeon Master activates a session worktree, it prepends the following block to delegation prompts:
+When the Dungeon Master activates a session worktree, it prepends the following block to delegation prompts. The canonical format for this block is defined in the `### Canonical Worktree Context Block Template` subsection below.
+
+### Canonical Worktree Context Block Template
+
+This is the canonical template referenced by every consumer-side delegation prompt. When a delegation prompt includes a Worktree Context Block, the four lines below define the required format:
 
 ```
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
@@ -18,6 +22,8 @@ All file operations and Bash commands must use this directory as the working roo
 ```
 
 Bitsmith delegations may include an additional `SKIP_TREE_AUDIT: true` line outside this canonical block — see `claude/agents/bitsmith.md` § Working-Tree Audit for the audit semantics and `claude/agents/dungeonmaster.md` § SKIP_TREE_AUDIT Choice Rule for when DM emits it.
+
+**Format-change protocol:** If this format changes, update this subsection first, then run `grep -rn 'All file operations and Bash commands must use this directory as the working root' claude/`. *(Note: the grep will also surface two in-file occurrences that are not consumer sites: the canonical block in this `### Canonical Worktree Context Block Template` subsection itself (which you just updated — it is the source of truth, not a consumer site), and the protocol sentence above that quotes the marker phrase verbatim. Both should be ignored. Every other hit from this file's `claude/` tree is an external consumer site to update in lockstep.)* Then update each consumer site in lockstep. Consumer sites currently live in `claude/agents/dungeonmaster.md` (4 full templates + 1 partial template) and `claude/agents/pathfinder.md` (1 template).
 
 This block signals that all work for this task must be scoped to the specified directory. It is not a suggestion — it is a hard scope boundary.
 

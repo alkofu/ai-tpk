@@ -157,7 +157,7 @@ Please confirm the scope above and, if multiple options were presented, select y
 
 **Pathfinder re-invocation template (after scope confirmation):**
 
-(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+(The first four lines of the template below are the canonical Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
 ````
 WORKING_DIRECTORY: {WORKTREE_PATH}

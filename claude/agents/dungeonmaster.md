@@ -401,7 +401,7 @@ When not triggered: skip directly to the Intake Gate.
 
 **Tracebloom delegation template:**
 
-(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+(The first four lines of the template below are the canonical Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
 ~~~
 WORKING_DIRECTORY: {REPO_ROOT}
@@ -423,7 +423,7 @@ Investigate the reported symptom. Produce a Diagnostic Report with all 5 require
 
 **Diagnostic Report handoff to Pathfinder template:**
 
-(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+(The first four lines of the template below are the canonical Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
 ~~~
 WORKING_DIRECTORY: {WORKTREE_PATH}
@@ -442,7 +442,7 @@ The following Diagnostic Report was produced by Tracebloom after investigating a
 
 **Diagnostic Report handoff to Bitsmith (trivial-fix branch) template:**
 
-(The first four lines of the template below are the Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+(The first four lines of the template below are the canonical Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
 When invoking Bitsmith with this template, pass `model: haiku` as the per-invocation model parameter on the Agent tool call. The trivial-fix branch is the one delegation path where the DM has independent confirmation — from Tracebloom's `Recommended next action` field — that the work fits the Trivial tier. For all other Bitsmith delegation call sites, omit the per-invocation model parameter entirely and let Bitsmith's frontmatter (`model: inherit`) and her Phase 1 self-classification govern.
 
@@ -492,7 +492,7 @@ On round 6 (after 5 questions): append "You have reached the maximum number of q
 
 **Pathfinder handoff template (when brief is ready):**
 
-(The first three lines of the template below are a partial Worktree Context Block — see `claude/references/worktree-protocol.md` for the canonical format definition.)
+(The first three lines of the template below are a partial Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. The trailing scope sentence is intentionally omitted in this template. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
 ```
 WORKING_DIRECTORY: ...
@@ -564,7 +564,7 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
    **Revision delegation template** (use this every time DM re-delegates to Pathfinder from Phase 2 step 4, including subsequent revision rounds after repeated REVISE/REJECT verdicts — every iteration of the review-revise loop uses this same template with updated feedback):
 
-   (The Worktree Context Block lines below — `WORKING_DIRECTORY`, `WORKTREE_BRANCH`, `REPO_SLUG`, and the trailing scope sentence — follow the format defined in `claude/references/worktree-protocol.md`. `REVISION_MODE` and `USER_FLAGS` are revision-specific additions.)
+   (The four canonical Worktree Context Block lines below — `WORKING_DIRECTORY`, `WORKTREE_BRANCH`, `REPO_SLUG`, and the trailing scope sentence — are defined in `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template. `REVISION_MODE` and `USER_FLAGS` are revision-specific additions. Per the format-change protocol defined in that subsection, do not edit the canonical lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
    ```
    REVISION_MODE: true

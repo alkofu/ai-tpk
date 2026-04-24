@@ -26,6 +26,8 @@ The installer copies the whitelisted paths (`CLAUDE.md`, `settings.json`, `skill
 
 The `.claude/` directory is never synced by the installer — it remains project-local.
 
+**GitHub MCP setup:** To enable multi-account GitHub MCP servers, create `~/.config/github-pats.json` before (or after) running `install.sh` and set its mode to `0600`. See [docs/MCP.md § Server Roster](/docs/MCP.md#server-roster) for the file format, key naming rules, and operational details.
+
 ## Development Setup
 
 To contribute to this repository, you'll need to set up the development environment:

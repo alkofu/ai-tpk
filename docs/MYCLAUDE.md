@@ -47,6 +47,35 @@ In both cases, run `myclaude` without `--skip` to (re)configure.
 
 **Unknown flags** are rejected with exit code 2. Any token other than `--skip` prints `Unknown flag: <flag>. Usage: myclaude [--skip]` to stderr and exits immediately.
 
+### `batch-open-issues.sh`: open one tab per issue
+
+`batch-open-issues.sh` is a helper script installed to `~/.claude/scripts/` that accepts one or more GitHub issue numbers (or full issue URLs) and opens one new terminal tab or window per issue, each running `myclaude --skip '/feature-issue <n>'`.
+
+**Usage:**
+
+```bash
+batch-open-issues.sh 42 123 https://github.com/owner/repo/issues/7
+```
+
+Each argument can be a bare integer (`42`) or a GitHub issue URL in the form `https://github.com/<owner>/<repo>/issues/<n>` (with an optional trailing `/`, `?query`, or `#anchor`).
+
+**Supported terminals:** tmux (new window with `-c "$PWD"`) and iTerm2 (new tab via AppleScript, inherits current session CWD). cmux and Ghostty are not supported and produce a clear error with exit code 3.
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| 0 | All tabs spawned successfully |
+| 2 | Missing or unparseable arguments, or required library not found |
+| 3 | Unsupported or undetected terminal |
+| 4 | One or more tab spawns failed (partial success) |
+
+**Prerequisite:** Requires the `feat/forward-initial-command-to-claude-from-myclaude-cli` PR to be merged before use. That PR extends `myclaude` to accept an initial-message positional argument alongside `--skip`. If your installed `myclaude` predates that merge, the tabs will open but each session will fail silently — re-run `install.sh` against an updated checkout to fix.
+
+**Spawn success is not session success.** The script reports whether the tab was opened, not whether `myclaude` started correctly inside it. Verify each tab visually after launch.
+
+The script header comment is the authoritative reference for usage, exit codes, and dependencies.
+
 ## Grafana Configuration
 
 Create `~/.config/grafana-clusters.yaml` with your cluster definitions. The file must use this YAML schema:

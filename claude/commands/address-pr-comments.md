@@ -5,8 +5,8 @@ description: Address unresolved inline PR review comments -- fetch, reason, prop
 You are addressing unresolved inline review comments on a GitHub pull request. For each
 unresolved thread you will display the reviewer's context, read the current file state,
 reason about the comment, categorize it, draft a reply, and present it for approval before
-posting. Follow every step below in order. Run each command as a standalone call -- do not
-chain commands with `&&`, `;`, or `|`.
+posting. Follow every step below in order. All Bash commands must follow
+`~/.claude/references/bash-style.md`.
 
 ## Step 1 -- Parse arguments and generate session timestamp
 

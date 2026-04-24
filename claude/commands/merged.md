@@ -4,8 +4,8 @@ description: Clean up the worktree and local branch for a PR that has been merge
 
 You are cleaning up after a merged pull request. This command discovers which worktree and
 branch to remove, then performs the cleanup (prompting only when multiple candidates are
-found). Follow every step below
-in order. Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
+found). Follow every step below in order. All Bash commands must follow
+`~/.claude/references/bash-style.md`.
 
 **Note for DM:** Steps that perform write operations (destructive git commands) must be
 delegated to Bitsmith per the DM delegation policy. Those steps are marked below.

@@ -3,7 +3,7 @@ description: Rebuild dist/installer.js, reinstall all project artifacts to ~/.cl
 ---
 
 You are rebuilding and reinstalling all project artifacts. Follow every step below in order.
-Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
+All Bash commands must follow `~/.claude/references/bash-style.md`.
 
 ## Step 1 — Resolve repo root
 

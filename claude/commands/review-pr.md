@@ -3,7 +3,7 @@ description: Run the local Ruinor + specialist review pipeline against a GitHub 
 ---
 
 You are running the local review pipeline against a GitHub pull request. Follow every step below in
-order. Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
+order. All Bash commands must follow `~/.claude/references/bash-style.md`.
 
 **Conventions:**
 - This command does NOT post anything to GitHub. v1 is review-only; posting is deferred to a future `/review-pr-post` command.

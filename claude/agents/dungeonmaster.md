@@ -136,6 +136,23 @@ Workflow flags control how the DM routes work through the pipeline. They are dis
 
 When a session worktree is active, prepend the Worktree Context Block — defined in `claude/references/worktree-protocol.md` under "The WORKING_DIRECTORY Context Block" — to every Pathfinder, Bitsmith, Quill, and Tracebloom delegation prompt. That reference is the canonical format definition and also defines the file-operation, bash, and git rules sub-agents apply when the block is present; this section does not reproduce either.
 
+#### EXPECTED_TREE_STATE Choice Rule (Bitsmith delegations)
+
+When emitting a Bitsmith delegation prompt that includes a `WORKING_DIRECTORY:` line, DM must also emit an `EXPECTED_TREE_STATE:` line. Bitsmith uses this to run a one-shot working-tree audit before its first file write — see `bitsmith.md` § Working-Tree Audit.
+
+This field applies **only** to Bitsmith delegations. Pathfinder, Quill, and Tracebloom delegations do not need it (they do not run the audit).
+
+**Choice rule** — which value to emit:
+
+- **`clean`** — emit on the **first** Bitsmith delegation into a freshly created worktree, and on any Bitsmith delegation where DM expects no prior in-flight changes (e.g., the trivial-fix branch immediately after the Worktree Creation Subroutine, the first Phase 3 execution after Phase 2 plan approval, the Phase 5a open-questions write — the open-questions file lives outside `WORKING_DIRECTORY` so the worktree itself is expected clean at that point).
+- **`dirty-continuing`** — emit on **every re-delegation** into a worktree where Bitsmith has already written within the same session, including: Phase 4 fix-back delegations after a REVISE/REJECT verdict, Phase 5c Resolution Gate auto-fix delegations and "Fix now" delegations, Phase 3 retry-with-guidance delegations after a Bitsmith escalation, and any second Bitsmith delegation in a session where the first one wrote files. The trigger is "has Bitsmith written to this worktree earlier in this session?" — if yes, emit `dirty-continuing`; if no, emit `clean`.
+
+**Emission style:** Emit the value as the bare lowercase token `clean` or `dirty-continuing`, with no surrounding quotes and no leading/trailing whitespace beyond the single space after the colon. Bitsmith's audit treats other casings, quoted forms, or embedded whitespace as malformed.
+
+**Scope exemptions:** Bitsmith delegations that do **not** emit a `WORKING_DIRECTORY:` line do not need `EXPECTED_TREE_STATE:` either. These are: the `--save-report` advisory delegation (line ~810), the `--execute` single-command delegation (line ~867), the multi-step `/do` delegation (line ~881), and the worktree-creation delegation itself (line ~290, which runs *before* `WORKING_DIRECTORY` exists). Do not add the field to these templates.
+
+**Halt handling:** If Bitsmith returns a Working-Tree Audit Report (recognized by the literal first-line header `## Working-Tree Audit Halt`, defined in `bitsmith.md` § Working-Tree Audit), surface it to the user verbatim and ask for direction. Do not auto-decide between reset, `dirty-continuing` retry, or scope adjustment — the user owns this choice because it concerns their working state. Additionally, when the report shows `EXPECTED_TREE_STATE: (absent — defaulted to clean)` and the observed `git status --porcelain` output is non-empty (i.e., a real dirty tree, not a malformed-value or command-failure case), log the event in the session record as `dm_field_omission_audit_halt` so a recurring DM field-omission bug can be detected by Everwise across sessions. This log entry is in addition to surfacing the report to the user, not a substitute for it.
+
 Ruinor and other reviewer agents do not receive this block — instead, pass worktree-absolute file paths directly in their delegation prompts. Note: Ruinor does receive the separate Project Constitution Injection block — see the Project Constitution Injection section below.
 
 ### Project Constitution Injection
@@ -438,6 +455,7 @@ The following Diagnostic Report was produced by Tracebloom after investigating a
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
 REPO_SLUG: {REPO_SLUG}
+EXPECTED_TREE_STATE: clean
 All file operations and Bash commands must use this directory as the working root.
 
 The following Diagnostic Report was produced by Tracebloom after investigating a user-reported issue. Tracebloom's `Recommended next action` field marked the fix as trivial; you are being delegated directly (Pathfinder is skipped). Use the report as your problem definition input. Do not re-investigate facts already established in this report.
@@ -603,7 +621,7 @@ This routing decision is **re-derivable on demand** by re-running the same read-
 This is a read-only Bash usage authorized by DM's read-only scope (see "What the Dungeon Master may do directly" in this file).
 
 1. Convert the approved plan into execution tasks.
-2. Delegate each execution task to the Phase 3 execution agent determined by the routing decision above (Bitsmith for standard plans, Quill for documentation-primary plans). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active. The chosen agent must operate entirely within this directory. When the routing decision selected Quill, Quill executes the plan steps as the primary writer (Invocation Mode A — see quill.md). The Phase 4 Ruinor review still applies to Quill's output exactly as it would for Bitsmith's output. If a Mode A plan step exceeds Quill's documentation scope (e.g., requires running tests or invoking other agents), Quill returns a structured escalation per its escalation protocol; treat the escalation as you would a Bitsmith structured failure report.
+2. Delegate each execution task to the Phase 3 execution agent determined by the routing decision above (Bitsmith for standard plans, Quill for documentation-primary plans). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active. The chosen agent must operate entirely within this directory. When the routing decision selected Quill, Quill executes the plan steps as the primary writer (Invocation Mode A — see quill.md). The Phase 4 Ruinor review still applies to Quill's output exactly as it would for Bitsmith's output. If a Mode A plan step exceeds Quill's documentation scope (e.g., requires running tests or invoking other agents), Quill returns a structured escalation per its escalation protocol; treat the escalation as you would a Bitsmith structured failure report. When delegating to Bitsmith (the standard non-documentation routing), emit `EXPECTED_TREE_STATE: clean` on the first Phase 3 Bitsmith delegation in the session (the worktree was freshly created in Phase 1). On every subsequent Phase 3 Bitsmith delegation in the same session — including step 4c retry-with-guidance re-delegations after a Bitsmith escalation — emit `EXPECTED_TREE_STATE: dirty-continuing` per the choice rule.
 3. After each delegated task:
     - compare results against the plan
     - decide whether to continue, retry, or adjust
@@ -650,6 +668,8 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
 
     When Ruinor issues REJECT (not REVISE), require Bitsmith to produce a written remediation brief — a short summary of what was changed and why — before the re-review invocation. Pass this brief explicitly to Ruinor as context in the re-review delegation prompt. This distinguishes REJECT remediation from REVISE remediation and prevents rubber-stamp re-approvals.
 
+    For every fix-back Bitsmith delegation in this phase — both REVISE-driven and REJECT-driven, on every iteration of the review-fix loop — emit `EXPECTED_TREE_STATE: dirty-continuing`. Phase 3 (and any prior Phase 4 iteration) will have left writes in the worktree.
+
 5. Phase 4 complete — all implementation reviewers have issued ACCEPT or ACCEPT-WITH-RESERVATIONS.
 
 ### Phase 5: Completion
@@ -662,7 +682,7 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
     - **If Pathfinder was invoked this session:** derive the open-questions filename from the plan file stem. For example, `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login.md` → `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-oauth-login-open-questions.md`. No worktree prefix is needed — plan files are now at a fixed user-scoped path.
     - **If Pathfinder was NOT invoked this session:** use `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}-open-questions.md` (e.g., `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-rename-env-var-open-questions.md`). No worktree prefix is needed.
 
-    **Delegation note:** When delegating this write to Bitsmith while a worktree is active, include in the delegation prompt: "The target path `~/.ai-tpk/plans/...` is a user-scoped artifact directory outside `WORKING_DIRECTORY`. This is an authorized exception to the Path Mismatch Guard per scenario 1b in Bitsmith's definition."
+    **Delegation note:** When delegating this write to Bitsmith while a worktree is active, include in the delegation prompt: "The target path `~/.ai-tpk/plans/...` is a user-scoped artifact directory outside `WORKING_DIRECTORY`. This is an authorized exception to the Path Mismatch Guard per scenario 1b in Bitsmith's definition." Emit `EXPECTED_TREE_STATE: clean` on the open-questions write delegation. The target path lives under `~/.ai-tpk/plans/...` (outside `WORKING_DIRECTORY` per the existing scenario 1b exception), and Phase 5a fires before any Phase 5c fixes have run — so the worktree itself is expected clean at this point. The audit checks `WORKING_DIRECTORY`, not the target path, so the user-scoped target is not in conflict with this expectation.
 
     Instruct Bitsmith to append the reservations under a section titled `## Review Reservations - [session date]` with the specific issues noted. If the target file does not exist, Bitsmith should create it first with the following header (substituting the plan name where applicable):
 
@@ -697,7 +717,7 @@ This is a read-only Bash usage authorized by DM's read-only scope (see "What the
 
     Reservations logged after a post-gate Phase 4 re-review proceed directly to step 5d; they do not re-trigger the Resolution Gate.
 
-    Evaluate each reservation's severity:
+    Evaluate each reservation's severity. All Bitsmith fix delegations in the Resolution Gate — both the Auto-fix path and the user-confirmed "Fix now" path — must emit `EXPECTED_TREE_STATE: dirty-continuing`. Prior Phase 3 / Phase 4 execution will have populated the worktree.
 
     **Auto-fix path** (fires when ALL reservations are MINOR severity):
     - Delegate the fixes to Bitsmith

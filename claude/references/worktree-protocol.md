@@ -14,8 +14,13 @@ When the Dungeon Master activates a session worktree, it prepends the following 
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/dm-slug
 WORKTREE_BRANCH: feat/feature-name
 REPO_SLUG: {repo-name}
+EXPECTED_TREE_STATE: clean
 All file operations and Bash commands must use this directory as the working root.
 ```
+
+(`EXPECTED_TREE_STATE:` appears on Bitsmith delegations only — see paragraph below.)
+
+`EXPECTED_TREE_STATE:` is a sibling field that may appear in the block on Bitsmith delegations only. Valid values are `clean` (the worktree is expected to have no uncommitted changes per `git status --porcelain`) and `dirty-continuing` (the worktree contains changes from a prior in-session Bitsmith delegation; the audit is skipped). When the field is absent but `WORKING_DIRECTORY` is present, Bitsmith defaults to `clean`. Bitsmith trims leading/trailing whitespace from the value before comparison. Comparison is case-sensitive — only the literal lowercase strings `clean` and `dirty-continuing` are accepted; any other variant (including `Clean`, `CLEAN`, quoted forms, or embedded whitespace) is treated as malformed and triggers a halt. DM is responsible for emitting bare lowercase tokens. This field is used only by Bitsmith. Other agents that receive the Worktree Context Block ignore it. See `claude/agents/bitsmith.md` § Working-Tree Audit for the full check semantics (including the structured halt-report format, which begins with the recognizable header `## Working-Tree Audit Halt`), and `claude/agents/dungeonmaster.md` § EXPECTED_TREE_STATE Choice Rule for when DM emits each value.
 
 This block signals that all work for this task must be scoped to the specified directory. It is not a suggestion — it is a hard scope boundary.
 

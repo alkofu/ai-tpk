@@ -133,11 +133,10 @@ When a DungeonMaster session has an active worktree, Pathfinder, Bitsmith, Quill
 WORKING_DIRECTORY: /absolute/path/to/.worktrees/feat-add-oauth-login
 WORKTREE_BRANCH: feat/add-oauth-login
 REPO_SLUG: my-repo
-EXPECTED_TREE_STATE: clean
 All file operations and Bash commands must use this directory as the working root.
 ```
 
-(`EXPECTED_TREE_STATE:` appears on Bitsmith delegations only — see "Bitsmith's Working-Tree Audit" below. `REPO_SLUG:` is always present.)
+(Bitsmith delegations may also include a `SKIP_TREE_AUDIT: true` line outside this block — see "Bitsmith's Worktree Safeguards" below. `REPO_SLUG:` is always present.)
 
 Sub-agents respect this context:
 
@@ -154,7 +153,7 @@ Bitsmith has two complementary safeguards that enforce write isolation when a se
 
 **Path Mismatch Guard** fires before every Write, Edit, or file-modifying Bash command and verifies that the target path sits under `WORKING_DIRECTORY`. It prevents silent writes to the main working tree. For the authoritative specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#path-mismatch-guard).
 
-**Working-Tree Audit** fires once per invocation, immediately before the first write. It reads the `EXPECTED_TREE_STATE:` field from the delegation prompt and checks the actual worktree state — running `git status --porcelain` when the expected state is `clean`. If the worktree is unexpectedly dirty (e.g., a stale prior session left uncommitted changes), Bitsmith halts and surfaces a structured `## Working-Tree Audit Halt` report to DM rather than silently writing into a contaminated worktree. DM emits `clean` on first delegations into a fresh worktree and `dirty-continuing` on re-delegations where prior writes are expected. For the authoritative specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#working-tree-audit).
+**Working-Tree Audit** fires once per invocation, immediately before the first write. By default it runs `git -C {WORKING_DIRECTORY} status --porcelain` and halts if the worktree is unexpectedly dirty (or the command itself fails), surfacing a structured `## Working-Tree Audit Halt` report to DM rather than silently writing into a contaminated worktree. DM may suppress the audit by emitting `SKIP_TREE_AUDIT: true` in the delegation prompt for re-delegations into a worktree where prior in-session writes are expected. For the authoritative specification, see [`claude/agents/bitsmith.md`](/claude/agents/bitsmith.md#working-tree-audit).
 
 ## Phase 5 Completion Log
 

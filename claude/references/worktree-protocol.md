@@ -17,9 +17,7 @@ REPO_SLUG: {repo-name}
 All file operations and Bash commands must use this directory as the working root.
 ```
 
-Bitsmith delegations also receive a fifth line: `EXPECTED_TREE_STATE: clean` or `EXPECTED_TREE_STATE: dirty-continuing` (see the `EXPECTED_TREE_STATE` section below for valid values, the absence-default rule, and cross-references).
-
-`EXPECTED_TREE_STATE:` is a sibling field that may appear in the block on Bitsmith delegations only. Valid values are `clean` (the worktree is expected to have no uncommitted changes per `git status --porcelain`) and `dirty-continuing` (the worktree contains changes from a prior in-session Bitsmith delegation; the audit is skipped). When the field is absent but `WORKING_DIRECTORY` is present, Bitsmith defaults to `clean`. Bitsmith trims leading/trailing whitespace from the value before comparison. Comparison is case-sensitive — only the literal lowercase strings `clean` and `dirty-continuing` are accepted; any other variant (including `Clean`, `CLEAN`, quoted forms, or embedded whitespace) is treated as malformed and triggers a halt. DM is responsible for emitting bare lowercase tokens. This field is used only by Bitsmith. Other agents that receive the Worktree Context Block ignore it. See `claude/agents/bitsmith.md` § Working-Tree Audit for the full check semantics (including the structured halt-report format, which begins with the recognizable header `## Working-Tree Audit Halt`), and `claude/agents/dungeonmaster.md` § EXPECTED_TREE_STATE Choice Rule for when DM emits each value.
+Bitsmith delegations may include an additional `SKIP_TREE_AUDIT: true` line outside this canonical block — see `claude/agents/bitsmith.md` § Working-Tree Audit for the audit semantics and `claude/agents/dungeonmaster.md` § SKIP_TREE_AUDIT Choice Rule for when DM emits it.
 
 This block signals that all work for this task must be scoped to the specified directory. It is not a suggestion — it is a hard scope boundary.
 

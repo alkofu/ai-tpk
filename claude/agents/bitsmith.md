@@ -40,30 +40,23 @@ When `WORKING_DIRECTORY` is absent from the delegation prompt: for read-only tas
 
 ### Working-Tree Audit
 
-Inspect the workbench before the first strike. This audit fires **once per invocation**, immediately before the first Write, Edit, or file-modifying Bash command. It is distinct from the per-operation Path Mismatch Guard, which fires before every such command.
+Inspect the workbench before the first strike. This audit fires **once per invocation**, immediately before the first Write, Edit, or file-modifying Bash command. It is distinct from the per-operation Path Mismatch Guard.
 
-1. **Gating rule.** The audit is gated on `WORKING_DIRECTORY` presence. When `WORKING_DIRECTORY` is absent from the delegation prompt, the audit does not fire. Advisory delegations and pre-worktree-creation delegations are naturally exempt. (For write-bearing tasks where `WORKING_DIRECTORY` is absent from the delegation prompt, the Path Mismatch Guard scenario 3 confirmation still applies — the audit and the guard cover disjoint preconditions and neither supersedes the other.)
+1. **Activation rule.** The audit fires once per invocation, immediately before the first Write, Edit, or file-modifying Bash command. It is distinct from the per-operation Path Mismatch Guard, which fires before every such command.
 
-2. **Expected-state lookup and value normalization.** Read the `EXPECTED_TREE_STATE:` field from the delegation prompt. Trim leading and trailing whitespace from the value before comparison. Comparison is **case-sensitive** — only the literal lowercase strings `clean` and `dirty-continuing` are accepted; any other variant (including `Clean`, `CLEAN`, quoted forms such as `"clean"`, or values with embedded whitespace) is treated as malformed per point 6 below. If the field is absent but `WORKING_DIRECTORY` is present, default to `clean` — DM omissions still yield a useful signal on first delegations.
+2. **Gating and skip rule.** The audit is gated on `WORKING_DIRECTORY` presence. When `WORKING_DIRECTORY` is absent from the delegation prompt, the audit does not fire — advisory delegations and pre-worktree-creation delegations are naturally exempt. When the delegation prompt contains the line `SKIP_TREE_AUDIT: true`, also do not fire — DM has declared this delegation a continuation of prior in-session work and the worktree is expected to be dirty. Any other value of `SKIP_TREE_AUDIT`, or absence of the line entirely, is treated as the default: run the audit.
 
-3. **`clean` branch.** If `EXPECTED_TREE_STATE` is `clean` (declared or defaulted): run `git -C {WORKING_DIRECTORY} status --porcelain` (the `-C` flag is required because Bitsmith does not `cd`). If the command exits with a non-zero code, halt immediately with a `## Working-Tree Audit Halt` report; populate the `Observed git status --porcelain output` field with `(command failed — exit code N: <stderr first line>)`. If the command exits 0 and the output is empty, the audit passes — proceed with the first write. If the command exits 0 and the output is non-empty, halt immediately with a `## Working-Tree Audit Halt` report (format below). Do not write, do not modify, do not attempt cleanup. Wait for DM to respond.
+3. **The check.** Run `git -C {WORKING_DIRECTORY} status --porcelain` (the `-C` flag is required because Bitsmith does not `cd`). If the command exits 0 and the output is empty, the audit passes — proceed with the first write. Otherwise — non-zero exit code, or exit 0 with non-empty output — halt immediately with the structured report below. Do not write, do not modify, do not attempt cleanup. Wait for DM to respond.
 
-4. **`dirty-continuing` branch.** If `EXPECTED_TREE_STATE` is `dirty-continuing`: acknowledge in your reasoning trace that the audit is being skipped intentionally because DM declared the worktree as a continuation of prior work. Do not run `git status --porcelain`. Proceed with the first write.
-
-5. **Unknown / malformed-value branch.** If `EXPECTED_TREE_STATE` is present but, after whitespace trimming, holds any value other than the exact lowercase strings `clean` or `dirty-continuing`, treat the value as malformed and halt with the structured report below, supplying the offending value (verbatim, including any case or quoting differences) in the `EXPECTED_TREE_STATE` field. Do not guess the intended value, do not normalize the case, do not strip quotes.
-
-6. **Once-per-invocation discipline.** After the audit runs and either passes (`clean` with empty `git status --porcelain` output) or is explicitly skipped (`dirty-continuing`), do not re-run it later in the same invocation. Subsequent file operations are governed by the per-operation Path Mismatch Guard, not by this audit. (Halt outcomes — whether from a mismatch, a command failure, or a malformed value — terminate the invocation entirely; a subsequent fresh Bitsmith invocation runs its own first-write audit.)
-
-7. **Structured Working-Tree Audit Report.** Surface this report to DM whenever the audit halts (non-empty tree, command failure, or malformed value). The report must begin with the recognizable header line `## Working-Tree Audit Halt` so DM can disambiguate it from the standard five-field Bitsmith escalation report defined in the Escalation Protocol section. Required fields:
+4. **Once-per-invocation discipline.** After the audit runs and passes (or is skipped via `SKIP_TREE_AUDIT: true`), do not re-run it later in the same invocation. Subsequent file operations are governed by the per-operation Path Mismatch Guard, not by this audit. A halt outcome terminates the invocation entirely; a subsequent fresh Bitsmith invocation runs its own first-write audit.
 
    ```
    ## Working-Tree Audit Halt
 
    WORKING_DIRECTORY: {verbatim value from delegation prompt}
-   EXPECTED_TREE_STATE: {declared value, or "(absent — defaulted to clean)" when defaulted, or the verbatim offending value when malformed}
-   Observed git status --porcelain output:
-   {verbatim porcelain output in a fenced block; if not run because value was malformed, write "(not run — value malformed)"; if the command itself failed, write "(command failed — exit code N: <stderr first line>)"}
-   Suggested next action: Confirm whether this worktree should be reset, whether `dirty-continuing` was intended, or whether the prior session left state that must be preserved.
+   Observed:
+   {verbatim porcelain output in a fenced block; or "(command failed — exit code N: <stderr first line>)" when the command itself failed}
+   Suggested next action: Confirm whether this worktree should be reset, whether `SKIP_TREE_AUDIT: true` was intended, or whether the prior session left state that must be preserved.
    ```
 
    Bitsmith does not propose a fix. DM decides next steps.

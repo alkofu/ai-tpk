@@ -10,6 +10,11 @@ import {
   computeConfigSignature,
   readStamps,
   writeStamps,
+  registerGithubAccounts,
+  removeStaleGithubRegistrations,
+  removeLegacyGithubRegistration,
+  assertWrappersDirNotWorldWritable,
+  updateGithubAllowList,
 } from "./mcp.js";
 
 // ---------------------------------------------------------------------------
@@ -537,5 +542,694 @@ describe("writeStamps", () => {
   it("does not throw when path is unwritable", () => {
     const stampsPath = path.join(tmpDir, "no", "such", "dir", "stamps.json");
     assert.doesNotThrow(() => writeStamps(stampsPath, { key: "value" }));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helpers for GitHub multi-account tests
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a fake homedir with the necessary directory structure.
+ * Returns the path to the fake homedir.
+ */
+function makeFakeHome(): string {
+  const fakeHome = fs.mkdtempSync(path.join(tmpDir, "home-gh-"));
+  fs.mkdirSync(path.join(fakeHome, ".config"), { recursive: true });
+  fs.mkdirSync(path.join(fakeHome, ".claude", "wrappers"), { recursive: true });
+  return fakeHome;
+}
+
+/**
+ * Writes a github-pats.json to the fake home's .config directory and sets
+ * the given octal mode on it.
+ */
+function writePatsFile(
+  fakeHome: string,
+  contents: unknown,
+  mode: number = 0o600,
+): string {
+  const patsPath = path.join(fakeHome, ".config", "github-pats.json");
+  fs.writeFileSync(patsPath, JSON.stringify(contents), "utf8");
+  fs.chmodSync(patsPath, mode);
+  return patsPath;
+}
+
+/** Captured spawnSync call record. */
+interface SpawnCall {
+  cmd: string;
+  args: string[];
+}
+
+/**
+ * Replaces execFileSync with a stub that records calls and optionally
+ * throws on certain command patterns. Returns the call log and a restore fn.
+ *
+ * The stub is injected via the module-level override pattern: we monkey-patch
+ * the `child_process` module's execFileSync by temporarily replacing it on
+ * the mcp module's internal binding. Because the TypeScript source imports
+ * execFileSync as a named import at module load time, we cannot replace it
+ * after the fact. Instead, we pass a `spawnFn` override to functions that
+ * accept it (registerGithubAccounts etc. accept an optional last parameter).
+ */
+
+// ---------------------------------------------------------------------------
+// removeLegacyGithubRegistration
+// ---------------------------------------------------------------------------
+
+/** Stub that always throws — used to assert error-tolerance. */
+function alwaysThrowStub(_cmd: string, _args: string[]): void {
+  throw new Error("command failed");
+}
+
+/** No-op stub — used in tests that only check thrown errors and don't need call capture. */
+function noOpStub(_cmd: string, _args: string[]): void {
+  // intentionally empty
+}
+
+describe("removeLegacyGithubRegistration", () => {
+  it("invokes claude mcp remove -s user github exactly once", () => {
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => {
+      calls.push({ cmd, args });
+    };
+
+    removeLegacyGithubRegistration(stub);
+
+    assert.strictEqual(calls.length, 1);
+    assert.deepStrictEqual(calls[0], {
+      cmd: "claude",
+      args: ["mcp", "remove", "-s", "user", "github"],
+    });
+  });
+
+  it("does not throw when the command fails (legacy registration absent)", () => {
+    assert.doesNotThrow(() => removeLegacyGithubRegistration(alwaysThrowStub));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// assertWrappersDirNotWorldWritable
+// ---------------------------------------------------------------------------
+
+describe("assertWrappersDirNotWorldWritable", () => {
+  it("is silent when wrappers dir mode is 0755", () => {
+    const fakeHome = makeFakeHome();
+    const wrappersDir = path.join(fakeHome, ".claude", "wrappers");
+    fs.chmodSync(wrappersDir, 0o755);
+
+    const warnings: string[] = [];
+    assertWrappersDirNotWorldWritable(fakeHome, (msg) => warnings.push(msg));
+
+    assert.strictEqual(warnings.length, 0);
+  });
+
+  it("prints warning when wrappers dir mode is 0775 (group-writable)", () => {
+    const fakeHome = makeFakeHome();
+    const wrappersDir = path.join(fakeHome, ".claude", "wrappers");
+    fs.chmodSync(wrappersDir, 0o775);
+
+    const warnings: string[] = [];
+    assertWrappersDirNotWorldWritable(fakeHome, (msg) => warnings.push(msg));
+
+    assert.ok(warnings.length > 0, "expected at least one warning");
+    assert.ok(
+      warnings.some((w) => w.includes("wrappers")),
+      `expected 'wrappers' in warning, got: ${warnings.join(", ")}`,
+    );
+  });
+
+  it("prints warning when wrappers dir mode is 0777 (world-writable)", () => {
+    const fakeHome = makeFakeHome();
+    const wrappersDir = path.join(fakeHome, ".claude", "wrappers");
+    fs.chmodSync(wrappersDir, 0o777);
+
+    const warnings: string[] = [];
+    assertWrappersDirNotWorldWritable(fakeHome, (msg) => warnings.push(msg));
+
+    assert.ok(warnings.length > 0, "expected at least one warning");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// registerGithubAccounts
+// ---------------------------------------------------------------------------
+
+describe("registerGithubAccounts", () => {
+  it("registers one server per key in sorted order with only GITHUB_ACCOUNT env, no PAT in argv", () => {
+    const fakeHome = makeFakeHome();
+    writePatsFile(fakeHome, { work: "ghp_b", personal: "ghp_a" });
+
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => {
+      calls.push({ cmd, args });
+    };
+
+    const result = registerGithubAccounts(fakeHome, stub);
+
+    // Should have registered 2 accounts (each: remove + add = 2 calls per account)
+    const addCalls = calls.filter(
+      (c) => c.cmd === "claude" && c.args.includes("add"),
+    );
+    assert.strictEqual(addCalls.length, 2, "expected exactly 2 mcp add calls");
+
+    // Sorted order: personal before work
+    const firstAdd = addCalls[0]!;
+    const secondAdd = addCalls[1]!;
+    assert.ok(
+      firstAdd.args.includes("github-personal"),
+      `expected first add to be for 'personal', got: ${JSON.stringify(firstAdd.args)}`,
+    );
+    assert.ok(
+      secondAdd.args.includes("github-work"),
+      `expected second add to be for 'work', got: ${JSON.stringify(secondAdd.args)}`,
+    );
+
+    // Each add must contain -e GITHUB_ACCOUNT=<key>
+    assert.ok(
+      firstAdd.args.includes("-e") &&
+        firstAdd.args.includes("GITHUB_ACCOUNT=personal"),
+      `expected GITHUB_ACCOUNT=personal in argv: ${JSON.stringify(firstAdd.args)}`,
+    );
+    assert.ok(
+      secondAdd.args.includes("-e") &&
+        secondAdd.args.includes("GITHUB_ACCOUNT=work"),
+      `expected GITHUB_ACCOUNT=work in argv: ${JSON.stringify(secondAdd.args)}`,
+    );
+
+    // No GITHUB_PERSONAL_ACCESS_TOKEN anywhere in any call's args
+    for (const call of calls) {
+      for (const arg of call.args) {
+        assert.ok(
+          !arg.includes("GITHUB_PERSONAL_ACCESS_TOKEN"),
+          `found GITHUB_PERSONAL_ACCESS_TOKEN in argv: ${JSON.stringify(call.args)}`,
+        );
+      }
+    }
+
+    // No PAT values in any arg
+    for (const call of calls) {
+      for (const arg of call.args) {
+        assert.ok(
+          !arg.includes("ghp_a") && !arg.includes("ghp_b"),
+          `found PAT value in argv: ${JSON.stringify(call.args)}`,
+        );
+      }
+    }
+
+    // Wrapper path resolves to fakeHome/.claude/wrappers/mcp-github.sh
+    const expectedWrapperPath = path.join(
+      fakeHome,
+      ".claude",
+      "wrappers",
+      "mcp-github.sh",
+    );
+    assert.ok(
+      firstAdd.args.includes(expectedWrapperPath),
+      `expected wrapper path in add args: ${JSON.stringify(firstAdd.args)}`,
+    );
+
+    // Returns the set of registered keys
+    assert.deepStrictEqual(result, new Set(["personal", "work"]));
+  });
+
+  it("returns empty set and prints warning when github-pats.json is absent", () => {
+    const fakeHome = makeFakeHome();
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    const warnings: string[] = [];
+    const result = registerGithubAccounts(fakeHome, stub, (msg) =>
+      warnings.push(msg),
+    );
+
+    assert.deepStrictEqual(result, new Set());
+    assert.ok(
+      warnings.some((w) => w.includes("not found")),
+      `expected 'not found' warning, got: ${warnings.join(", ")}`,
+    );
+    const addCalls = calls.filter((c) => c.args.includes("add"));
+    assert.strictEqual(addCalls.length, 0);
+  });
+
+  it("returns empty set and prints warning when github-pats.json is empty object", () => {
+    const fakeHome = makeFakeHome();
+    writePatsFile(fakeHome, {});
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    const warnings: string[] = [];
+    const result = registerGithubAccounts(fakeHome, stub, (msg) =>
+      warnings.push(msg),
+    );
+
+    assert.deepStrictEqual(result, new Set());
+    assert.ok(
+      warnings.some((w) => w.includes("empty")),
+      `expected 'empty' warning, got: ${warnings.join(", ")}`,
+    );
+    const addCalls = calls.filter((c) => c.args.includes("add"));
+    assert.strictEqual(addCalls.length, 0);
+  });
+
+  it("throws on invalid JSON and error message does not include file contents", () => {
+    const fakeHome = makeFakeHome();
+    const patsPath = path.join(fakeHome, ".config", "github-pats.json");
+    fs.writeFileSync(patsPath, "not-valid-json-{{{", "utf8");
+    fs.chmodSync(patsPath, 0o600);
+
+    assert.throws(
+      () => registerGithubAccounts(fakeHome, noOpStub),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        // Must not include file contents
+        assert.ok(
+          !err.message.includes("not-valid-json"),
+          `error message must not include file contents, got: ${err.message}`,
+        );
+        // Must include path
+        assert.ok(
+          err.message.includes("github-pats.json"),
+          `error message must include path, got: ${err.message}`,
+        );
+        return true;
+      },
+    );
+  });
+
+  it("throws when PAT value is a number, error identifies key only not value", () => {
+    const fakeHome = makeFakeHome();
+    writePatsFile(fakeHome, { personal: 123 });
+
+    assert.throws(
+      () => registerGithubAccounts(fakeHome, noOpStub),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        assert.ok(
+          err.message.includes("personal"),
+          `expected key name in error: ${err.message}`,
+        );
+        assert.ok(
+          !err.message.includes("123"),
+          `must not include value '123' in error: ${err.message}`,
+        );
+        return true;
+      },
+    );
+  });
+
+  it("throws when PAT value is empty string, error identifies key only", () => {
+    const fakeHome = makeFakeHome();
+    writePatsFile(fakeHome, { personal: "" });
+
+    assert.throws(
+      () => registerGithubAccounts(fakeHome, noOpStub),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        assert.ok(
+          err.message.includes("personal"),
+          `expected key name in error: ${err.message}`,
+        );
+        return true;
+      },
+    );
+  });
+
+  it("throws when key contains invalid characters", () => {
+    const fakeHome = makeFakeHome();
+    writePatsFile(fakeHome, { "per sonal": "ghp_x" });
+
+    assert.throws(
+      () => registerGithubAccounts(fakeHome, noOpStub),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        return true;
+      },
+    );
+  });
+
+  it("prints mode warning when github-pats.json mode is 0644 but continues to register", () => {
+    const fakeHome = makeFakeHome();
+    writePatsFile(fakeHome, { personal: "ghp_a" }, 0o644);
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    const warnings: string[] = [];
+    registerGithubAccounts(fakeHome, stub, (msg) => warnings.push(msg));
+
+    assert.ok(
+      warnings.some((w) => w.includes("644") || w.includes("0644")),
+      `expected mode warning, got: ${warnings.join(", ")}`,
+    );
+    const addCalls = calls.filter((c) => c.args.includes("add"));
+    assert.strictEqual(addCalls.length, 1, "should still register 1 account");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// removeStaleGithubRegistrations
+// ---------------------------------------------------------------------------
+
+describe("removeStaleGithubRegistrations", () => {
+  it("removes stale github-old but not desired github-personal or unrelated grafana", () => {
+    const fakeHome = makeFakeHome();
+    const claudeJsonPath = path.join(fakeHome, ".claude.json");
+    fs.writeFileSync(
+      claudeJsonPath,
+      JSON.stringify({
+        mcpServers: {
+          "github-old": { type: "stdio", command: "/some/wrapper" },
+          "github-personal": { type: "stdio", command: "/some/wrapper" },
+          grafana: { type: "stdio", command: "/some/wrapper" },
+        },
+      }),
+      "utf8",
+    );
+
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    removeStaleGithubRegistrations(new Set(["personal"]), fakeHome, stub);
+
+    const removeCalls = calls.filter(
+      (c) => c.cmd === "claude" && c.args.includes("remove"),
+    );
+    assert.strictEqual(removeCalls.length, 1, "expected exactly 1 remove call");
+    assert.ok(
+      removeCalls[0]!.args.includes("github-old"),
+      `expected github-old to be removed, got: ${JSON.stringify(removeCalls[0]!.args)}`,
+    );
+
+    // Assert grafana and github-personal not removed
+    for (const call of removeCalls) {
+      assert.ok(!call.args.includes("grafana"), "must not remove grafana");
+      assert.ok(
+        !call.args.includes("github-personal"),
+        "must not remove github-personal (still desired)",
+      );
+    }
+  });
+
+  it("removes stale github-my_account (underscore suffix, F-10 mirror)", () => {
+    const fakeHome = makeFakeHome();
+    const claudeJsonPath = path.join(fakeHome, ".claude.json");
+    fs.writeFileSync(
+      claudeJsonPath,
+      JSON.stringify({
+        mcpServers: {
+          "github-my_account": { type: "stdio", command: "/some/wrapper" },
+        },
+      }),
+      "utf8",
+    );
+
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    removeStaleGithubRegistrations(new Set(["personal"]), fakeHome, stub);
+
+    const removeCalls = calls.filter(
+      (c) => c.cmd === "claude" && c.args.includes("remove"),
+    );
+    assert.strictEqual(removeCalls.length, 1);
+    assert.ok(removeCalls[0]!.args.includes("github-my_account"));
+  });
+
+  it("does not remove the legacy github (no hyphen suffix) server", () => {
+    const fakeHome = makeFakeHome();
+    const claudeJsonPath = path.join(fakeHome, ".claude.json");
+    fs.writeFileSync(
+      claudeJsonPath,
+      JSON.stringify({
+        mcpServers: {
+          github: { type: "stdio", command: "/some/wrapper" },
+        },
+      }),
+      "utf8",
+    );
+
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    removeStaleGithubRegistrations(new Set(), fakeHome, stub);
+
+    const removeCalls = calls.filter(
+      (c) => c.cmd === "claude" && c.args.includes("remove"),
+    );
+    assert.strictEqual(
+      removeCalls.length,
+      0,
+      "legacy github should not be removed by removeStale (removeLegacy handles it)",
+    );
+  });
+
+  it("returns silently when ~/.claude.json is absent", () => {
+    const fakeHome = makeFakeHome();
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+
+    assert.doesNotThrow(() =>
+      removeStaleGithubRegistrations(new Set(), fakeHome, stub),
+    );
+    assert.strictEqual(calls.length, 0);
+  });
+
+  it("prints yellow warning and returns without throwing when ~/.claude.json is malformed", () => {
+    const fakeHome = makeFakeHome();
+    const claudeJsonPath = path.join(fakeHome, ".claude.json");
+    fs.writeFileSync(claudeJsonPath, "not-valid-json", "utf8");
+
+    const calls: SpawnCall[] = [];
+    const stub = (cmd: string, args: string[]) => calls.push({ cmd, args });
+    const warnings: string[] = [];
+
+    assert.doesNotThrow(() =>
+      removeStaleGithubRegistrations(new Set(), fakeHome, stub, (msg) =>
+        warnings.push(msg),
+      ),
+    );
+    assert.ok(
+      warnings.some(
+        (w) => w.includes("invalid JSON") || w.includes("claude.json"),
+      ),
+      `expected warning about invalid JSON, got: ${warnings.join(", ")}`,
+    );
+    assert.strictEqual(calls.length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateGithubAllowList
+// ---------------------------------------------------------------------------
+
+describe("updateGithubAllowList", () => {
+  /** Creates a settings.json with an allowedTools array (and optional extra tools). */
+  function writeSettings(
+    fakeHome: string,
+    allowedTools: string[],
+    extra: Record<string, unknown> = {},
+  ): string {
+    const settingsPath = path.join(fakeHome, ".claude", "settings.json");
+    const content = { allowedTools, ...extra };
+    fs.writeFileSync(
+      settingsPath,
+      JSON.stringify(content, null, 2) + "\n",
+      "utf8",
+    );
+    return settingsPath;
+  }
+
+  function readSettings(fakeHome: string): Record<string, unknown> {
+    const settingsPath = path.join(fakeHome, ".claude", "settings.json");
+    return JSON.parse(fs.readFileSync(settingsPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+  }
+
+  it("adds mcp__github-personal__* and mcp__github-work__* in sorted order", () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ["Bash(git *)"]);
+
+    updateGithubAllowList(new Set(["work", "personal"]), fakeHome);
+
+    const settings = readSettings(fakeHome);
+    const tools = settings["allowedTools"] as string[];
+    assert.ok(tools.includes("mcp__github-personal__*"));
+    assert.ok(tools.includes("mcp__github-work__*"));
+    // sorted: personal before work when appended
+    const piIdx = tools.indexOf("mcp__github-personal__*");
+    const wiIdx = tools.indexOf("mcp__github-work__*");
+    assert.ok(piIdx < wiIdx, "personal should appear before work (sorted)");
+    // Unrelated entry preserved
+    assert.ok(tools.includes("Bash(git *)"));
+  });
+
+  it("is idempotent: calling twice with same input produces byte-identical output", () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ["Bash(git *)"]);
+
+    updateGithubAllowList(new Set(["personal"]), fakeHome);
+    const settingsPath = path.join(fakeHome, ".claude", "settings.json");
+    const after1 = fs.readFileSync(settingsPath, "utf8");
+
+    updateGithubAllowList(new Set(["personal"]), fakeHome);
+    const after2 = fs.readFileSync(settingsPath, "utf8");
+
+    assert.strictEqual(
+      after1,
+      after2,
+      "file must be byte-identical on second run",
+    );
+  });
+
+  it("removes stale mcp__github-old__* when key is no longer in desired set", () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ["mcp__github-old__*", "Bash(git *)"]);
+
+    updateGithubAllowList(new Set(["personal"]), fakeHome);
+
+    const settings = readSettings(fakeHome);
+    const tools = settings["allowedTools"] as string[];
+    assert.ok(
+      !tools.includes("mcp__github-old__*"),
+      "stale entry must be removed",
+    );
+    assert.ok(
+      tools.includes("mcp__github-personal__*"),
+      "new entry must be added",
+    );
+    assert.ok(
+      tools.includes("Bash(git *)"),
+      "unrelated entry must be preserved",
+    );
+  });
+
+  it("removes mcp__github-my_account__* (underscore in key, F-10)", () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ["mcp__github-my_account__*", "Bash(git *)"]);
+
+    updateGithubAllowList(new Set(["personal"]), fakeHome);
+
+    const settings = readSettings(fakeHome);
+    const tools = settings["allowedTools"] as string[];
+    assert.ok(
+      !tools.includes("mcp__github-my_account__*"),
+      "underscore-suffix stale entry must be removed",
+    );
+    assert.ok(tools.includes("mcp__github-personal__*"));
+  });
+
+  it("removes multi-character-class entries (dots, dashes, underscores) when desired set is empty", () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, [
+      "mcp__github-foo.bar__*",
+      "mcp__github-foo-bar__*",
+      "mcp__github-foo_bar__*",
+      "Bash(git *)",
+    ]);
+
+    updateGithubAllowList(new Set(), fakeHome);
+
+    const settings = readSettings(fakeHome);
+    const tools = settings["allowedTools"] as string[];
+    assert.ok(!tools.includes("mcp__github-foo.bar__*"));
+    assert.ok(!tools.includes("mcp__github-foo-bar__*"));
+    assert.ok(!tools.includes("mcp__github-foo_bar__*"));
+    assert.ok(tools.includes("Bash(git *)"));
+  });
+
+  it("removes github entry when desired set is empty", () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ["mcp__github-foo__*", "Bash(git *)"]);
+
+    updateGithubAllowList(new Set(), fakeHome);
+
+    const settings = readSettings(fakeHome);
+    const tools = settings["allowedTools"] as string[];
+    assert.ok(!tools.includes("mcp__github-foo__*"));
+    assert.ok(tools.includes("Bash(git *)"));
+  });
+
+  it("does not reorder or modify unrelated entries", () => {
+    const fakeHome = makeFakeHome();
+    const originalTools = [
+      "Bash(git *)",
+      "mcp__grafana__search_dashboards",
+      "Write(~/.ai-tpk/**)",
+    ];
+    writeSettings(fakeHome, originalTools);
+
+    updateGithubAllowList(new Set(["personal"]), fakeHome);
+
+    const settings = readSettings(fakeHome);
+    const tools = settings["allowedTools"] as string[];
+    // Original entries preserved and in original order
+    const gitIdx = tools.indexOf("Bash(git *)");
+    const grafanaIdx = tools.indexOf("mcp__grafana__search_dashboards");
+    const writeIdx = tools.indexOf("Write(~/.ai-tpk/**)");
+    assert.ok(gitIdx < grafanaIdx, "original order preserved");
+    assert.ok(grafanaIdx < writeIdx, "original order preserved");
+  });
+
+  it("throws when settings file is malformed and does not write", () => {
+    const fakeHome = makeFakeHome();
+    const settingsPath = path.join(fakeHome, ".claude", "settings.json");
+    fs.writeFileSync(settingsPath, "not-valid-json", "utf8");
+
+    assert.throws(
+      () => updateGithubAllowList(new Set(["personal"]), fakeHome),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        return true;
+      },
+    );
+
+    // File must remain unchanged
+    const onDisk = fs.readFileSync(settingsPath, "utf8");
+    assert.strictEqual(onDisk, "not-valid-json");
+  });
+
+  it("prints warning and returns when settings file does not exist", () => {
+    const fakeHome = makeFakeHome();
+    // Don't write settings file
+    const warnings: string[] = [];
+    assert.doesNotThrow(() =>
+      updateGithubAllowList(new Set(["personal"]), fakeHome, (msg) =>
+        warnings.push(msg),
+      ),
+    );
+    assert.ok(
+      warnings.some((w) => w.includes("settings.json")),
+      `expected warning about missing settings.json, got: ${warnings.join(", ")}`,
+    );
+  });
+
+  it("uses atomic temp+rename write pattern", () => {
+    const fakeHome = makeFakeHome();
+    const settingsPath = path.join(fakeHome, ".claude", "settings.json");
+    writeSettings(fakeHome, ["Bash(git *)"]);
+
+    // Collect file ops by checking what files are created/modified in the .claude dir
+    // We verify by checking that no .tmp file remains after the call
+    updateGithubAllowList(new Set(["personal"]), fakeHome);
+
+    // The final file must exist and be valid JSON
+    const content = fs.readFileSync(settingsPath, "utf8");
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    assert.ok(
+      Array.isArray(parsed["allowedTools"]),
+      "allowedTools must be an array",
+    );
+
+    // No temp files should remain in .claude dir
+    const claudeDir = path.join(fakeHome, ".claude");
+    const entries = fs.readdirSync(claudeDir);
+    const tempFiles = entries.filter((e) => e.includes(".tmp."));
+    assert.strictEqual(
+      tempFiles.length,
+      0,
+      `temp files must be cleaned up, found: ${tempFiles.join(", ")}`,
+    );
   });
 });

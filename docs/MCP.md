@@ -11,7 +11,19 @@ Currently configured servers:
 - **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) — Read-only Kubernetes cluster access via `~/.kube/config`. Skips setup gracefully if that file does not exist.
 - **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `src/mcp/wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist.
 - **Grafana MCP Server** (`mcp-grafana`) — Grafana dashboards, datasources, and incident access. Uses `src/mcp/wrappers/mcp-grafana.sh`, which requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in the shell environment.
-- **GitHub MCP Server** (`@modelcontextprotocol/server-github`) — GitHub repository, issue, PR, and code search access. Requires `GITHUB_PERSONAL_ACCESS_TOKEN` set in `src/mcp/mcp-servers.json` before running `install.sh`. Note: the npm package was archived 2025-05-29; the Docker-based successor (`ghcr.io/github/github-mcp-server`) is not used here to avoid a Docker dependency.
+- **GitHub MCP Server** (`@modelcontextprotocol/server-github@2025.4.8`) — Multi-account GitHub repository, issue, PR, and code search access via `~/.config/github-pats.json`. Define your accounts as a flat JSON object mapping account names to PATs:
+  ```json
+  {"personal": "ghp_xxx", "work": "ghp_yyy"}
+  ```
+  **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/github-pats.json`.** The file holds long-lived GitHub PATs in plaintext; on multi-user hosts a default umask (`022`) leaves it world-readable. The wrapper refuses to read the file at MCP-server boot if the mode is broader than `0600`, and the installer prints a warning.
+
+  Each key becomes the suffix of a registered MCP server (`github-personal`, `github-work`) and a tool namespace (`mcp__github-personal__*`, `mcp__github-work__*`). Account keys must match `^[a-zA-Z0-9_.-]+$`.
+
+  The wrapper at `~/.claude/wrappers/mcp-github.sh` selects the token at runtime via the `GITHUB_ACCOUNT` env var injected by the installer. **The PAT is not stored in `~/.claude.json`**; rotating the token in `~/.config/github-pats.json` takes effect on the next MCP server boot without re-running `install.sh`.
+
+  The wrapper invokes **`pnpx`** (pnpm's equivalent of the npm runner) because this repository uses pnpm. Users without pnpm installed must install it (<https://pnpm.io/installation>) before GitHub MCP servers can spawn. The wrapper pins `@modelcontextprotocol/server-github@2025.4.8` to protect against any future "latest" publish on the abandoned package name (archived 2025-05-29; the Docker-based successor `ghcr.io/github/github-mcp-server` is not used here to avoid a Docker dependency).
+
+  If `~/.config/github-pats.json` is missing or empty (`{}`) at install time, GitHub MCP setup is skipped with a yellow warning and installation continues. On each run, the installer also removes the legacy `github` (no suffix) registration, removes stale `github-<key>` registrations, and removes stale `mcp__github-<key>__*` allow-list entries for keys no longer present in the PATs file.
 - **GCP Observability MCP Server** (`@google-cloud/observability-mcp@0.2.3`) — Read-only access to GCP Cloud Logging, Monitoring, Trace, and Error Reporting. Requires Node.js 20+ and the gcloud CLI. Authenticate before running `install.sh`: `gcloud auth application-default login` then `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`.
 
 MCP servers are available in all repositories once configured.

@@ -23,17 +23,6 @@
       "wrapper": "wrappers/mcp-grafana.sh"
     },
     {
-      "name": "github",
-      "scope": "user",
-      "transport": "stdio",
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
-      },
-      "command": "npx",
-      "args": ["--yes", "@modelcontextprotocol/server-github"],
-      "_note": "Package archived 2025-05-29. Successor: ghcr.io/github/github-mcp-server (requires Docker). Using npm package for zero-dependency install."
-    },
-    {
       "name": "gcp-observability",
       "scope": "user",
       "transport": "stdio",

@@ -16,7 +16,7 @@ const installerDir = path.dirname(__filename);
 const scriptDir = path.dirname(installerDir);
 
 try {
-  parseArgs(process.argv.slice(2));
+  const { targetAgent } = parseArgs(process.argv.slice(2));
 
   console.log(c.blue("AI TPK Installer"));
   console.log(c.blue("====================="));
@@ -24,9 +24,12 @@ try {
   console.log(`Source directory: ${scriptDir}`);
   console.log("");
 
-  installClaudeWhitelist(scriptDir, os.homedir());
   installDir(scriptDir, "cursor", ".cursor", os.homedir());
-  installDir(scriptDir, "src/mcp/wrappers", ".claude/wrappers", os.homedir());
+
+  if (targetAgent === "claude") {
+    installClaudeWhitelist(scriptDir, os.homedir());
+    installDir(scriptDir, "src/mcp/wrappers", ".claude/wrappers", os.homedir());
+  }
 
   // Create ~/.ai-tpk artifact directories
   const aiTpkDir = path.join(os.homedir(), ".ai-tpk");
@@ -39,7 +42,9 @@ try {
   );
 
   console.log("");
-  installMcpServers(scriptDir);
+  if (targetAgent === "claude") {
+    installMcpServers(scriptDir);
+  }
 
   console.log("");
   installLauncherScript(scriptDir);

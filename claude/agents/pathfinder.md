@@ -3,6 +3,7 @@ name: pathfinder
 color: blue
 description: "Strategic planning consultant with interview workflow"
 model: claude-opus-4-7
+effort: high
 permissionMode: acceptEdits
 level: 4
 tools: "Read, Write, Grep, Glob, Bash, Agent"

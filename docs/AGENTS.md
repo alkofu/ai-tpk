@@ -2,22 +2,22 @@
 
 ## Quick Reference
 
-| Agent | Purpose | Primary Use Cases | Model | Review Type |
-|-------|---------|-------------------|-------|-------------|
-| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
-| **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | N/A |
-| **Tracebloom** | Read-only investigative tracker | Open-ended "why is this broken?" diagnosis, pre-plan root cause analysis | claude-sonnet-4-6 | N/A |
-| **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4-6 | N/A |
-| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-7 | Specialist (opt-in) |
-| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-7 | N/A |
-| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-opus-4-7 | Specialist (opt-in) |
-| **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-7 | Mandatory baseline |
-| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-sonnet-4-6 | Specialist (opt-in) |
-| **Truthhammer** | Factual validation specialist | Verifying external system claims, config keys, API signatures, version compatibility | claude-sonnet-4-6 | Specialist (opt-in) |
-| **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | N/A |
-| **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | claude-haiku-4-5 | N/A |
-| **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-sonnet-4-6 | N/A |
-| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | claude-sonnet-4-6 | N/A |
+| Agent | Purpose | Primary Use Cases | Model | Effort | Review Type |
+|-------|---------|-------------------|-------|--------|-------------|
+| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | high | N/A |
+| **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | low | N/A |
+| **Tracebloom** | Read-only investigative tracker | Open-ended "why is this broken?" diagnosis, pre-plan root cause analysis | claude-sonnet-4-6 | low | N/A |
+| **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4-6 | low | N/A |
+| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-7 | high | Specialist (opt-in) |
+| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-7 | high | N/A |
+| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-opus-4-7 | high | Specialist (opt-in) |
+| **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-7 | high | Mandatory baseline |
+| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-sonnet-4-6 | medium | Specialist (opt-in) |
+| **Truthhammer** | Factual validation specialist | Verifying external system claims, config keys, API signatures, version compatibility | claude-sonnet-4-6 | low | Specialist (opt-in) |
+| **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | claude-sonnet-4-6 | medium | N/A |
+| **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | claude-haiku-4-5 | N/A | N/A |
+| **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-sonnet-4-6 | medium | N/A |
+| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | claude-sonnet-4-6 | high | N/A |
 
 ## When to Use Which Agent
 
@@ -309,3 +309,49 @@ Terminal tab titles are automatically managed via a SessionStart hook for resume
 Agent definitions can reference shared behavioral vocabulary defined in `claude/references/`. This eliminates duplication across multiple agents:
 
 For the authoritative catalog of shared reference files and what each one does, see [docs/SKILLS.md — References](/docs/SKILLS.md#references). Each agent definition file in [`claude/agents/`](/claude/agents/) cites the specific references it loads.
+
+## Agent Frontmatter: The `effort` Field
+
+All agent definition files (`.md` files in `claude/agents/`) use YAML frontmatter to configure the agent at runtime. The `effort` field is one of those fields.
+
+### What it does
+
+`effort` controls extended-thinking intensity for the subagent, overriding the session-level setting. It tells Claude Code how much reasoning budget to allocate when the agent runs. The field is optional; when absent, the agent inherits the session default.
+
+### Allowed values
+
+| Value | Meaning |
+|-------|---------|
+| `low` | Minimal extended thinking — suited to bounded, tool-call-driven tasks with a narrow decision surface |
+| `medium` | Moderate extended thinking — suited to structured, plan-driven execution with some judgement calls |
+| `high` | Full extended thinking — suited to planning, orchestration, adversarial review, and multi-step reasoning where errors propagate |
+| `xhigh` | Extra-high extended thinking — Opus 4.7 only; falls back to `high` on other models |
+| `max` | Maximum extended thinking — Opus 4.7, Opus 4.6, Sonnet 4.6, and Claude Mythos Preview only |
+
+None of the agents in this repository use `xhigh` or `max`. All current assignments use `low`, `medium`, or `high`, which are supported on every model in use here.
+
+### Model-compatibility constraints
+
+The `effort` API parameter is supported on: Opus 4.7, Opus 4.6, Sonnet 4.6, and Opus 4.5. It is **not supported on Haiku models**, including `claude-haiku-4-5`. When `effort` is set on an unsupported model, the field has no effect at runtime. Claude Code's documented behaviour is to silently fall back to the highest supported level at or below the requested value when a specific value is unavailable.
+
+**Talekeeper is deliberately excluded** from the `effort` field because it runs on `claude-haiku-4-5`. Adding the field to its frontmatter would be inert. (Haiku 4.5 does support extended thinking via the separate `thinking` API parameter, but that is a distinct mechanism from `effort` and is not controlled by this frontmatter field.)
+
+### Tiering rationale
+
+The effort levels assigned to agents in this repository follow an analysis by Reisannin (architecture advisor) matching cognitive load to task characteristics:
+
+- **`low`** — Askmaw, Tracebloom, Quill, Truthhammer. Stateless or lookup-bounded tasks: a single Q&A output, tool-call-driven investigation, artifact production from supplied inputs, or web-source factual lookup. Decision surface is narrow; extended thinking yields little return.
+
+- **`medium`** — Bitsmith, Windwarden, Everwise. Structured, plan-driven work with moderate judgement: executing a pre-approved plan, data-retrieval-bounded performance review, or pattern analysis over chronicle data. Some reasoning is beneficial but the task is largely constrained.
+
+- **`high`** — Dungeon Master, Pathfinder, Ruinor, Riskmancer, Knotcutter, Reisannin. High-impact decisions that propagate through the pipeline or require adversarial / multi-step reasoning. Planning errors compound downstream; routing errors are expensive mid-session; review agents must catch what others missed; security analysis requires attack-chain reasoning; complexity evaluation requires deep design judgement.
+
+### Adding a new agent
+
+When creating a new agent, place the `effort` field in the YAML frontmatter immediately after the `model:` line. Choose the tier based on the agent's decision surface:
+
+- Bounded, single-output, or lookup tasks → `low`
+- Plan-driven execution or data-bounded analysis → `medium`
+- Orchestration, planning, adversarial review, or architecture advisory → `high`
+
+If the agent uses `claude-haiku-4-5`, omit the `effort` field entirely — it has no effect on that model.

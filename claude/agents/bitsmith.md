@@ -3,6 +3,7 @@ name: bitsmith
 color: green
 description: "Precision code executor focused on minimal diffs, LSP-clean changes, and pattern-matching the existing codebase. Escalates to Dungeon Master after 3 failed attempts."
 model: claude-sonnet-4-6
+effort: medium
 permissionMode: acceptEdits
 level: 2
 tools: "Read, Write, Edit, Bash, Grep, Glob, Agent"

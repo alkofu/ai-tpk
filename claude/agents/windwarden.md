@@ -3,6 +3,7 @@ name: windwarden
 color: yellow
 description: "Performance and scalability reviewer for plans and code."
 model: claude-sonnet-4-6
+effort: medium
 permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash, mcp__grafana__*, mcp__kubernetes__*, mcp__cloudwatch__*, mcp__gcp-observability__*"

@@ -4,6 +4,7 @@ color: yellow
 description: "Radical simplification specialist for complexity elimination reviews."
 tools: "Read, Grep, Glob, Bash"
 model: claude-opus-4-7
+effort: high
 permissionMode: auto
 level: 3
 mandatory: false

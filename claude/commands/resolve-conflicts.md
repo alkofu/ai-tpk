@@ -4,7 +4,7 @@ description: Resolve merge conflicts during an in-progress rebase
 
 You are resolving merge conflicts during a rebase that has stopped due to conflicts. This
 command handles conflict detection, file-by-file resolution, staging, and `rebase --continue`
-cycling. Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
+cycling. All Bash commands must follow `~/.claude/references/bash-style.md`.
 
 **Note for DM:** This command performs write operations (file edits, git staging, rebase
 continuation). When invoked standalone, delegate execution to Bitsmith per the DM delegation

@@ -3,8 +3,8 @@ description: Rebase the current PR branch onto main and force-push to keep the P
 ---
 
 You are rebasing the current PR branch onto the latest `main` and force-pushing to keep the PR
-in sync. Follow every step below in order. Run each command as a standalone call — do not chain
-commands with `&&`, `;`, or `|`.
+in sync. Follow every step below in order. All Bash commands must follow
+`~/.claude/references/bash-style.md`.
 
 **Note for DM:** Steps that perform write operations (file edits, destructive git commands) must
 be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.

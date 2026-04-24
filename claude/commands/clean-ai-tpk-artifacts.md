@@ -3,7 +3,7 @@ description: Delete plan and lesson files older than N days from ~/.ai-tpk/ for 
 ---
 
 You are cleaning up stale artifact files from `~/.ai-tpk/`. Follow every step below in order.
-Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
+All Bash commands must follow `~/.claude/references/bash-style.md`.
 
 **Note for DM:** Steps that perform write operations (file deletions) must be delegated to
 Bitsmith per the DM delegation policy. Those steps are marked below.

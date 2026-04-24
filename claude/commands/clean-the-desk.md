@@ -3,7 +3,7 @@ description: Delete local branches whose PRs have been merged, and remove their 
 ---
 
 You are cleaning up stale local branches and their associated worktrees. Follow every step below
-in order. Run each command as a standalone call — do not chain commands with `&&`, `;`, or `|`.
+in order. All Bash commands must follow `~/.claude/references/bash-style.md`.
 
 **Note for DM:** Steps that perform write operations (file edits, destructive git commands) must
 be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.

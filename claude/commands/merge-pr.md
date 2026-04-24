@@ -3,8 +3,8 @@ description: Sync the current PR branch with main, wait for CI checks, squash-me
 ---
 
 You are squash-merging the current PR branch after ensuring it is in sync with `main` and all
-required CI checks have passed. Follow every step below in order. Run each command as a
-standalone call — do not chain commands with `&&`, `;`, or `|`.
+required CI checks have passed. Follow every step below in order. All Bash commands must follow
+`~/.claude/references/bash-style.md`.
 
 **Note for DM:** Steps that perform write operations (destructive git commands, merge operations)
 must be delegated to Bitsmith per the DM delegation policy. Those steps are marked below.

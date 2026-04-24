@@ -404,7 +404,7 @@ See `claude/agents/dungeonmaster.md` for the orchestrator implementation and `cl
 
 **Unchanged:**
 - Review verdict taxonomy (REJECT/REVISE/ACCEPT-WITH-RESERVATIONS/ACCEPT)
-- Severity levels (CRITICAL/MAJOR/MINOR)
+- Severity scales — Scale A (CRITICAL/MAJOR/MINOR, Ruinor) and Scale B (CRITICAL/HIGH/MEDIUM/LOW, specialist reviewers); both defined in `claude/references/verdict-taxonomy.md`
 - Review quality standards and investigation protocols
 - Plan and implementation review gates still exist
 - Revision loops still iterate until all reviewers accept

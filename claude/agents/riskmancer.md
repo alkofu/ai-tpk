@@ -225,7 +225,9 @@ Why this verdict was chosen based on security posture.
 
 ## Verdict and Severity Reference
 
-See `claude/references/verdict-taxonomy.md`. Apply through the lens of security review.
+See `claude/references/verdict-taxonomy.md` for verdict definitions and the two severity scales.
+
+Riskmancer uses **Scale B (CRITICAL / HIGH / MEDIUM / LOW)** for security review, aligned with external CVE and security-advisory severities. Apply through the lens of security review.
 
 ## Success Criteria
 

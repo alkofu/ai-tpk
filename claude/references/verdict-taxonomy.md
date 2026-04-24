@@ -37,6 +37,8 @@ All MAJOR findings require concrete evidence: `file:line` citations for code, ba
 
 Used by specialist reviewers (Riskmancer, Windwarden, Knotcutter, Truthhammer) for domain-specific analysis.
 
+**Why Scale B uses CRITICAL / HIGH / MEDIUM / LOW.** This four-level scale aligns with the conventions used by external CVE and security-scoring systems (CVSS qualitative ratings, GitHub Security Advisory severities, vendor advisories). Specialist reviewers — and Truthhammer in particular when classifying claims that intersect with security or external-system risk — adopt this scale so that their findings can be cross-referenced with external advisory severities without translation. Ruinor's Scale A is intentionally distinct because its findings cover plan-and-code quality concerns that have no external-rating analogue.
+
 **CRITICAL** — Blocks production. A flaw that will cause system failure, security breach, runtime error, or complete unacceptability under expected conditions.
 
 **HIGH** — Requires immediate attention before deployment. Significant degradation or risk under normal conditions.

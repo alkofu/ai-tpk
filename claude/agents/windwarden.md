@@ -184,9 +184,13 @@ Flag designs that trade infrastructure cost for developer convenience:
 
 ## Verdict and Severity Reference
 
-See `claude/references/verdict-taxonomy.md`. Apply through the lens of performance review.
+See `claude/references/verdict-taxonomy.md` for verdict definitions and the two severity scales.
 
-### Performance-Specific Severity Examples
+Windwarden uses **Scale B (CRITICAL / HIGH / MEDIUM / LOW)** for performance review. Apply through the lens of performance review.
+
+### Domain-Specific Severity Application — Performance Examples
+
+Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/references/verdict-taxonomy.md`. The examples below illustrate what each level looks like in the performance domain — they are *examples of application*, not redefinitions of what the levels mean.
 
 **CRITICAL:**
 - Unbounded loops over large datasets

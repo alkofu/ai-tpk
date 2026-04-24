@@ -79,7 +79,14 @@ If the delegation prompt contains a `## Diagnostic Report` section:
 - You may still ask the user follow-up questions about priorities, preferences, or scope (e.g., "The report identifies two contributing factors — should we fix both or just the critical one?")
 - If the report's "Recommended next action" suggests the fix is trivial, note this in the plan — the plan may be a single step
 
-If no Askmaw brief or Diagnostic Report is present, conduct the full interview:
+**Otherwise: check for `DOCS_HINT: true` in the delegation prompt.**
+
+If `DOCS_HINT: true` is present:
+- Skip this section (section 3) entirely — DM has signalled (via the user's `--docs` flag) that the task is self-evidently a documentation change and no requirements interview is required.
+- Proceed directly to section 5 (Generate Plan).
+- The Section 5 step 5 plan-confirmation prompt still applies — the user will still confirm the execution steps before the plan is saved.
+
+If none of the above (no Askmaw brief, no Diagnostic Report, no DOCS_HINT) is present, conduct the full interview:
 
 Ask about preferences and priorities using AskUserQuestion tool.
 
@@ -105,6 +112,7 @@ After codebase research and interview are complete but before writing the full p
 1. Delegation prompt contains a complete Askmaw `## Intake Brief` with substantive content in all fields
 2. Delegation prompt contains a `## Diagnostic Report` from Tracebloom
 3. Delegation prompt contains a `## Confirmed Scope` block (re-invocation after prior scope confirmation)
+4. Delegation prompt contains `DOCS_HINT: true` (DM-signalled documentation-only task — no scope confirmation required because the scope is the user's prose request itself). Placed last in the cascade so that any of the three richer signals above (Askmaw brief, Diagnostic Report, Confirmed Scope block) takes precedence when present alongside `DOCS_HINT: true`.
 
 **`STOP_AFTER_SCOPE: true` handling:** Execute Section 4 fully, produce scope + options output, then STOP — do not write a plan, return structured scope output to DM. DM presents scope + options to the user and waits. If the user does not ask to proceed with planning, the advisory session is complete — no plan is written, no execution follows. DM delivers a brief completion summary and the session concludes.
 
@@ -412,7 +420,7 @@ Before considering a plan complete, verify:
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
 7. ✅ **Pre-submission checklist passed** - all 9 questions reviewed and any issues corrected before saving
-8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when Askmaw brief, Tracebloom report, or Confirmed Scope block is present — REVISION_MODE skips Sections 3 and 4 entirely — proceed directly to Section 5)
+8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when Askmaw brief, Tracebloom report, Confirmed Scope block, or `DOCS_HINT: true` is present — REVISION_MODE and `DOCS_HINT: true` both skip Sections 3 and 4 entirely — proceed directly to Section 5)
 
 ## Tool Usage
 

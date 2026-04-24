@@ -45,11 +45,13 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 1. Dungeon Master evaluates the request
 2. If ambiguous → Routes to **Askmaw** for intake interview, collecting an **Intake Brief**
 3. If already clear → Proceeds directly to **Pathfinder**
-4. Pathfinder produces a **Plan** (objective, assumptions, constraints, execution steps, validation criteria, risks)
+4. Pathfinder conducts a requirements interview (Section 3) and scope confirmation (Section 4), then produces a **Plan**
 5. Plan review → Ruinor baseline + conditional specialist reviews → revision loop if needed
 6. Implementation → Bitsmith executes the approved plan
 7. Implementation review → Ruinor baseline + conditional specialist reviews
 8. Completion → Quill updates documentation
+
+**`--docs` shortcut:** For self-evidently documentation-only tasks (typo fixes, README updates, doc examples), pass `--docs` anywhere in your `/feature` message. DM detects the flag and emits `DOCS_HINT: true` in the Pathfinder delegation, causing Pathfinder to skip steps 3 (interview) and 4 (scope confirmation) and proceed directly to plan generation. The Section 5 plan-confirmation step still applies, and Phase 2/4 review gates are unchanged. Use only for unambiguous documentation tasks — omit for anything else.
 
 **Key property:** Structured planning before execution. Plans are saved to disk, reviewed, and form the blueprint for implementation.
 
@@ -108,6 +110,14 @@ User request received
     ├─ Does request require explicit scope/options review before planning?
     │  │
     │  ├─ YES → DM invokes with --explore-options flag → Scope Confirmation → Options → User selects
+    │  │
+    │  └─ NO → Continue
+    │
+    ├─ Is the task self-evidently documentation-only? (typo fix, README update, doc example)
+    │  │
+    │  ├─ YES (pass --docs flag) → Pathfinder skips interview + scope confirmation → plan generation
+    │  │                              │
+    │  │                              └─ Section 5 plan-confirmation still runs
     │  │
     │  └─ NO → Continue
     │

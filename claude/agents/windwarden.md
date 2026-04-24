@@ -219,7 +219,7 @@ Structure every review as follows:
 
 ### Performance Review Summary
 - **Artifact**: What was reviewed (plan file or code files)
-- **Verdict**: REJECT | REVISE | ACCEPT-WITH-RESERVATIONS | ACCEPT
+- **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Performance Impact**: CRITICAL | HIGH | MEDIUM | LOW
 - **Findings**: X CRITICAL, Y HIGH, Z MEDIUM, W LOW
 

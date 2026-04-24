@@ -169,7 +169,7 @@ Permitted tools include Grep for pattern detection, Bash for dependency audits, 
 
 ### Security Review Summary
 - **Artifact**: Plan file reviewed
-- **Verdict**: REJECT | REVISE | ACCEPT-WITH-RESERVATIONS | ACCEPT
+- **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Risk Level**: CRITICAL | HIGH | MEDIUM | LOW
 - **Findings**: X security gaps identified
 
@@ -192,7 +192,7 @@ Why this verdict was chosen based on identified security risks.
 
 ### Security Review Summary
 - **Scope**: Components, files, and attack surface reviewed
-- **Verdict**: REJECT | REVISE | ACCEPT-WITH-RESERVATIONS | ACCEPT
+- **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Overall Risk Level**: CRITICAL | HIGH | MEDIUM | LOW
 - **Findings**: X CRITICAL, Y HIGH, Z MEDIUM vulnerabilities
 

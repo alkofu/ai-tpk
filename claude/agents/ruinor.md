@@ -199,7 +199,7 @@ Structure every review as follows:
 
 ### Review Summary
 - **Artifact**: What was reviewed
-- **Verdict**: REJECT | REVISE | ACCEPT-WITH-RESERVATIONS | ACCEPT
+- **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Mode**: Standard | Adversarial
 - **Findings**: X CRITICAL, Y MAJOR, Z MINOR
 - **Specialist Review Recommended**: None | Riskmancer | Windwarden | Knotcutter | Truthhammer | Multiple (comma-separated)

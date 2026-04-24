@@ -191,7 +191,7 @@ See `claude/references/verdict-taxonomy.md`. Apply through the lens of complexit
 - Identify over-engineered steps and unnecessary complexity
 - Propose simpler alternatives that achieve core objectives
 - Challenge assumptions about what's "needed"
-- Issue verdict: ACCEPT (minimal), REVISE (too complex), REJECT (fundamentally over-engineered)
+- Issue a verdict per `claude/references/verdict-taxonomy.md`
 - Provide specific step-by-step simplification recommendations
 
 **For implementation reviews:**

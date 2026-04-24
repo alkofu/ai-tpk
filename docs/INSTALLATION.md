@@ -20,6 +20,8 @@ Run the installation script:
 ./install.sh
 ```
 
+The installer accepts an optional `--target-agent <name>` flag to select which agent to install for. The only currently supported value is `claude`, which is also the default.
+
 The installer copies the whitelisted paths (`CLAUDE.md`, `settings.json`, `skills/`, `agents/`, `commands/`, `hooks/`, `references/`, `scripts/`) from `claude/` into `~/.claude/` and, when present, into `~/.cursor/`. Anything else in the repo or on disk under those destinations is left untouched except where those paths are replaced (after a timestamped backup).
 
 The `.claude/` directory is never synced by the installer — it remains project-local.

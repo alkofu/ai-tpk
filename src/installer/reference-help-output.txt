@@ -1,4 +1,4 @@
-Usage: ./install.sh
+Usage: ./install.sh [options]
 
 Install AI TPK to your home directory.
 
@@ -7,4 +7,5 @@ Claude Code:
   - MCP servers: kubernetes, cloudwatch (user scope, via claude mcp add)
 
 Options:
-  --help    Show this help message
+  --target-agent <name>   Target agent to install for (default: claude). Valid values: claude
+  --help, -h              Show this help message

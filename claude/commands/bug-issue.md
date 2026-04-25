@@ -16,13 +16,15 @@ Before invoking `gh`, perform the following checks:
 
 3. **Cross-repo URL guard:** If the argument is a full URL, compare the `<owner>/<repo>` segment against the worktree's `origin` remote. If they do not match, stop and ask the user to confirm intent before continuing.
 
-Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url` using the Bash tool. Use this exact flag set.
+Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url,comments` using the Bash tool. Use this exact flag set.
 
 **On gh failure:** If `gh` fails, surface the exact error message and ask the user to either fix the problem and retry, or provide the bug description manually.
 
 **On empty issue body:** If the returned `body` field is empty or whitespace-only, proceed with a header-only task description and surface a brief note to the user (e.g., "Issue #N has no body — proceeding with title-only context").
 
 **Constructing the task description:** Build a one-line header — `Issue #<number> (<url>) [<label1>, <label2>, ...]: <title>` (omit `[...]` if labels is empty) — followed by a blank line and the issue body verbatim (if non-empty).
+
+If the `comments` array returned by `gh` is non-empty, append a blank line and a `## Comments` section after the issue body. Render each comment in array order as a sub-section: `### Comment by @<login> — <createdAt> ([link](<url>))` on one line, then a blank line, then the comment `body` verbatim, then a blank line. Use the comment's `author.login`, `createdAt`, and `url` fields for the heading and the `body` field for the content. If the `comments` array is empty, omit the `## Comments` section entirely (do not emit an empty header or a placeholder).
 
 **Routing:** The `INTENT: investigative` line above is an explicit routing signal. Per the Intent Override Block in Phase 1, skip heuristic classification and fire the Investigative Gate (Tracebloom) directly, using the constructed task description as the input. Strip this routing note and the `INTENT:` line — downstream agents see only the constructed task description.
 

@@ -85,6 +85,26 @@ Before committing code, run `pnpm run format` to auto-format your changes. This 
 
 Lefthook runs lint, format, and Markdown lint checks on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
 
+### Code Quality: Shell Linting and Formatting
+
+In addition to the JavaScript/TypeScript toolchain above, this repository lints and formats its shell scripts (`.sh` files under `claude/hooks/`, `claude/scripts/`, `src/launcher/`, `src/mcp/wrappers/`, and the repo root) with **ShellCheck** and **shfmt**.
+
+**Install both locally** before running shell checks (lefthook runs them on pre-push):
+
+```bash
+brew install shellcheck shfmt
+```
+
+**pnpm scripts:**
+
+- `pnpm run lint:sh` — Run ShellCheck across all 28 `.sh` files
+- `pnpm run format:sh` — Apply `shfmt -i 2 -ci -bn` formatting to all 28 `.sh` files
+- `pnpm run format:check:sh` — Check shfmt formatting without modifying files (used in CI and pre-push)
+
+**CI version pin:** CI pins `shfmt` to `v3.8.0`. Minor version drift between local and CI is generally acceptable, but if `pnpm run format:check:sh` produces different output locally vs CI, install the pinned version via `mise use shfmt@3.8.0` or download the v3.8.0 binary from `https://github.com/mvdan/sh/releases/tag/v3.8.0`. `shellcheck` is not pinned; the latest Homebrew or apt version is fine.
+
+**Pre-Push Hook:** The same Lefthook hook that runs the JS lint/format checks also runs `pnpm run lint:sh` and `pnpm run format:check:sh`. Hook configuration lives in `lefthook.yml`.
+
 ### Development Workflow
 
 When making changes to this repository:

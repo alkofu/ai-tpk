@@ -42,7 +42,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Install shfmt
-        run: curl -sSfL https://raw.githubusercontent.com/mvdan/sh/master/install.sh | sh -s -- -b /usr/local/bin v3.8.0
+        run: curl -sSfL https://github.com/mvdan/sh/releases/download/v3.8.0/shfmt_v3.8.0_linux_amd64 -o /usr/local/bin/shfmt && chmod +x /usr/local/bin/shfmt
 
       - name: Lint shell
         run: pnpm run lint:sh

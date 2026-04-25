@@ -1,0 +1,29 @@
+---
+# Project-wide yamllint configuration.
+# Extends the upstream `default` preset; only deviations from default are
+# listed below.
+# See https://yamllint.readthedocs.io/en/stable/configuration.html
+extends: default
+
+ignore: |
+  node_modules/
+  .worktrees/
+  dist/
+  pnpm-lock.yaml
+
+rules:
+  # GitHub Actions and lefthook produce lines longer than 80 chars
+  # (e.g. the shfmt curl-install line in ci.yml). Disable line-length;
+  # readability is governed by content, not column count.
+  line-length: disable
+
+  # `on:` in GitHub workflows is the canonical trigger-config key.
+  # yamllint's truthy rule flags it as a YAML 1.1 boolean (on/off).
+  # Allow `on` and `off` as keys; keep the rest of the rule active.
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']
+    check-keys: true
+
+  # The default `document-start` rule requires a leading `---`.
+  # Current files in this repo do not use it; avoid a churn-only change.
+  document-start: disable

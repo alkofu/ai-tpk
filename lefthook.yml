@@ -19,6 +19,9 @@ pre-push:
     lint-md:
       glob: "**/*.md"
       run: pnpm run lint:md
+    lint-yaml:
+      glob: "**/*.{yml,yaml}"
+      run: pnpm run lint:yaml
     lint-sh:
       glob: "**/*.sh"
       run: pnpm run lint:sh

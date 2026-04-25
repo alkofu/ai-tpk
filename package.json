@@ -30,6 +30,7 @@
     "lint": "oxlint src/installer/ src/launcher/",
     "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore plans --ignore lessons --ignore 'docs/superpowers' --ignore 'claude/cache'",
     "spellcheck": "cspell '**/*.{md,ts,sh}' --no-progress --exclude 'node_modules/**' --exclude 'dist/**' --exclude 'pnpm-lock.yaml' --exclude 'plans/**' --exclude 'lessons/**' --exclude 'docs/superpowers/**' --exclude 'claude/cache/**' --exclude '.git/**' --exclude '.worktrees/**'",
+    "lint:yaml": "yamllint lefthook.yml .github/ .yamllint.yml",
     "format": "oxfmt --write src/installer/ src/launcher/",
     "format:check": "oxfmt --check src/installer/ src/launcher/",
     "lint:sh": "shellcheck claude/hooks/*.sh claude/scripts/*.sh src/launcher/*.sh src/mcp/wrappers/*.sh clean-backups.sh install.sh recover.sh",

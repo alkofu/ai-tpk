@@ -88,7 +88,7 @@ Lefthook runs shellcheck (`pnpm run lint:sh`) on staged `.sh` files and markdown
 
 **Pre-Push Hook:**
 
-Lefthook runs lint, format, Markdown lint, shell lint/format, and spell-check on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md`; shell file changes trigger `pnpm run lint:sh` and `pnpm run format:check:sh`; Markdown, TypeScript, or shell file changes trigger `pnpm run spellcheck`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown and spelling violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
+Lefthook runs lint, format, Markdown lint, shell lint/format, spell-check, and YAML lint on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md`; shell file changes trigger `pnpm run lint:sh` and `pnpm run format:check:sh`; YAML file changes trigger `pnpm run lint:yaml`; Markdown, TypeScript, or shell file changes trigger `pnpm run spellcheck`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown, YAML, and spelling violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
 
 **Note for sibling-worktree onboarding:** After pulling this change into existing worktrees, run `pnpm install` to pick up the new `cspell` dependency. Without this, the pre-push hook will fail with `cspell: command not found`.
 
@@ -112,6 +112,26 @@ brew install shellcheck shfmt
 
 **Pre-Commit and Pre-Push Hook:** `pnpm run lint:sh` runs at both pre-commit (on staged `.sh` files) and pre-push. `pnpm run format:check:sh` runs at pre-push only — shfmt format checking is intentionally deferred to push. Hook configuration lives in `lefthook.yml`.
 
+### Code Quality: YAML Linting
+
+In addition to the JavaScript/TypeScript and shell toolchains above, this repository lints its YAML files (`lefthook.yml`, `.github/workflows/*.yml`, `.github/ISSUE_TEMPLATE/*.yml`, and `.yamllint.yml` itself) with **yamllint**. The generated `pnpm-lock.yaml` is excluded.
+
+**Install yamllint locally** before running the YAML check (lefthook runs it on pre-push):
+
+```bash
+pipx install yamllint    # preferred — keeps the tool in an isolated venv
+# or
+brew install yamllint    # acceptable
+```
+
+**pnpm scripts:**
+
+- `pnpm run lint:yaml` — Run yamllint across all hand-authored YAML files
+
+**CI version:** CI installs yamllint via `apt-get` on `ubuntu-latest`; the version is whatever the distribution packages (not pinned). Minor version drift between local and CI is generally acceptable, but if `pnpm run lint:yaml` produces different output locally vs CI, compare versions with `yamllint --version`.
+
+**Pre-Push Hook:** The same Lefthook hook that runs the JS, Markdown, and shell checks also runs `pnpm run lint:yaml` when YAML files change. Hook configuration lives in `lefthook.yml`. Lint configuration lives in `.yamllint.yml` at the repo root; deviations from the upstream `default` preset are documented inline in that file.
+
 ### Development Workflow
 
 When making changes to this repository:
@@ -120,7 +140,7 @@ When making changes to this repository:
 2. **Make changes** — Edit TypeScript files in `src/installer/` or `src/launcher/`, or configuration files in `claude/`
 3. **Build and reinstall** — Run `pnpm run build` to rebuild the installer bundle, then `./install.sh` to deploy to `~/.claude/`, then `./clean-backups.sh` to remove stale backups. The `/build-and-install` repo-scope slash command automates all three steps in sequence.
 4. **Test** — Run `pnpm test` to execute the test suite
-5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, `pnpm run lint:md` to verify Markdown style, and `pnpm run spellcheck` to verify spelling
+5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, `pnpm run lint:md` to verify Markdown style, `pnpm run lint:yaml` to verify YAML style, and `pnpm run spellcheck` to verify spelling
 6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing
 
 ## Updating

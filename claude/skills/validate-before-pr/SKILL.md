@@ -62,8 +62,20 @@ node -e "process.exit(require('./package.json').scripts?.['lint:sh'] ? 0 : 1)" 2
 ```
 
 - If the `node -e` probe exits non-zero (script not declared in package.json) or if `package.json` does not exist: skip with note "No `lint:sh` script declared in package.json — skipping shell lint." This is not a failure.
-- If the probe passes and `npm run lint:sh` **passes** (exit code 0): proceed to Step 2.
+- If the probe passes and `npm run lint:sh` **passes** (exit code 0): proceed to Step 1c.
 - If the probe passes and `npm run lint:sh` **fails** (non-zero exit): stop immediately. Do not proceed to format check or PR creation. Report the full lint output to the user and request that the errors be fixed before retrying.
+
+### Step 1c — Run YAML lint
+
+Run the following probe as a standalone Bash call:
+
+```
+node -e "process.exit(require('./package.json').scripts?.['lint:yaml'] ? 0 : 1)" 2>/dev/null && npm run lint:yaml
+```
+
+- If the `node -e` probe exits non-zero (script not declared in package.json) or if `package.json` does not exist: skip with note "No `lint:yaml` script declared in package.json — skipping YAML lint." This is not a failure.
+- If the probe passes and `npm run lint:yaml` **passes** (exit code 0): proceed to Step 2.
+- If the probe passes and `npm run lint:yaml` **fails** (non-zero exit): stop immediately. Do not proceed to format check or PR creation. Report the full lint output to the user and request that the errors be fixed before retrying.
 
 ### Step 2 — Run format check
 
@@ -104,18 +116,18 @@ node -e "process.exit(require('./package.json').scripts?.['spellcheck'] ? 0 : 1)
 
 ### Step 3 — Proceed to open-pull-request
 
-Only after all of Steps 1, 1b, 2, 2b, and 2c pass (or are legitimately skipped) may you proceed to the `open-pull-request` skill to create the pull request.
+Only after all of Steps 1, 1b, 1c, 2, 2b, and 2c pass (or are legitimately skipped) may you proceed to the `open-pull-request` skill to create the pull request.
 
 ## Fail-Fast Behavior
 
-- Stop on the first failure. Do not run Step 2 if Step 1 failed; do not run Step 2b if Step 2 failed.
+- Stop on the first failure. Do not run Step 1b if Step 1 failed; do not run Step 1c if Step 1b failed; do not run Step 2 if Step 1c failed; do not run Step 2b if Step 2 failed.
 - Report which check failed and include its full output so the user can act on it.
 - Do not attempt to open the PR until all checks pass.
-- The presence-check skip in Steps 1b, 2b, and 2c (when `lint:sh`, `format:check:sh`, or `spellcheck` is absent from `package.json`) is NOT a failure — it is a graceful no-op.
+- The presence-check skip in Steps 1b, 1c, 2b, and 2c (when `lint:sh`, `lint:yaml`, `format:check:sh`, or `spellcheck` is absent from `package.json`) is NOT a failure — it is a graceful no-op.
 
 ## Note on Optional Sub-Steps
 
-Optional sub-steps (Steps 1b, 2b, and 2c) use a `node -e` probe against `package.json.scripts` to detect whether the relevant script is declared. This covers shell lint (`lint:sh`), shell format check (`format:check:sh`), and spell check (`spellcheck`). This skill installs to `~/.claude/skills/` and runs in any repository; the probe ensures the gate degrades cleanly in repos without these scripts. `npm run` is used (not `pnpm run`) for package-manager-agnostic compatibility.
+Optional sub-steps (Steps 1b, 1c, 2b, and 2c) use a `node -e` probe against `package.json.scripts` to detect whether the relevant script is declared. This covers shell lint (`lint:sh`), YAML lint (`lint:yaml`), shell format check (`format:check:sh`), and spell check (`spellcheck`). This skill installs to `~/.claude/skills/` and runs in any repository; the probe ensures the gate degrades cleanly in repos without these scripts. `npm run` is used (not `pnpm run`) for package-manager-agnostic compatibility.
 
 ## Relationship to Other Skills
 

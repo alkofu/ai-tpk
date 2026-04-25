@@ -384,7 +384,8 @@ Tracebloom completed its investigation. Before I hand this off to Pathfinder for
 Reply with "proceed" to continue to planning, or describe any corrections or scope adjustments you would like Pathfinder to incorporate.
 ```
 
-1. **Branch name derivation for the deferred subroutine** (used by the two fix-bound routing branches in step 2 above): when invoking the Worktree Creation Subroutine post-investigation, derive `{branch-name}` from the Diagnostic Report's root cause rather than the user's original reported symptom. Specifically:
+<!-- markdownlint-disable MD029 -->
+4. **Branch name derivation for the deferred subroutine** (used by the two fix-bound routing branches in step 2 above): when invoking the Worktree Creation Subroutine post-investigation, derive `{branch-name}` from the Diagnostic Report's root cause rather than the user's original reported symptom. Specifically:
 
    a. **Extract a short fix-essence string** from the Diagnostic Report's `Root cause` field. The fix-essence is the noun phrase or short clause describing the *thing being fixed*, stripped of clarifying clauses, file paths, and explanatory context. Aim for 4–8 words that capture what is wrong. Examples:
    - Root cause: *'Worker pool size set to 0 in `config/production.yaml` due to a merge conflict marker'* → fix-essence: *'worker pool size zero'*
@@ -398,6 +399,7 @@ Reply with "proceed" to continue to planning, or describe any corrections or sco
    c. **All other steps of the Worktree Creation Subroutine (collision handling, session context, log message) apply unchanged.**
 
    d. **User scope adjustments do not alter the branch name.** If the user supplied scope adjustments at the Premise Check, those adjustments are appended to the Pathfinder handoff (per step 3d) but the branch is named from the original root cause's fix-essence.
+<!-- markdownlint-enable MD029 -->
 
 When not triggered: skip directly to the Intake Gate.
 
@@ -512,7 +514,8 @@ The following intake brief was produced by Askmaw after user interview. Use it a
 
 When Askmaw is skipped: proceed to step 2 as before.
 
-1. Assess whether a plan already exists in the `~/.ai-tpk/plans/{REPO_SLUG}/` directory.
+<!-- markdownlint-disable MD029 -->
+2. Assess whether a plan already exists in the `~/.ai-tpk/plans/{REPO_SLUG}/` directory.
 
 **Explore-Options Gate** (scope-exploration-only, between step 2 and step 3):
 
@@ -529,7 +532,7 @@ When triggered:
 
 When not triggered: proceed to step 3; options discovery happens naturally inside Pathfinder's Section 4.
 
-1. Invoke Pathfinder (first invocation). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active.
+3. Invoke Pathfinder (first invocation). Include the `WORKING_DIRECTORY` and `WORKTREE_BRANCH` context block if a session worktree is active.
 
    **What Pathfinder returns depends on skip conditions:**
    - **Triggers that skip Section 4 (Scope Confirmation) only**: a complete Askmaw brief covering all fields, a Tracebloom Diagnostic Report, or a `## Confirmed Scope` block. Pathfinder still runs Section 3 (Interview) — though the Askmaw brief and Diagnostic Report cases have their own in-section skip handling that suppresses re-interviewing the user — and writes the completed plan to disk on this invocation. Proceed to step 4.
@@ -544,7 +547,8 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
 
 3b. Re-invoke Pathfinder with the confirmed scope. Use the Pathfinder re-invocation template defined in pathfinder.md Section 4, substituting the user's confirmed objective, assumptions, selected option, and any user modifications. Pathfinder will skip Section 4 and proceed directly to plan generation.
 
-1. Pathfinder saves the completed plan to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`.
+4. Pathfinder saves the completed plan to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`.
+<!-- markdownlint-enable MD029 -->
 
 ### Phase 2: Plan Review (Quality Gate)
 
@@ -873,19 +877,20 @@ When `--execute` is active, execute the following after delivering the inline Ph
     - If either check fails: DM does NOT show a confirmation prompt and does NOT delegate to Bitsmith. Instead, DM informs the user: "The command `{cmd}` is outside the `/do` allowlist. `/do` is restricted to single `gh` CLI commands with no shell chaining. For other operations, use the standard constructive pipeline." The session ends.
     - If both checks pass: proceed to step 2.
 
-1. DM classifies the (now-validated) command:
+<!-- markdownlint-disable MD029 -->
+2. DM classifies the (now-validated) command:
 - **Destructive subcommands** (require typed confirmation): any command matching `gh pr close`, `gh pr merge`, `gh issue close`, `gh issue delete`, `gh release delete`, `gh repo delete`, or any `gh api` invocation whose command string contains any of the tokens `DELETE`, `PUT`, or `PATCH` (case-insensitive, as standalone tokens — covers `--method DELETE`, `--method=DELETE`, `-X DELETE`, and any other flag position).
 - **Non-destructive subcommands**: all other validated `gh` commands (e.g., `gh issue label`, `gh issue edit --add-label`, `gh issue comment`, `gh pr edit --add-label`).
 
-1. DM presents the confirmation prompt to the user. The prompt reads exactly: "You asked: \"{user's original prose action request, verbatim}\"\nI will run: `{proposed command}`\n\nThese should describe the same action. Reply to proceed, adjust the command, or cancel."
+3. DM presents the confirmation prompt to the user. The prompt reads exactly: "You asked: \"{user's original prose action request, verbatim}\"\nI will run: `{proposed command}`\n\nThese should describe the same action. Reply to proceed, adjust the command, or cancel."
 
 For destructive subcommands, DM appends to the prompt: "⚠️ This is a destructive action. Type `CONFIRM` (exact, case-insensitive) to proceed. Any other response will cancel." DM accepts ONLY the literal token `CONFIRM` (case-insensitive). Any other response — including "yes", "ok", "proceed" — is treated as rejection. DM states clearly: "Confirmation required: type `CONFIRM` to proceed, or anything else to cancel."
 
 For non-destructive subcommands, DM uses the standard natural-language interpretation described below.
 
-1. DM waits for explicit user response. There is no implicit timeout. DM interprets the user's response as affirmative (proceed), revision (apply adjustments and re-validate the updated command per step 1a before re-prompting), or rejection (acknowledge and end the session). Ambiguous responses are clarified with a one-line follow-up question.
+4. DM waits for explicit user response. There is no implicit timeout. DM interprets the user's response as affirmative (proceed), revision (apply adjustments and re-validate the updated command per step 1a before re-prompting), or rejection (acknowledge and end the session). Ambiguous responses are clarified with a one-line follow-up question.
 
-2. On affirmative confirmation, DM delegates a single execution step to Bitsmith using the following template:
+5. On affirmative confirmation, DM delegates a single execution step to Bitsmith using the following template:
 
 ```
 ## Operational Execution Task
@@ -897,7 +902,8 @@ The following action was requested by the user and confirmed by the user before 
 Run the command, capture stdout, stderr, and exit code. Return the result. Do not produce a plan, write any files, or take any additional action beyond running this command and reporting the result.
 ```
 
-1. **(Single-command path)** After Bitsmith returns, DM logs the outcome inline to the user (e.g., "Action executed: `{command}` — exit code 0. Output: ..."). On non-zero exit code, surface the command, exit code, and stderr to the user inline. Do not silently swallow failures. The session ends; the user may issue a new `/do` if they wish to retry.
+6. **(Single-command path)** After Bitsmith returns, DM logs the outcome inline to the user (e.g., "Action executed: `{command}` — exit code 0. Output: ..."). On non-zero exit code, surface the command, exit code, and stderr to the user inline. Do not silently swallow failures. The session ends; the user may issue a new `/do` if they wish to retry.
+<!-- markdownlint-enable MD029 -->
 
 **Multi-step path Bitsmith delegation template**
 

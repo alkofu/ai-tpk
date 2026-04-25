@@ -150,30 +150,32 @@ Classify the feature as read-heavy, write-heavy, or mixed, then apply the approp
 
 **Mixed:** Assess whether CQRS separation would reduce contention or add unjustified complexity.
 
-1. **Analyze Database Performance**
+<!-- markdownlint-disable MD029 -->
+2. **Analyze Database Performance**
    - Run EXPLAIN on queries to check execution plans
    - Identify missing indexes (full table scans)
    - Detect N+1 query patterns
    - Check for SELECT * when specific fields suffice
    - Validate proper use of eager loading vs. lazy loading
 
-2. **Assess Resource Usage**
+3. **Assess Resource Usage**
    - Memory allocations in loops
    - File handles, connections not properly closed
    - Large objects held in memory unnecessarily
    - Inefficient serialization/deserialization
 
-3. **Check Caching & Optimization**
+4. **Check Caching & Optimization**
    - Expensive operations cached appropriately
    - Cache TTL and invalidation strategy
    - Memoization opportunities
    - Computed values vs. repeated calculations
 
-4. **Validate Scalability Patterns**
+5. **Validate Scalability Patterns**
    - Pagination implemented correctly
    - Rate limiting and throttling in place
    - Bulk operations batched appropriately
    - Background jobs for heavy processing
+<!-- markdownlint-enable MD029 -->
 
 ### Capacity Modeling and Cost Awareness
 

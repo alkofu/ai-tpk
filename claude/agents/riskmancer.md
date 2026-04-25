@@ -158,7 +158,8 @@ Expand A02 (Cryptographic Failures) with:
 - **Double-spend / double-submit**: Can a state-changing operation be triggered concurrently, bypassing idempotency guards?
 - **Atomicity**: Are multi-step authorization flows atomic, or can an attacker exploit partial completion?
 
-1. **Prioritize and Deliver Remediation**
+<!-- markdownlint-disable-next-line MD029 -->
+5. **Prioritize and Deliver Remediation**
    - Rank findings by severity × exploitability × blast radius
    - Provide location-specific fixes with secure code examples
 

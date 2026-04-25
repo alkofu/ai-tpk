@@ -1,6 +1,6 @@
-# Launcher Module — myclaude Interactive Wizard
+# Launcher Module — tpk Interactive Wizard
 
-The launcher is a TypeScript module that implements the `myclaude` interactive wizard. It allows users to configure MCP environment variables and launch Claude with the Dungeon Master agent in a single command.
+The launcher is a TypeScript module that implements the `tpk` interactive wizard. It allows users to configure MCP environment variables and launch Claude with the Dungeon Master agent in a single command.
 
 ## Quick Start
 
@@ -23,25 +23,25 @@ pnpm exec tsx src/launcher/main.ts
 After installation via `./install.sh`, the launcher is available as:
 
 ```bash
-myclaude
+tpk
 ```
 
 To launch Claude with an initial prompt (bypasses the wizard):
 
 ```bash
-myclaude --skip "/feature-issue 42"
+tpk --skip "/feature-issue 42"
 ```
 
 Launches Claude with the given string as its first prompt. Requires `--skip` (the wizard cannot also forward an initial message).
 
 ## Startup Behavior
 
-**First run** (no saved config): the wizard goes straight to MCP selection. Choices are saved to `~/.config/myclaude/config.json` after you complete the flow.
+**First run** (no saved config): the wizard goes straight to MCP selection. Choices are saved to `~/.config/tpk/config.json` after you complete the flow.
 
 **Subsequent runs** (saved config exists): a summary screen is shown before any prompts.
 
 ```
-┌  myclaude — Session Launcher
+┌  tpk — Session Launcher
 │
 ◆  Current Configuration
 │  Grafana: cluster prod-us-east, role viewer
@@ -58,7 +58,7 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 | Launch    | Enter              | Launches Claude immediately with the saved config. Config is not re-saved. |
 | Configure | Arrow-down + Enter | Enters the full MCP selection flow. Config is re-saved on completion.      |
 
-If the saved Grafana cluster ID no longer exists in `~/.config/grafana-clusters.yaml`, the launch path is skipped and the configure flow starts automatically with a warning.
+If the saved Grafana cluster ID no longer exists in `~/.config/tpk/grafana-clusters.yaml`, the launch path is skipped and the configure flow starts automatically with a warning.
 
 **`--skip` flag:** Pass `--skip` on the command line to bypass the summary screen entirely and launch Claude immediately with the saved config. The flag is parsed by `argv.ts` before `loadConfig` is called. If the saved config is unusable, the launcher exits non-zero with one of two stderr messages (no saved config, or stale/unresolvable config) — it never falls back to the interactive flow. Any unknown flag causes exit code 2. Example: `pnpm exec tsx src/launcher/main.ts --skip`.
 
@@ -67,13 +67,13 @@ If the saved Grafana cluster ID no longer exists in `~/.config/grafana-clusters.
 Pass an initial message as a positional argument to forward it verbatim to `claude` as its first prompt:
 
 ```bash
-myclaude --skip <initial-message>
+tpk --skip <initial-message>
 ```
 
 **Rules:**
 
-- `--skip` is required when supplying an initial message. If an initial message is given without `--skip`, the launcher writes `Initial message requires --skip. Usage: myclaude --skip <initial-message>` to stderr and exits with code `2`. No wizard banner is printed.
-- Only one positional argument is allowed. If two or more are supplied, the launcher writes `Too many positional arguments. Only one initial message is allowed. Usage: myclaude [--skip] [<initial-message>]` to stderr and exits with code `2`. No wizard banner is printed.
+- `--skip` is required when supplying an initial message. If an initial message is given without `--skip`, the launcher writes `Initial message requires --skip. Usage: tpk --skip <initial-message>` to stderr and exits with code `2`. No wizard banner is printed.
+- Only one positional argument is allowed. If two or more are supplied, the launcher writes `Too many positional arguments. Only one initial message is allowed. Usage: tpk [--skip] [<initial-message>]` to stderr and exits with code `2`. No wizard banner is printed.
 - Any token starting with `-` other than `--skip` (including single-dash tokens like `-h` and the bare `-`) is rejected as an unknown flag. It is never captured as the initial message.
 - The message is passed verbatim to `claude` — quoting at the shell level controls whether spaces become one argument or many. The launcher performs no further tokenisation.
 
@@ -87,7 +87,7 @@ pnpm test
 
 ## Grafana Configuration Format
 
-The launcher reads `~/.config/grafana-clusters.yaml`. Required structure:
+The launcher reads `~/.config/tpk/grafana-clusters.yaml`. Required structure:
 
 ```yaml
 clusters:
@@ -100,7 +100,7 @@ clusters:
 
 **Required fields:** `id`, `name`, `url`, `viewer_token`, `editor_token`.
 
-**Legacy fallback:** If a cluster has only a `token` field, the launcher warns and uses it as `viewer_token` (see `mcp/grafana.ts` for details). Ensure the file is readable only by the user: `chmod 600 ~/.config/grafana-clusters.yaml`.
+**Legacy fallback:** If a cluster has only a `token` field, the launcher warns and uses it as `viewer_token` (see `mcp/grafana.ts` for details). Ensure the file is readable only by the user: `chmod 600 ~/.config/tpk/grafana-clusters.yaml`.
 
 ## Environment Variables and Role Translation
 
@@ -114,7 +114,7 @@ The launcher constructs environment variables based on user selections:
 
 ## Persistence Format
 
-User selections are saved to `~/.config/myclaude/config.json` with mode 0600. If the file is missing or malformed, the config loader returns a default empty config, and the wizard prompts for selections on first run.
+User selections are saved to `~/.config/tpk/config.json` with mode 0600. If the file is missing or malformed, the config loader returns a default empty config, and the wizard prompts for selections on first run.
 
 ## Architecture
 
@@ -151,7 +151,7 @@ The `McpCommand` interface captures every per-MCP responsibility:
 | `outro.ts`       | `buildOutroLines` — two registry passes: success lines first, then skip lines, both in registry order                                                                                                                                                                                              |
 | `summary.ts`     | `formatSummaryLines` + `promptSummaryAction` — looks up each selected MCP in the registry by id                                                                                                                                                                                                    |
 | `prompts.ts`     | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`                                                                                                                                                                                                           |
-| `config.ts`      | Persistence: load/save `~/.config/myclaude/config.json`                                                                                                                                                                                                                                            |
+| `config.ts`      | Persistence: load/save `~/.config/tpk/config.json`                                                                                                                                                                                                                                                |
 | `types.ts`       | All shared TypeScript types (`ResolvedConfig`, `LauncherConfig`, `SkippedMap`, per-MCP config interfaces)                                                                                                                                                                                          |
 
 ### Shared helpers
@@ -184,11 +184,11 @@ The comment block at the top of `mcp-command.ts` repeats this checklist as an in
 
 ## Integration with install.sh
 
-Installation is handled by `src/installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.cjs` and installs the `~/bin/myclaude` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed, and any stale `~/.ai-tpk/launcher.js` from a previous install is removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
+Installation is handled by `src/installer/launcher-install.ts`. The process is idempotent: it copies the pre-built bundle to `~/.ai-tpk/launcher.cjs` and installs the `~/bin/tpk` bootstrap script. On upgrade, any old `~/.claude/launcher/` directory is automatically removed, and any stale `~/.ai-tpk/launcher.js` from a previous install is removed. The installed launcher has zero runtime dependency on the ai-tpk repository.
 
 ## Migration: Existing grafana-mcp Script
 
-Users with the legacy `~/bin/grafana-mcp` script can continue using it or switch to `myclaude`. The two are independent; there is no automatic migration.
+Users with the legacy `~/bin/grafana-mcp` script can continue using it or switch to `tpk`. The two are independent; there is no automatic migration.
 
 ## GCP Observability Configuration
 
@@ -214,7 +214,7 @@ When 'GCP Observability' is selected in the MCP multiselect, the launcher first 
 
 If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, the launcher logs a warning, skips the GCP MCP, and continues with the rest of the session. Failures in any other MCP loader (Grafana, CloudWatch, Kubernetes) are also non-fatal: the launcher logs a warning, skips that MCP, and continues with the remaining selected MCPs.
 
-The selected project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/myclaude/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
+The selected project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/tpk/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
 
 ### What GOOGLE_CLOUD_PROJECT does and does not do
 
@@ -228,7 +228,7 @@ The selected project ID is written to `~/.claude/.current-gcp-project` (mode 060
 2. Validates the project ID format (lowercase letters, digits, hyphens; 6-30 characters; must start with a letter and not end with a hyphen)
 3. Exports `GOOGLE_CLOUD_PROJECT` and launches `@google-cloud/observability-mcp@0.2.3` via `npx`
 
-If the dotfile is absent or empty, and no project was set another way, the wrapper exits with a helpful error pointing the user back to the `myclaude` launcher.
+If the dotfile is absent or empty, and no project was set another way, the wrapper exits with a helpful error pointing the user back to the `tpk` launcher.
 
 ## Kubernetes Configuration
 
@@ -252,7 +252,7 @@ If the `kubectx` switch fails, `applyKubernetesContextSwitch` clears `kubernetes
 
 ### Persistence
 
-The selected context is saved under `kubernetes.context` in `~/.config/myclaude/config.json` and offered as the default on the next run.
+The selected context is saved under `kubernetes.context` in `~/.config/tpk/config.json` and offered as the default on the next run.
 
 ## See Also
 
@@ -263,6 +263,6 @@ The selected context is saved under `kubernetes.context` in `~/.config/myclaude/
 - **`src/launcher/mcp-command-types.ts`** — `McpCommand` interface and `StaleResourceError` class
 - **`src/launcher/mcp-command.ts`** — Registry, re-exports of core types, and the "how to add a new MCP" comment block
 - **`src/launcher/mcp/kubernetes.ts`** — `kubectx` context listing, selection prompt, context switching, and `applyKubernetesContextSwitch`
-- **`src/launcher/mcp/argocd.ts`** — ArgoCD cluster listing from `~/.config/argocd-accounts.json`, cluster selection prompt, and dotfile write to `~/.claude/.current-argocd-cluster`
-- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper that reads `~/.claude/.current-argocd-cluster`, extracts the matching `url` and `token` from `~/.config/argocd-accounts.json` via `python3`, and launches `argocd-mcp@0.5.0`
+- **`src/launcher/mcp/argocd.ts`** — ArgoCD cluster listing from `~/.config/tpk/argocd-accounts.json`, cluster selection prompt, and dotfile write to `~/.claude/.current-argocd-cluster`
+- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper that reads `~/.claude/.current-argocd-cluster`, extracts the matching `url` and `token` from `~/.config/tpk/argocd-accounts.json` via `python3`, and launches `argocd-mcp@0.5.0`
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

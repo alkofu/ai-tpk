@@ -59,14 +59,14 @@ function runSkipLaunch(
 ): never {
   if (savedConfig.selectedMcps.length === 0) {
     console.error(
-      'No saved config found — run myclaude without --skip first to configure.',
+      'No saved config found — run tpk without --skip first to configure.',
     );
     process.exit(1);
   }
   const resolved = buildResolvedFromSaved(savedConfig);
   if (resolved === null) {
     console.error(
-      'Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run myclaude without --skip to reconfigure.',
+      'Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run tpk without --skip to reconfigure.',
     );
     process.exit(1);
   }
@@ -93,12 +93,12 @@ async function main(): Promise<void> {
 
   if (initialMessage !== undefined && !skip) {
     console.error(
-      'Initial message requires --skip. Usage: myclaude --skip <initial-message>',
+      'Initial message requires --skip. Usage: tpk --skip <initial-message>',
     );
     process.exit(2);
   }
 
-  intro('myclaude — Session Launcher');
+  intro('tpk — Session Launcher');
 
   const savedConfig = loadConfig();
 

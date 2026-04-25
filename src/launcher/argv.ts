@@ -1,4 +1,4 @@
-// Parses the argv array passed to the myclaude launcher.
+// Parses the argv array passed to the tpk launcher.
 //
 // Rules:
 //   - The literal token `--skip` sets the skip flag (idempotent; duplicates are tolerated).
@@ -14,7 +14,7 @@
 export class UnknownFlagError extends Error {
   constructor(flag: string) {
     super(
-      `Unknown flag: ${flag}. Usage: myclaude [--skip] [<initial-message>]`,
+      `Unknown flag: ${flag}. Usage: tpk [--skip] [<initial-message>]`,
     );
     this.name = 'UnknownFlagError';
   }
@@ -23,14 +23,14 @@ export class UnknownFlagError extends Error {
 export class TooManyPositionalsError extends Error {
   constructor() {
     super(
-      'Too many positional arguments. Only one initial message is allowed. Usage: myclaude [--skip] [<initial-message>]',
+      'Too many positional arguments. Only one initial message is allowed. Usage: tpk [--skip] [<initial-message>]',
     );
     this.name = 'TooManyPositionalsError';
   }
 }
 
 /**
- * Parse the arguments passed to the myclaude launcher.
+ * Parse the arguments passed to the tpk launcher.
  *
  * @param argv - the array to parse (pass `process.argv.slice(2)`; never the full argv)
  * @returns `{ skip, initialMessage }` where `skip` is true when `--skip` is present and

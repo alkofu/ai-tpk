@@ -158,7 +158,7 @@ Expand A02 (Cryptographic Failures) with:
 - **Double-spend / double-submit**: Can a state-changing operation be triggered concurrently, bypassing idempotency guards?
 - **Atomicity**: Are multi-step authorization flows atomic, or can an attacker exploit partial completion?
 
-5. **Prioritize and Deliver Remediation**
+1. **Prioritize and Deliver Remediation**
    - Rank findings by severity × exploitability × blast radius
    - Provide location-specific fixes with secure code examples
 
@@ -170,7 +170,7 @@ Permitted tools include Grep for pattern detection, Bash for dependency audits, 
 
 **For plan reviews, structure output as:**
 
-### Security Review Summary
+### Plan Review Summary
 
 - **Artifact**: Plan file reviewed
 - **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
@@ -191,13 +191,13 @@ For each gap:
 
 Recommended additions to the plan (threat modeling, security testing, hardening steps).
 
-### Verdict Rationale
+### Plan Verdict Rationale
 
 Why this verdict was chosen based on identified security risks.
 
 **For implementation reviews, structure output as:**
 
-### Security Review Summary
+### Implementation Review Summary
 
 - **Scope**: Components, files, and attack surface reviewed
 - **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
@@ -232,7 +232,7 @@ For each vulnerability:
 - [x] Error handling reviewed
 - [x] OWASP Top 10 evaluated
 
-### Verdict Rationale
+### Implementation Verdict Rationale
 
 Why this verdict was chosen based on security posture.
 

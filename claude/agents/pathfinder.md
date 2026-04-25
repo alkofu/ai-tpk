@@ -419,7 +419,7 @@ Track unresolved questions in `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature
 - Before finalizing plan if assumptions need validation
 - When user explicitly defers a decision
 
-## Success Criteria
+## Pathfinder Quality Gates
 
 Before considering a plan complete, verify:
 

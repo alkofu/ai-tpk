@@ -192,7 +192,7 @@ Users with the legacy `~/bin/grafana-mcp` script can continue using it or switch
 
 ## GCP Observability Configuration
 
-### Prerequisites
+### GCP Observability Prerequisites
 
 Authenticate with Application Default Credentials (ADC) before running the launcher:
 
@@ -232,7 +232,7 @@ If the dotfile is absent or empty, and no project was set another way, the wrapp
 
 ## Kubernetes Configuration
 
-### Prerequisites
+### Kubernetes Prerequisites
 
 `kubectx` must be installed and on `PATH`. A valid `~/.kube/config` with at least one context must exist. The launcher does not install `kubectx` — if it is absent, the launcher logs a warning, skips the Kubernetes MCP, and continues launching Claude with the remaining selections.
 

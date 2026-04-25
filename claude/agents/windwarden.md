@@ -112,13 +112,13 @@ See `claude/references/review-gates.md` for the shared gate framework and operat
    - Map API call chains and external dependencies
    - Locate synchronous operations that could be async
 
-#### Bottleneck Identification (Amdahl's Law)
+### Bottleneck Identification (Amdahl's Law)
 
 1. Classify each component in the request path as **I/O-bound** (database, network, disk) or **CPU-bound** (computation, serialization, encryption).
 2. Identify the single highest-latency or highest-cost component — this is the bottleneck.
 3. Apply Amdahl's Law: optimizing non-bottleneck components yields diminishing returns. State explicitly: _"The bottleneck is [X]. Optimizing [Y] will not meaningfully improve end-to-end performance until [X] is addressed."_
 
-#### Latency Budget Decomposition
+### Latency Budget Decomposition
 
 For latency-sensitive features:
 - Define the end-to-end latency target (e.g., P99 < 200ms)
@@ -126,7 +126,7 @@ For latency-sensitive features:
 - Flag components whose actual or estimated latency exceeds their budget
 - Identify high-variance components (P99/P50 ratio > 5×) — these are SLO risk even if P50 is acceptable
 
-#### Concurrency and Contention Analysis
+### Concurrency and Contention Analysis
 
 - **Connection pool sizing**: Is the pool size matched to expected concurrent requests? Undersized pools cause queueing; oversized pools can exhaust database connections.
 - **Lock contention**: Identify database row-level locks, mutex usage, and distributed locks that could become bottlenecks under concurrency.
@@ -134,7 +134,7 @@ For latency-sensitive features:
 - **Concurrency strategy fitness**: Is optimistic concurrency (compare-and-swap, versioning) or pessimistic locking (SELECT FOR UPDATE) appropriate given the conflict rate?
 - **Async/thread starvation**: Can blocking operations starve the thread pool or event loop?
 
-#### Read Path vs Write Path Analysis
+### Read Path vs Write Path Analysis
 
 Classify the feature as read-heavy, write-heavy, or mixed, then apply the appropriate lens:
 
@@ -150,26 +150,26 @@ Classify the feature as read-heavy, write-heavy, or mixed, then apply the approp
 
 **Mixed:** Assess whether CQRS separation would reduce contention or add unjustified complexity.
 
-2. **Analyze Database Performance**
+1. **Analyze Database Performance**
    - Run EXPLAIN on queries to check execution plans
    - Identify missing indexes (full table scans)
    - Detect N+1 query patterns
    - Check for SELECT * when specific fields suffice
    - Validate proper use of eager loading vs. lazy loading
 
-3. **Assess Resource Usage**
+2. **Assess Resource Usage**
    - Memory allocations in loops
    - File handles, connections not properly closed
    - Large objects held in memory unnecessarily
    - Inefficient serialization/deserialization
 
-4. **Check Caching & Optimization**
+3. **Check Caching & Optimization**
    - Expensive operations cached appropriately
    - Cache TTL and invalidation strategy
    - Memoization opportunities
    - Computed values vs. repeated calculations
 
-5. **Validate Scalability Patterns**
+4. **Validate Scalability Patterns**
    - Pagination implemented correctly
    - Rate limiting and throttling in place
    - Bulk operations batched appropriately

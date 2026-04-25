@@ -33,7 +33,7 @@
       "name": "argocd",
       "scope": "user",
       "transport": "stdio",
-      "prereq": "$HOME/.config/argocd-accounts.json",
+      "prereq": "$HOME/.config/tpk/argocd-accounts.json",
       "wrapper": "wrappers/mcp-argocd.sh"
     }
   ]

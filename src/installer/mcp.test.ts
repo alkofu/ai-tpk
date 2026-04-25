@@ -555,7 +555,7 @@ describe('writeStamps', () => {
  */
 function makeFakeHome(): string {
   const fakeHome = fs.mkdtempSync(path.join(tmpDir, 'home-gh-'));
-  fs.mkdirSync(path.join(fakeHome, '.config'), { recursive: true });
+  fs.mkdirSync(path.join(fakeHome, '.config', 'tpk'), { recursive: true });
   fs.mkdirSync(path.join(fakeHome, '.claude', 'wrappers'), { recursive: true });
   return fakeHome;
 }
@@ -569,7 +569,7 @@ function writePatsFile(
   contents: unknown,
   mode: number = 0o600,
 ): string {
-  const patsPath = path.join(fakeHome, '.config', 'github-pats.json');
+  const patsPath = path.join(fakeHome, '.config', 'tpk', 'github-pats.json');
   fs.writeFileSync(patsPath, JSON.stringify(contents), 'utf8');
   fs.chmodSync(patsPath, mode);
   return patsPath;
@@ -794,7 +794,7 @@ describe('registerGithubAccounts', () => {
 
   it('throws on invalid JSON and error message does not include file contents', () => {
     const fakeHome = makeFakeHome();
-    const patsPath = path.join(fakeHome, '.config', 'github-pats.json');
+    const patsPath = path.join(fakeHome, '.config', 'tpk', 'github-pats.json');
     fs.writeFileSync(patsPath, 'not-valid-json-{{{', 'utf8');
     fs.chmodSync(patsPath, 0o600);
 

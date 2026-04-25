@@ -13,6 +13,7 @@ import type { ResolvedConfig, LauncherConfig, SkippedMap } from '../types.js';
 const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
   '.config',
+  'tpk',
   'grafana-clusters.yaml',
 );
 
@@ -83,7 +84,7 @@ export function loadGrafanaClusters(configPath?: string): GrafanaCluster[] {
 
     if (!viewer_token && !editor_token && c.token) {
       log.warn(
-        `Cluster "${name}" uses legacy 'token' field. Add 'viewer_token' and 'editor_token' to ~/.config/grafana-clusters.yaml.`,
+        `Cluster "${name}" uses legacy 'token' field. Add 'viewer_token' and 'editor_token' to ~/.config/tpk/grafana-clusters.yaml.`,
       );
       viewer_token = String(c.token);
       editor_token = '';
@@ -137,14 +138,14 @@ export async function configureGrafana(
 
   if (roleValue === 'editor' && !selectedCluster.editor_token) {
     cancel(
-      `Cluster "${selectedCluster.name}" has no editor_token configured. Update ~/.config/grafana-clusters.yaml or select Viewer role.`,
+      `Cluster "${selectedCluster.name}" has no editor_token configured. Update ~/.config/tpk/grafana-clusters.yaml or select Viewer role.`,
     );
     process.exit(1);
   }
 
   if (roleValue === 'viewer' && !selectedCluster.viewer_token) {
     cancel(
-      `Cluster "${selectedCluster.name}" has no viewer_token configured. Update ~/.config/grafana-clusters.yaml or select Editor role.`,
+      `Cluster "${selectedCluster.name}" has no viewer_token configured. Update ~/.config/tpk/grafana-clusters.yaml or select Editor role.`,
     );
     process.exit(1);
   }

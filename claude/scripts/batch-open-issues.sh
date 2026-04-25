@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # batch-open-issues.sh
-# Spawns one new terminal tab/window per GitHub issue, each running myclaude --skip '/feature-issue <n>'
+# Spawns one new terminal tab/window per GitHub issue, each running tpk --skip '/feature-issue <n>'
 #
 # Usage: batch-open-issues.sh <issue> [<issue> ...]
 #
@@ -29,21 +29,22 @@ set -euo pipefail
 #   mapping of environment variables to TERMINAL values) requires
 #   updating this script in lockstep.
 #
-# myclaude contract dependency (documented, NOT probed at runtime):
-#   This script depends on the post-merge myclaude from the
-#   feat/forward-initial-command-to-claude-from-myclaude-cli PR, which extends
-#   myclaude to accept an initial-message positional argument alongside --skip.
-#   Runtime probing (e.g. myclaude --help) was deliberately removed: the
-#   post-merge myclaude has no --help handler — parseArgs rejects unknown flags
+# tpk contract dependency (documented, NOT probed at runtime):
+#   This script depends on tpk accepting an initial-message argument, added in
+#   the feat/forward-initial-command-to-claude-from-myclaude-cli PR (historical
+#   PR slug retained verbatim — this is the merged branch name in git history).
+#   tpk accepts an initial-message positional argument alongside --skip.
+#   Runtime probing (e.g. tpk --help) was deliberately removed: the
+#   post-merge tpk has no --help handler — parseArgs rejects unknown flags
 #   by exiting non-zero — so any probe pipeline would always fail under
 #   set -euo pipefail, breaking the script on every invocation including
-#   correctly-installed environments. If running against a stale myclaude (one
+#   correctly-installed environments. If running against a stale tpk (one
 #   that predates the merged PR), the user will see N broken Claude sessions
 #   rather than one fail-fast error. Fix: re-run install.sh with an updated
 #   ai-tpk checkout.
 #
 # Spawn-vs-success caveat:
-#   Successful tab spawn does NOT guarantee myclaude started successfully inside
+#   Successful tab spawn does NOT guarantee tpk started successfully inside
 #   the tab — verify tabs visually.
 #
 # iTerm2 workaround:
@@ -103,13 +104,13 @@ open_tab_for_issue() {
   local n="$1"
   case "$TERMINAL" in
     tmux)
-      tmux new-window -c "$PWD" "myclaude --skip '/feature-issue ${n}'"
+      tmux new-window -c "$PWD" "tpk --skip '/feature-issue ${n}'"
       return $?
       ;;
     iterm2)
       osascript -e "tell application \"iTerm\"
   tell current window to create tab with default profile
-  tell current session of current tab of current window to write text \"cd '$PWD' && myclaude --skip '/feature-issue ${n}'\"
+  tell current session of current tab of current window to write text \"cd '$PWD' && tpk --skip '/feature-issue ${n}'\"
 end tell"
       return $?
       ;;
@@ -123,7 +124,7 @@ end tell"
         printf 'batch-open-issues: cmux binary not found in PATH or at /Applications/cmux.app/Contents/Resources/bin/cmux — install cmux or ensure /Applications/cmux.app exists, then retry\n' >&2
         return 1
       fi
-      "$cmux_bin" new-workspace --cwd "$PWD" --name "issue-${n}" --command "myclaude --skip '/feature-issue ${n}'"
+      "$cmux_bin" new-workspace --cwd "$PWD" --name "issue-${n}" --command "tpk --skip '/feature-issue ${n}'"
       return $?
       ;;
     *)
@@ -141,7 +142,7 @@ if [[ "$TERMINAL" == "cmux" && -z "${CMUX_WORKSPACE_ID:-}" ]]; then
   # standalone Ghostty (TERM_PROGRAM=ghostty without cmux running). cmux's
   # new-workspace command requires a cmux instance, so this case is genuinely
   # unsupported.
-  printf "batch-open-issues: standalone Ghostty (without cmux running) is not supported — open tabs manually and run \`myclaude --skip '/feature-issue <n>'\` in each\n" >&2
+  printf "batch-open-issues: standalone Ghostty (without cmux running) is not supported — open tabs manually and run \`tpk --skip '/feature-issue <n>'\` in each\n" >&2
   exit 3
 elif [[ -z "$TERMINAL" ]]; then
   printf 'batch-open-issues: no supported terminal detected (TMUX, CMUX_WORKSPACE_ID, and the terminal program env var all unset or unrecognized)\n' >&2
@@ -164,7 +165,7 @@ done
 # Summary
 if [[ ${#successes[@]} -gt 0 ]]; then
   printf 'batch-open-issues: spawned %d tab(s) for issues %s\n' "${#successes[@]}" "${successes[*]}"
-  printf 'batch-open-issues: NOTE — spawn success does not guarantee myclaude started successfully inside each tab; verify tabs visually.\n'
+  printf 'batch-open-issues: NOTE — spawn success does not guarantee tpk started successfully inside each tab; verify tabs visually.\n'
 fi
 
 if [[ ${#failures[@]} -gt 0 ]]; then

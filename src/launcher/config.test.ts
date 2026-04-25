@@ -6,55 +6,48 @@ import * as os from 'node:os';
 import { loadConfig, saveConfig } from './config.js';
 
 // ---------------------------------------------------------------------------
-// The real CONFIG_FILE path (hardcoded in config.ts — no path injection).
-// We back up any existing file before the suite and restore it after.
+// Fake-home isolation: swap process.env.HOME to a temp directory so that
+// loadConfig / saveConfig (which call os.homedir() internally) never touch
+// the real user home. Getter functions re-derive paths at call time, after
+// the HOME swap has occurred.
+// These getters are deliberately re-defined locally rather than imported from
+// `./config.js` so the test computes paths independently and a bug in
+// `config.ts`'s path derivation cannot escape detection.
 // ---------------------------------------------------------------------------
 
-const configDir = path.join(os.homedir(), '.config', 'myclaude');
-// Re-derive using the same logic as config.ts
-const REAL_CONFIG_FILE = path.join(
-  os.homedir(),
-  '.config',
-  'myclaude',
-  'config.json',
-);
+let originalHome: string | undefined;
+let fakeHome: string;
+
+function getConfigDir(): string {
+  return path.join(os.homedir(), '.config', 'tpk');
+}
+function getConfigFile(): string {
+  return path.join(getConfigDir(), 'config.json');
+}
 
 // Temp dir for scratch space used in tests that need it
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-config-test-'));
 
-// Snapshot state before any tests run
-let priorContent: string | null = null;
-let priorDirExisted = false;
-
 before(() => {
-  priorDirExisted = fs.existsSync(configDir);
-  if (fs.existsSync(REAL_CONFIG_FILE)) {
-    priorContent = fs.readFileSync(REAL_CONFIG_FILE, 'utf8');
-  }
+  originalHome = process.env.HOME;
+  fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-config-test-home-'));
+  process.env.HOME = fakeHome;
 });
 
 after(() => {
-  // Restore original state
-  if (priorContent !== null) {
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(REAL_CONFIG_FILE, priorContent, 'utf8');
-  } else if (!priorDirExisted && fs.existsSync(configDir)) {
-    // We created the dir during tests; remove it
-    fs.rmSync(configDir, { recursive: true });
-  } else if (priorDirExisted && fs.existsSync(REAL_CONFIG_FILE)) {
-    // Dir existed but file did not — remove just the file
-    if (priorContent === null) {
-      fs.rmSync(REAL_CONFIG_FILE, { force: true });
-    }
+  if (originalHome !== undefined) {
+    process.env.HOME = originalHome;
+  } else {
+    delete process.env.HOME;
   }
-
+  fs.rmSync(fakeHome, { recursive: true, force: true });
   fs.rmSync(tmpDir, { recursive: true });
 });
 
-// Helper: ensure the real config file does not exist before a test
+// Helper: ensure the config file does not exist before a test
 function removeConfigFile(): void {
-  if (fs.existsSync(REAL_CONFIG_FILE)) {
-    fs.rmSync(REAL_CONFIG_FILE);
+  if (fs.existsSync(getConfigFile())) {
+    fs.rmSync(getConfigFile());
   }
 }
 
@@ -70,8 +63,8 @@ describe('loadConfig', () => {
   });
 
   it('returns { selectedMcps: [] } when file contains malformed JSON', () => {
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(REAL_CONFIG_FILE, 'not valid json {{', 'utf8');
+    fs.mkdirSync(getConfigDir(), { recursive: true });
+    fs.writeFileSync(getConfigFile(), 'not valid json {{', 'utf8');
     const result = loadConfig();
     assert.deepStrictEqual(result, { selectedMcps: [] });
   });
@@ -81,8 +74,8 @@ describe('loadConfig', () => {
       selectedMcps: ['grafana', 'cloudwatch'],
       cloudwatch: { profile: 'my-profile' },
     };
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(REAL_CONFIG_FILE, JSON.stringify(config), 'utf8');
+    fs.mkdirSync(getConfigDir(), { recursive: true });
+    fs.writeFileSync(getConfigFile(), JSON.stringify(config), 'utf8');
     const result = loadConfig();
     assert.deepStrictEqual(result, config);
   });
@@ -95,29 +88,29 @@ describe('loadConfig', () => {
 describe('saveConfig', () => {
   it('creates the directory and file when they do not exist', () => {
     // Remove both file and dir so saveConfig must create them from scratch
-    if (fs.existsSync(REAL_CONFIG_FILE)) {
-      fs.rmSync(REAL_CONFIG_FILE);
+    if (fs.existsSync(getConfigFile())) {
+      fs.rmSync(getConfigFile());
     }
-    if (fs.existsSync(configDir)) {
-      fs.rmSync(configDir, { recursive: true });
+    if (fs.existsSync(getConfigDir())) {
+      fs.rmSync(getConfigDir(), { recursive: true });
     }
     saveConfig({ selectedMcps: ['grafana'] });
     assert.ok(
-      fs.existsSync(REAL_CONFIG_FILE),
+      fs.existsSync(getConfigFile()),
       'config file should exist after saveConfig',
     );
   });
 
   it('overwrites an existing config file', () => {
-    fs.mkdirSync(configDir, { recursive: true });
+    fs.mkdirSync(getConfigDir(), { recursive: true });
     fs.writeFileSync(
-      REAL_CONFIG_FILE,
+      getConfigFile(),
       JSON.stringify({ selectedMcps: ['old'] }),
       'utf8',
     );
     saveConfig({ selectedMcps: ['new'] });
     const written = JSON.parse(
-      fs.readFileSync(REAL_CONFIG_FILE, 'utf8'),
+      fs.readFileSync(getConfigFile(), 'utf8'),
     ) as unknown;
     assert.deepStrictEqual(written, { selectedMcps: ['new'] });
   });
@@ -135,7 +128,7 @@ describe('saveConfig', () => {
 
   it('writes the file with mode 0o600', () => {
     saveConfig({ selectedMcps: [] });
-    const mode = fs.statSync(REAL_CONFIG_FILE).mode & 0o777;
+    const mode = fs.statSync(getConfigFile()).mode & 0o777;
     assert.strictEqual(
       mode,
       0o600,

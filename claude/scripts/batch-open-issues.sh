@@ -30,9 +30,10 @@ set -euo pipefail
 #   updating this script in lockstep.
 #
 # tpk contract dependency (documented, NOT probed at runtime):
-#   This script depends on the post-merge tpk from the
-#   feat/forward-initial-command-to-claude-from-myclaude-cli PR, which extends  # Historical PR slug retained verbatim — merged branch name in git history
-#   tpk to accept an initial-message positional argument alongside --skip.
+#   This script depends on tpk accepting an initial-message argument, added in
+#   the feat/forward-initial-command-to-claude-from-myclaude-cli PR (historical
+#   PR slug retained verbatim — this is the merged branch name in git history).
+#   tpk accepts an initial-message positional argument alongside --skip.
 #   Runtime probing (e.g. tpk --help) was deliberately removed: the
 #   post-merge tpk has no --help handler — parseArgs rejects unknown flags
 #   by exiting non-zero — so any probe pipeline would always fail under

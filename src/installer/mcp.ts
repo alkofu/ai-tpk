@@ -383,7 +383,7 @@ export function assertWrappersDirNotWorldWritable(
 }
 
 /**
- * Reads and validates ~/.config/github-pats.json.
+ * Reads and validates ~/.config/tpk/github-pats.json.
  * Returns the validated flat object of key→PAT pairs, or null on ENOENT/empty.
  * Throws on malformed JSON, wrong shape, or invalid entries.
  *

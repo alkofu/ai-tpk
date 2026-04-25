@@ -3,6 +3,6 @@
   "MD032": false,
   "MD036": false,
   "MD040": false,
-  "MD060": false,
-  "MD033": { "allowed_elements": ["img"] }
+  "MD033": { "allowed_elements": ["img", "div"] },
+  "MD041": false
 }

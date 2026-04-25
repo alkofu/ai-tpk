@@ -11,6 +11,7 @@ Never chain commands using `&&` or `;` as sequential execution operators. Always
 Pipes (`|`) are permitted **only for data transformation** (feeding the output of one command into a filter). Do not use pipes as a substitute for sequential control flow.
 
 **Wrong — sequential chaining:**
+
 ```bash
 mkdir -p foo && cd foo && git init
 ```
@@ -21,6 +22,7 @@ mkdir -p foo && cd foo && git init
 3. `git init`
 
 **Wrong — pipe as control flow:**
+
 ```bash
 git stash && git pull | grep "Already up to date"
 ```
@@ -31,6 +33,7 @@ git stash && git pull | grep "Already up to date"
 3. `git log --oneline -5`  ← prefer `-5` flag over `git log | head -5`
 
 **Acceptable — pipe for data transformation (no tool-native alternative):**
+
 ```bash
 grep "ERROR" app.log | wc -l
 ```
@@ -42,6 +45,7 @@ Never use process substitution (`<(cmd)` or `>(cmd)`). Each substitution spawns 
 **Enforcement:** This rule is enforced automatically by the `PermissionRequest` hook (`permission-learn.sh`). Any command containing `<(` or `>(` outside of quoted strings will be denied.
 
 **Wrong — process substitution:**
+
 ```bash
 diff <(sort file1.txt) <(sort file2.txt)
 ```
@@ -52,6 +56,7 @@ diff <(sort file1.txt) <(sort file2.txt)
 3. `diff /tmp/sorted1.txt /tmp/sorted2.txt`
 
 **Wrong — output process substitution:**
+
 ```bash
 tee >(grep ERROR > errors.log) < app.log
 ```
@@ -77,6 +82,7 @@ Use multiple `-m` flags on a single `git commit` command instead. Git allows `-m
 **Enforcement:** `permission-learn.sh` Guard 5 (`is_simple_expansion_only`) blocks auto-approval for any command containing `$(`. The command falls through to the interactive permission dialog instead of being auto-approved. (This is not a hard deny -- the dialog still allows manual approval, but it breaks unattended operation.)
 
 **Wrong -- command substitution in commit:**
+
 ```bash
 git commit -m "$(cat <<'EOF'
 feat(api): add batch endpoint
@@ -87,6 +93,7 @@ EOF
 ```
 
 **Wrong -- heredoc temp-file pattern (also triggers permission dialogs):**
+
 ```bash
 cat > /tmp/claude-commit-msg.txt <<'EOF'
 feat(api): add batch endpoint
@@ -94,6 +101,7 @@ feat(api): add batch endpoint
 Implements batch processing for bulk operations.
 EOF
 ```
+
 ```bash
 git commit -F /tmp/claude-commit-msg.txt
 ```
@@ -101,16 +109,19 @@ git commit -F /tmp/claude-commit-msg.txt
 The temp-file approach fails for three reasons: `cat` is not in the auto-approve allowlist, `>` redirection fails Guard 5, and the multi-line heredoc body triggers the compound-command hard deny (newline count > 0).
 
 **Right -- multiple `-m` flags (subject only):**
+
 ```bash
 git commit -m "feat(api): add batch endpoint"
 ```
 
 **Right -- multiple `-m` flags (subject + body):**
+
 ```bash
 git commit -m "feat(api): add batch endpoint" -m "Implements batch processing for bulk operations."
 ```
 
 **Right -- multiple `-m` flags (subject + body + footer):**
+
 ```bash
 git commit -m "feat(api): add batch endpoint" -m "Implements batch processing for bulk operations." -m "BREAKING CHANGE: removes legacy single-item endpoint"
 ```

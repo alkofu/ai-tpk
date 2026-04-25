@@ -112,13 +112,13 @@ See `claude/references/review-gates.md` for the shared gate framework and operat
    - Map API call chains and external dependencies
    - Locate synchronous operations that could be async
 
-#### Bottleneck Identification (Amdahl's Law)
+### Bottleneck Identification (Amdahl's Law)
 
 1. Classify each component in the request path as **I/O-bound** (database, network, disk) or **CPU-bound** (computation, serialization, encryption).
 2. Identify the single highest-latency or highest-cost component — this is the bottleneck.
 3. Apply Amdahl's Law: optimizing non-bottleneck components yields diminishing returns. State explicitly: _"The bottleneck is [X]. Optimizing [Y] will not meaningfully improve end-to-end performance until [X] is addressed."_
 
-#### Latency Budget Decomposition
+### Latency Budget Decomposition
 
 For latency-sensitive features:
 - Define the end-to-end latency target (e.g., P99 < 200ms)
@@ -126,7 +126,7 @@ For latency-sensitive features:
 - Flag components whose actual or estimated latency exceeds their budget
 - Identify high-variance components (P99/P50 ratio > 5×) — these are SLO risk even if P50 is acceptable
 
-#### Concurrency and Contention Analysis
+### Concurrency and Contention Analysis
 
 - **Connection pool sizing**: Is the pool size matched to expected concurrent requests? Undersized pools cause queueing; oversized pools can exhaust database connections.
 - **Lock contention**: Identify database row-level locks, mutex usage, and distributed locks that could become bottlenecks under concurrency.
@@ -134,7 +134,7 @@ For latency-sensitive features:
 - **Concurrency strategy fitness**: Is optimistic concurrency (compare-and-swap, versioning) or pessimistic locking (SELECT FOR UPDATE) appropriate given the conflict rate?
 - **Async/thread starvation**: Can blocking operations starve the thread pool or event loop?
 
-#### Read Path vs Write Path Analysis
+### Read Path vs Write Path Analysis
 
 Classify the feature as read-heavy, write-heavy, or mixed, then apply the appropriate lens:
 
@@ -150,6 +150,7 @@ Classify the feature as read-heavy, write-heavy, or mixed, then apply the approp
 
 **Mixed:** Assess whether CQRS separation would reduce contention or add unjustified complexity.
 
+<!-- markdownlint-disable MD029 -->
 2. **Analyze Database Performance**
    - Run EXPLAIN on queries to check execution plans
    - Identify missing indexes (full table scans)
@@ -174,6 +175,7 @@ Classify the feature as read-heavy, write-heavy, or mixed, then apply the approp
    - Rate limiting and throttling in place
    - Bulk operations batched appropriately
    - Background jobs for heavy processing
+<!-- markdownlint-enable MD029 -->
 
 ### Capacity Modeling and Cost Awareness
 
@@ -190,7 +192,7 @@ Windwarden uses **Scale B (CRITICAL / HIGH / MEDIUM / LOW)** for performance rev
 
 ### Domain-Specific Severity Application — Performance Examples
 
-Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/references/verdict-taxonomy.md`. The examples below illustrate what each level looks like in the performance domain — they are *examples of application*, not redefinitions of what the levels mean.
+Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/references/verdict-taxonomy.md`. The examples below illustrate what each level looks like in the performance domain — they are _examples of application_, not redefinitions of what the levels mean.
 
 **CRITICAL:**
 - Unbounded loops over large datasets
@@ -222,12 +224,14 @@ Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/r
 Structure every review as follows:
 
 ### Performance Review Summary
+
 - **Artifact**: What was reviewed (plan file or code files)
 - **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Performance Impact**: CRITICAL | HIGH | MEDIUM | LOW
 - **Findings**: X CRITICAL, Y HIGH, Z MEDIUM, W LOW
 
 ### Performance Analysis
+
 Brief overview of the performance characteristics and main concerns.
 
 ### Findings
@@ -243,12 +247,15 @@ For each finding:
 - **Optimization**: Specific fix with improved approach or code example
 
 ### Performance Gaps
+
 What performance considerations are missing or unaddressed.
 
 ### Benchmark Recommendations
+
 Suggested performance tests or metrics to validate the fix.
 
 ### Verdict Rationale
+
 Brief explanation of why this verdict was chosen based on performance impact.
 
 ## Critical Constraints

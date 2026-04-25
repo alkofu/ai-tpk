@@ -9,6 +9,7 @@ Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented
 ## Quick Install
 
 Clone the repository:
+
 ```bash
 git clone git@github.com:alkofu/ai-tpk.git
 cd ai-tpk
@@ -72,6 +73,7 @@ The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) t
 **pnpm scripts:**
 
 - `pnpm run lint` — Run oxlint to check for TypeScript errors and code quality issues
+- `pnpm run lint:md` — Run markdownlint across all Markdown files (ignores `node_modules`, `plans`, `lessons`, `docs/superpowers`, `claude/cache`)
 - `pnpm run format` — Apply oxfmt formatting to all TypeScript files in `src/`
 - `pnpm run format:check` — Check formatting without modifying files (used in CI)
 
@@ -81,7 +83,7 @@ Before committing code, run `pnpm run format` to auto-format your changes. This 
 
 **Pre-Push Hook:**
 
-Lefthook runs lint and format checks on every push when JS/TS files have changed. If either check fails, the push is blocked. Run `pnpm run format` to auto-fix formatting issues. Hook configuration lives in `lefthook.yml`.
+Lefthook runs lint, format, and Markdown lint checks on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
 
 ### Development Workflow
 
@@ -91,7 +93,7 @@ When making changes to this repository:
 2. **Make changes** — Edit TypeScript files in `src/installer/` or `src/launcher/`, or configuration files in `claude/`
 3. **Build and reinstall** — Run `pnpm run build` to rebuild the installer bundle, then `./install.sh` to deploy to `~/.claude/`, then `./clean-backups.sh` to remove stale backups. The `/build-and-install` repo-scope slash command automates all three steps in sequence.
 4. **Test** — Run `pnpm test` to execute the test suite
-5. **Lint and format** — Run `pnpm run format` to auto-fix formatting, then `pnpm run lint` to verify code quality
+5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, and `pnpm run lint:md` to verify Markdown style
 6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing
 
 ## Updating

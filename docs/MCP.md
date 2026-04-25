@@ -12,9 +12,11 @@ Currently configured servers:
 - **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `src/mcp/wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist.
 - **Grafana MCP Server** (`mcp-grafana`) — Grafana dashboards, datasources, and incident access. Uses `src/mcp/wrappers/mcp-grafana.sh`, which requires `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN` in the shell environment.
 - **GitHub MCP Server** (`@modelcontextprotocol/server-github@2025.4.8`) — Multi-account GitHub repository, issue, PR, and code search access via `~/.config/tpk/github-pats.json`. Define your accounts as a flat JSON object mapping account names to PATs:
+
   ```json
   {"personal": "ghp_xxx", "work": "ghp_yyy"}
   ```
+
   **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/tpk/github-pats.json`.** The file holds long-lived GitHub PATs in plaintext; on multi-user hosts a default umask (`022`) leaves it world-readable. The wrapper refuses to read the file at MCP-server boot if the mode is broader than `0600`, and the installer prints a warning.
 
   Each key becomes the suffix of a registered MCP server (`github-personal`, `github-work`) and a tool namespace (`mcp__github-personal__*`, `mcp__github-work__*`). Account keys must match `^[a-zA-Z0-9_.-]+$`.
@@ -25,9 +27,11 @@ Currently configured servers:
 
   If `~/.config/tpk/github-pats.json` is missing or empty (`{}`) at install time, GitHub MCP setup is skipped with a yellow warning and installation continues. On each run, the installer also removes the legacy `github` (no suffix) registration, removes stale `github-<key>` registrations, and removes stale `mcp__github-<key>__*` allow-list entries for keys no longer present in the PATs file.
 - **ArgoCD MCP Server** (`argocd-mcp@0.5.0`) — Multi-cluster ArgoCD access via `~/.config/tpk/argocd-accounts.json`. Define your clusters as a JSON object mapping cluster names to `{ url, token }` pairs:
+
   ```json
   { "prod": { "url": "https://argocd.prod.example.com", "token": "..." }, "staging": { "url": "https://argocd.staging.example.com", "token": "..." } }
   ```
+
   **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/tpk/argocd-accounts.json`.** ArgoCD tokens are equivalent in sensitivity to GitHub PATs; the wrapper refuses to read the file if the mode is broader than `0600`.
 
   Cluster names (keys) must match `^[a-zA-Z0-9_.-]+$`. The selected cluster is written to `~/.claude/.current-argocd-cluster` by the launcher and read at wrapper boot time. Rotating a token in `~/.config/tpk/argocd-accounts.json` takes effect on the next MCP server boot without re-running `install.sh`.

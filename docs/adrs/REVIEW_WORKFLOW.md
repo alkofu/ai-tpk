@@ -261,6 +261,7 @@ claude --agent dungeonmaster "Major feature overhaul --review-all"
 Ruinor's 6-phase investigation protocol includes **Phase 5: Specialist Assessment**, where it evaluates whether concerns extend beyond baseline checks.
 
 **Example Ruinor output:**
+
 ```
 ### Specialist Recommendations
 

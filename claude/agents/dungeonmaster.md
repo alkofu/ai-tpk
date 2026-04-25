@@ -274,7 +274,7 @@ This overview is a navigation aid, not a substitute for the gate-by-gate detail 
    e. **Pathfinder re-invocation** — DM passes the confirmed scope back; Pathfinder writes the plan file and signals completion.
 6. **Advisory branch entry point.** When the advisory branch fires (either via `INTENT: advisory` or Mutual Exclusivity branch (d)), do not invoke any of the gates above. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables are still captured.
 
-1. Clarify the user goal in one sentence.
+7. Clarify the user goal in one sentence.
 
 **Worktree Creation Subroutine:**
 
@@ -300,6 +300,7 @@ This subroutine is **invoked explicitly** by routing branches in this section th
    The `{branch-slug}` used in `WORKTREE_PATH` (step 2) is the portion of `{branch-name}` after the final `/`, with any remaining `/` replaced by `-` to keep the path segment flat (e.g., `{branch-name}` = `feat/add-oauth-login` → `{branch-slug}` = `add-oauth-login`, so `WORKTREE_PATH` = `{REPO_ROOT}/.worktrees/add-oauth-login`).
 
 2. **Delegate worktree creation to Bitsmith** (DM's Bash is read-only scoped; `mkdir` and `git worktree add` are write operations):
+
    ```
    REPO_ROOT=$(git rev-parse --show-toplevel)
    REPO_SLUG=$(basename "${REPO_ROOT}")
@@ -368,7 +369,7 @@ If the task was classified as investigative (see "When to call Tracebloom" routi
 
 **Premise Check template** (use this exact format when surfacing the disclosure to the user):
 
-~~~
+```
 Tracebloom completed its investigation. Before I hand this off to Pathfinder for planning, please confirm the diagnosis matches your understanding of the problem.
 
 **Root cause:** {one-sentence root cause}
@@ -381,8 +382,9 @@ Tracebloom completed its investigation. Before I hand this off to Pathfinder for
 **Recommended next action:** {verbatim recommended next action}
 
 Reply with "proceed" to continue to planning, or describe any corrections or scope adjustments you would like Pathfinder to incorporate.
-~~~
+```
 
+<!-- markdownlint-disable MD029 -->
 4. **Branch name derivation for the deferred subroutine** (used by the two fix-bound routing branches in step 2 above): when invoking the Worktree Creation Subroutine post-investigation, derive `{branch-name}` from the Diagnostic Report's root cause rather than the user's original reported symptom. Specifically:
 
    a. **Extract a short fix-essence string** from the Diagnostic Report's `Root cause` field. The fix-essence is the noun phrase or short clause describing the *thing being fixed*, stripped of clarifying clauses, file paths, and explanatory context. Aim for 4–8 words that capture what is wrong. Examples:
@@ -397,6 +399,7 @@ Reply with "proceed" to continue to planning, or describe any corrections or sco
    c. **All other steps of the Worktree Creation Subroutine (collision handling, session context, log message) apply unchanged.**
 
    d. **User scope adjustments do not alter the branch name.** If the user supplied scope adjustments at the Premise Check, those adjustments are appended to the Pathfinder handoff (per step 3d) but the branch is named from the original root cause's fix-essence.
+<!-- markdownlint-enable MD029 -->
 
 When not triggered: skip directly to the Intake Gate.
 
@@ -404,7 +407,7 @@ When not triggered: skip directly to the Intake Gate.
 
 (The first four lines of the template below are the canonical Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
-~~~
+```
 WORKING_DIRECTORY: {REPO_ROOT}
 WORKTREE_BRANCH: (none — pre-worktree investigation)
 REPO_SLUG: {REPO_SLUG}
@@ -420,13 +423,13 @@ Note: this investigation runs **before** any session worktree is created. `{REPO
 
 ## Instructions
 Investigate the reported symptom. Produce a Diagnostic Report with all 5 required fields. Do not plan or fix -- investigate only.
-~~~
+```
 
 **Diagnostic Report handoff to Pathfinder template:**
 
 (The first four lines of the template below are the canonical Worktree Context Block — see `claude/references/worktree-protocol.md` § Canonical Worktree Context Block Template for the source of truth. Per the format-change protocol defined in that subsection, do not edit these lines in isolation; if the canonical format changes, update the subsection first, then update every consumer site in lockstep.)
 
-~~~
+```
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
 REPO_SLUG: {REPO_SLUG}
@@ -439,7 +442,7 @@ The following Diagnostic Report was produced by Tracebloom after investigating a
 {Tracebloom's Diagnostic Report, verbatim}
 
 [Rest of Pathfinder delegation as normal]
-~~~
+```
 
 **Diagnostic Report handoff to Bitsmith (trivial-fix branch) template:**
 
@@ -449,7 +452,7 @@ When invoking Bitsmith with this template, pass `model: haiku` as the per-invoca
 
 Use only the aliases `haiku`, `sonnet`, `opus` as the per-invocation model value — full model IDs (e.g., `claude-haiku-4-5`) are not accepted by the per-invocation parameter.
 
-~~~
+```
 WORKING_DIRECTORY: {WORKTREE_PATH}
 WORKTREE_BRANCH: {WORKTREE_BRANCH}
 REPO_SLUG: {REPO_SLUG}
@@ -463,7 +466,7 @@ The following Diagnostic Report was produced by Tracebloom after investigating a
 
 ## Instructions
 Implement the trivial fix described in the report's `Recommended next action`. Follow the standard Bitsmith implementation protocol. Do not modify scope beyond what the report identifies.
-~~~
+```
 
 **Intake Gate** (between the Investigative Gate and step 2):
 
@@ -476,6 +479,7 @@ When Askmaw is invoked, DM manages the interview loop:
 4. **Failure safeguard:** After 5 rounds without a brief, instruct Askmaw to produce a best-effort brief from information gathered so far, with unresolved ambiguities flagged. Proceed to Pathfinder with a note that the brief is incomplete and Pathfinder may need to exercise judgment on flagged open questions.
 
 **Askmaw delegation template:**
+
 ```
 The user has requested the following. Review the request and conversation history, then either ask one clarifying question or produce the final structured brief.
 
@@ -489,6 +493,7 @@ The user has requested the following. Review the request and conversation histor
 If critical ambiguities remain, return a single clarifying question using the "Intake Question" format.
 If the objective is clear and scope is bounded, return the completed "Intake Brief" format.
 ```
+
 On round 6 (after 5 questions): append "You have reached the maximum number of questions. Produce a best-effort brief now, flagging any unresolved ambiguities as open questions."
 
 **Pathfinder handoff template (when brief is ready):**
@@ -509,6 +514,7 @@ The following intake brief was produced by Askmaw after user interview. Use it a
 
 When Askmaw is skipped: proceed to step 2 as before.
 
+<!-- markdownlint-disable MD029 -->
 2. Assess whether a plan already exists in the `~/.ai-tpk/plans/{REPO_SLUG}/` directory.
 
 **Explore-Options Gate** (scope-exploration-only, between step 2 and step 3):
@@ -536,12 +542,13 @@ When not triggered: proceed to step 3; options discovery happens naturally insid
    **DOCS_HINT propagation rule.** If `--docs` was detected in the user's message body during this session's flag scan, DM emits the line `DOCS_HINT: true` in every Pathfinder delegation prompt this session (first invocation, scope-confirmation re-invocation, and Phase 2 revision-mode re-invocations). Same DM-side text-scan model as `--explore-options`. The line is omitted entirely when `--docs` is not active — absence is the negative signal. See the Workflow Flags table row for `--docs` (above) for the full flag definition, including the rule that `--docs` in advisory or investigative sessions is captured-but-ignored with a warning.
 
 3a. When Pathfinder returns Scope Confirmation output (not a plan):
-   - Surface the scope summary and any implementation options to the user exactly as Pathfinder returned them.
-   - Wait for the user to confirm scope and (if options were presented) select an implementation approach. Do not proceed until the user responds.
+- Surface the scope summary and any implementation options to the user exactly as Pathfinder returned them.
+- Wait for the user to confirm scope and (if options were presented) select an implementation approach. Do not proceed until the user responds.
 
 3b. Re-invoke Pathfinder with the confirmed scope. Use the Pathfinder re-invocation template defined in pathfinder.md Section 4, substituting the user's confirmed objective, assumptions, selected option, and any user modifications. Pathfinder will skip Section 4 and proceed directly to plan generation.
 
 4. Pathfinder saves the completed plan to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`.
+<!-- markdownlint-enable MD029 -->
 
 ### Phase 2: Plan Review (Quality Gate)
 
@@ -828,7 +835,7 @@ When `--save-report` is active, execute the following after delivering the inlin
 2. Compute the report path: `{REPO_ROOT}/reports/{SESSION_TS}-{SESSION_SLUG}.md`
 3. Delegate to Bitsmith with the following template:
 
-~~~
+```
 ## Report Write Task
 
 Write the advisory report to disk. This is a single file write — no code changes, no tests, no review needed.
@@ -852,9 +859,9 @@ Write the advisory report to disk. This is a single file write — no code chang
 
 {Sources list compiled during Phase C}
 ---end report content---
-~~~
+```
 
-4. After Bitsmith confirms the write, log the report path to the user: "Report saved to `{report path}`"
+1. After Bitsmith confirms the write, log the report path to the user: "Report saved to `{report path}`"
 
 **`--execute` post-synthesis step (conditional):**
 
@@ -864,13 +871,13 @@ When `--execute` is active, execute the following after delivering the inline Ph
 
 1a. **DM validates the proposed command before showing any confirmation prompt:**
     - The command MUST start with one of the following approved command prefixes (after trimming leading whitespace):
-      - `gh ` — GitHub CLI
-
+      - `gh` — GitHub CLI
       Any other prefix is rejected. To add a new tool in a future session, append its prefix to this list and add corresponding entries to the destructive-subcommand classification in step 2.
     - The command MUST NOT contain any of the following characters or sequences that introduce new statements, substitutions, redirections, or background execution: `&` (covers both `&` background and `&&` chaining), `|` (pipe), `;`, `$(`, `` ` `` (backtick), `>`, `<`, `${`, or a literal newline character.
     - If either check fails: DM does NOT show a confirmation prompt and does NOT delegate to Bitsmith. Instead, DM informs the user: "The command `{cmd}` is outside the `/do` allowlist. `/do` is restricted to single `gh` CLI commands with no shell chaining. For other operations, use the standard constructive pipeline." The session ends.
     - If both checks pass: proceed to step 2.
 
+<!-- markdownlint-disable MD029 -->
 2. DM classifies the (now-validated) command:
 - **Destructive subcommands** (require typed confirmation): any command matching `gh pr close`, `gh pr merge`, `gh issue close`, `gh issue delete`, `gh release delete`, `gh repo delete`, or any `gh api` invocation whose command string contains any of the tokens `DELETE`, `PUT`, or `PATCH` (case-insensitive, as standalone tokens — covers `--method DELETE`, `--method=DELETE`, `-X DELETE`, and any other flag position).
 - **Non-destructive subcommands**: all other validated `gh` commands (e.g., `gh issue label`, `gh issue edit --add-label`, `gh issue comment`, `gh pr edit --add-label`).
@@ -885,7 +892,7 @@ For non-destructive subcommands, DM uses the standard natural-language interpret
 
 5. On affirmative confirmation, DM delegates a single execution step to Bitsmith using the following template:
 
-~~~
+```
 ## Operational Execution Task
 
 The following action was requested by the user and confirmed by the user before delegation. It is a single `gh` CLI command that has passed DM's allowlist validation. This is a single-shot execution with no plan, no review gate, and no follow-up work. Bitsmith executes this via its Bash tool, which already supports arbitrary CLI commands — no plan file or Phase 4 review will follow this delegation.
@@ -893,13 +900,14 @@ The following action was requested by the user and confirmed by the user before 
 **Command to run:** `{proposed command}`
 
 Run the command, capture stdout, stderr, and exit code. Return the result. Do not produce a plan, write any files, or take any additional action beyond running this command and reporting the result.
-~~~
+```
 
 6. **(Single-command path)** After Bitsmith returns, DM logs the outcome inline to the user (e.g., "Action executed: `{command}` — exit code 0. Output: ..."). On non-zero exit code, surface the command, exit code, and stderr to the user inline. Do not silently swallow failures. The session ends; the user may issue a new `/do` if they wish to retry.
+<!-- markdownlint-enable MD029 -->
 
 **Multi-step path Bitsmith delegation template**
 
-~~~
+```
 ## Operational Multi-Step Execution Task
 
 The following multi-step task was requested by the user via /do and confirmed by the user (typed CONFIRM) before delegation. Execute the task by sequencing `gh` CLI commands via your Bash tool. This is a single delegation with no plan file, no Phase 4 review, and no follow-up Bitsmith invocations.
@@ -979,7 +987,7 @@ On normal completion, return:
 No structured schema, no `total_items` / `succeeded` / `skipped` / `failed` fields. The paragraph and the bullet list are sufficient for DM's MS6 inline log.
 
 On halted task (suspected prompt injection, three-strike escalation, item-set-lock violation, or write-subcommand-lock violation), return only the structured failure report defined in the relevant section above. Do not return the paragraph + bullet list in this case.
-~~~
+```
 
 The multi-step path uses Bitsmith's standard Escalation Protocol (see `bitsmith.md` § Escalation Protocol — the three-strike rule and structured failure report) for hard failures. The success path returns the one-paragraph summary plus failure-bullet list defined above rather than a Phase 4-eligible diff. DM does not invoke Phase 4 review on this delegation — the user's typed `CONFIRM` in step MS3 is the gate, mirroring the single-command path's user-confirmation gate. Bitsmith runs in the advisory-pipeline (no `WORKING_DIRECTORY` is passed); the multi-step path performs no local file writes, so Path Mismatch Guard scenario 3 does not apply (it is a write-bearing-task guard for local files). Read-only access to template files in the main working tree (such as `.github/ISSUE_TEMPLATE/general.md` when present and relevant) is permitted per the read-only behavior described in bitsmith.md's Path Mismatch Guard section. The delegation's structural locks (item-set lock, write-subcommand lock) live in the delegation prompt that DM constructs at delegation time — DM populates `{authorized_write_subcommand}` once at the first delegation, and `{locked_item_identifiers}` on the second delegation after Bitsmith's pre-flight returns and DM clears the cap.
 
@@ -1039,8 +1047,8 @@ For advisory sessions (`INTENT: advisory`), use this simplified structure instea
 - Report saved: `{path}` (only when `--save-report` is active; omit this line otherwise)
 
 When `--execute` is active, exactly one of the two bullets below appears, depending on which path fired (the paths are mutually exclusive).
-- **Single-command path:** `Action: \`{command}\` — exit {N}` (only when `--execute` is active and the user confirmed; if the user rejected, write `Action: skipped — user did not confirm`; omit when `--execute` is not active). On non-zero exit, append stderr summary inline.
-- **Multi-step path:** `Task delegated: {one-paragraph summary of what was done}` (only when `--execute` is active and the user typed `CONFIRM`; if the user did not type `CONFIRM`, write `Task: skipped — user did not confirm`; omit when `--execute` is not active or when the single-command path was taken). On any failures, append a bullet list under the summary, one bullet per failure, format `- {item identifier}: \`{command}\` — exit {N} — {first line of stderr}`. If Bitsmith returned a structured failure report (suspected prompt injection, three-strike escalation, or item-set-lock violation), append the failure report verbatim instead of the bullet list. If the post-completion `git status --porcelain` check returned non-empty, append a final line `Unexpected working-tree modifications detected: {porcelain output}` to the output.
+- **Single-command path:** `Action: \`{command}\` — exit {N}` (only when `--execute` is active and the user confirmed; if the user rejected, write `Action: skipped — user did not confirm`; omit when`--execute` is not active). On non-zero exit, append stderr summary inline.
+- **Multi-step path:** `Task delegated: {one-paragraph summary of what was done}` (only when `--execute` is active and the user typed `CONFIRM`; if the user did not type `CONFIRM`, write `Task: skipped — user did not confirm`; omit when `--execute` is not active or when the single-command path was taken). On any failures, append a bullet list under the summary, one bullet per failure, format `- {item identifier}: \`{command}\` — exit {N} — {first line of stderr}`. If Bitsmith returned a structured failure report (suspected prompt injection, three-strike escalation, or item-set-lock violation), append the failure report verbatim instead of the bullet list. If the post-completion`git status --porcelain` check returned non-empty, append a final line `Unexpected working-tree modifications detected: {porcelain output}` to the output.
 
 Keep it concise and operational. Prefer facts over narration.
 

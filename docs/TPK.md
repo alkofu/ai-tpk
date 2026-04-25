@@ -48,10 +48,13 @@ This is useful for scripts, hot-key launches, and users who never want to see th
 **Strict failure behaviour** — `--skip` never falls back to the interactive flow. Instead it exits non-zero with a clear error message in two cases:
 
 - **No saved config:** If `~/.config/tpk/config.json` contains no MCP selections, the launcher prints to stderr and exits with code 1:
+
   ```
   No saved config found — run tpk without --skip first to configure.
   ```
+
 - **Stale saved config:** If the saved config cannot be resolved (e.g. the saved Grafana cluster ID no longer exists in `~/.config/tpk/grafana-clusters.yaml`), the launcher prints to stderr and exits with code 1:
+
   ```
   Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run tpk without --skip to reconfigure.
   ```
@@ -162,6 +165,7 @@ When "ArgoCD" is selected, the launcher reads this file and prompts you to selec
 ## Environment Variables Set by tpk
 
 When you select Grafana with Viewer role, the launcher sets:
+
 ```
 GRAFANA_URL={cluster_url}
 GRAFANA_SERVICE_ACCOUNT_TOKEN={viewer_token}
@@ -169,22 +173,26 @@ GRAFANA_DISABLE_WRITE=true
 ```
 
 When you select Grafana with Editor role:
+
 ```
 GRAFANA_URL={cluster_url}
 GRAFANA_SERVICE_ACCOUNT_TOKEN={editor_token}
 ```
 
 When you select CloudWatch:
+
 ```
 AWS_PROFILE={profile}
 ```
 
 When you select GCP Observability:
+
 ```
 GOOGLE_CLOUD_PROJECT={project_id}
 ```
 
 When you select Kubernetes:
+
 ```
 K8S_CONTEXT={context_name}
 ```

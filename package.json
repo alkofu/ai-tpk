@@ -29,6 +29,9 @@
     "lint": "oxlint src/installer/ src/launcher/",
     "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore plans --ignore lessons --ignore 'docs/superpowers' --ignore 'claude/cache'",
     "format": "oxfmt --write src/installer/ src/launcher/",
-    "format:check": "oxfmt --check src/installer/ src/launcher/"
+    "format:check": "oxfmt --check src/installer/ src/launcher/",
+    "lint:sh": "shellcheck claude/hooks/*.sh claude/scripts/*.sh src/launcher/*.sh src/mcp/wrappers/*.sh clean-backups.sh install.sh recover.sh",
+    "format:sh": "shfmt -i 2 -ci -bn -w claude/hooks/*.sh claude/scripts/*.sh src/launcher/*.sh src/mcp/wrappers/*.sh clean-backups.sh install.sh recover.sh",
+    "format:check:sh": "shfmt -i 2 -ci -bn -d claude/hooks/*.sh claude/scripts/*.sh src/launcher/*.sh src/mcp/wrappers/*.sh clean-backups.sh install.sh recover.sh"
   }
 }

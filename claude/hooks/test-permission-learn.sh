@@ -4,6 +4,8 @@
 # Usage: bash claude/hooks/test-permission-learn.sh  (from repo root)
 #        bash test-permission-learn.sh               (from hooks directory)
 # Exits 1 if any test fails.
+# shellcheck disable=SC2016  # Single-quoted strings are intentional test payloads — $ must not expand
+# shellcheck disable=SC2088  # Tilde-in-quotes is intentional — these are test path literals passed to jq
 
 HOOK="$(dirname "$0")/permission-learn.sh"
 

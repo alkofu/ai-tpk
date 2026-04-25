@@ -13,7 +13,7 @@ if [[ ! -f "$DOTFILE" ]] || [[ ! -s "$DOTFILE" ]]; then
 fi
 
 # --- Read and trim cluster id ---
-IFS= read -r ARGOCD_CLUSTER_ID < "$DOTFILE"
+IFS= read -r ARGOCD_CLUSTER_ID <"$DOTFILE"
 ARGOCD_CLUSTER_ID="${ARGOCD_CLUSTER_ID#"${ARGOCD_CLUSTER_ID%%[! $'\t']*}"}"
 ARGOCD_CLUSTER_ID="${ARGOCD_CLUSTER_ID%"${ARGOCD_CLUSTER_ID##*[! $'\t']}"}"
 export ARGOCD_CLUSTER_ID
@@ -56,7 +56,8 @@ fi
 # Use `if !` form to bypass set -e cleanly (no set +e/set -e toggle dance).
 # The python heredoc reads the accounts file, looks up the cluster by id,
 # and extracts url and token. It exits non-zero on any missing or null/empty value.
-if ! read -r ARGOCD_BASE_URL ARGOCD_API_TOKEN < <(python3 - <<'PY'
+if ! read -r ARGOCD_BASE_URL ARGOCD_API_TOKEN < <(
+  python3 - <<'PY'
 import json, os, sys
 accounts_file = os.environ["ACCOUNTS_FILE"]
 cluster_id = os.environ["ARGOCD_CLUSTER_ID"]

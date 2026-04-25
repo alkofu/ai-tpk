@@ -6,7 +6,10 @@
 
 set -euo pipefail
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { printf 'Error: not inside a git repository\n' >&2; exit 1; }
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  printf 'Error: not inside a git repository\n' >&2
+  exit 1
+}
 
 # ---------------------------------------------------------------------------
 # git fetch --prune
@@ -31,7 +34,7 @@ worktree_output="$(git worktree list --porcelain)"
 #   prunable                   (present when the worktree is stale/prunable)
 # ---------------------------------------------------------------------------
 main_path=""
-worktrees_json="[]"   # JSON array built incrementally via jq
+worktrees_json="[]" # JSON array built incrementally via jq
 block_path=""
 block_branch=""
 block_prunable=false
@@ -78,7 +81,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   elif [[ "$line" == "prunable"* ]]; then
     block_prunable=true
   fi
-done <<< "$worktree_output"
+done <<<"$worktree_output"
 
 # Flush the last block (no trailing blank line at EOF).
 flush_block

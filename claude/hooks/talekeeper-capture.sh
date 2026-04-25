@@ -32,10 +32,10 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Use jq if available, else fall back to a minimal entry
 if command -v jq &>/dev/null; then
-  echo "$STDIN_DATA" | jq -c --arg ts "$TIMESTAMP" '. + {"_captured_at": $ts}' >> "$LOG_FILE" 2>/dev/null
+  echo "$STDIN_DATA" | jq -c --arg ts "$TIMESTAMP" '. + {"_captured_at": $ts}' >>"$LOG_FILE" 2>/dev/null
 else
   # Fallback: write a minimal JSON line with timestamp only
-  printf '{"_captured_at":"%s","_raw_unavailable":true}\n' "$TIMESTAMP" >> "$LOG_FILE" 2>/dev/null
+  printf '{"_captured_at":"%s","_raw_unavailable":true}\n' "$TIMESTAMP" >>"$LOG_FILE" 2>/dev/null
 fi
 
 # Always exit 0 -- logging must never block the session

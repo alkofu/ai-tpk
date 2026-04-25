@@ -6,7 +6,10 @@
 
 set -euo pipefail
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { printf 'Error: not inside a git repository\n' >&2; exit 1; }
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  printf 'Error: not inside a git repository\n' >&2
+  exit 1
+}
 
 # Arg validation: require a positive integer PR number.
 pr_number="${1:-}"
@@ -17,6 +20,7 @@ fi
 
 # Verify GitHub authentication.
 if ! gh auth status >/dev/null 2>&1; then
+  # shellcheck disable=SC2016  # backtick inside single-quoted printf is intentional (literal output)
   printf 'GitHub authentication is required. Run `gh auth login` and try again.\n' >&2
   exit 1
 fi
@@ -42,6 +46,7 @@ fi
 # The GraphQL query string and the jq merge filter are stored in variables so that
 # single-quote characters do not conflict with the surrounding $(...) command substitution.
 
+# shellcheck disable=SC2016  # GraphQL variables like $owner are not shell expansions
 graphql_query='
 query($owner: String!, $repo: String!, $prNumber: Int!, $endCursor: String) {
   repository(owner: $owner, name: $repo) {
@@ -80,6 +85,7 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $endCursor: String) {
 }
 '
 
+# shellcheck disable=SC2016  # jq variables like $pr are not shell expansions
 jq_merge_filter='
   if length == 0 then null
   else

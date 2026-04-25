@@ -28,15 +28,15 @@ COMMAND=$(echo "$STDIN_DATA" | jq -r '.tool_input.command // ""' 2>/dev/null)
 is_allowed_claude_read_path() {
   local p="$1"
   case "$p" in
-    "$HOME/.claude/agents/"*)   return 0 ;;
-    "$HOME/.claude/skills/"*)   return 0 ;;
+    "$HOME/.claude/agents/"*) return 0 ;;
+    "$HOME/.claude/skills/"*) return 0 ;;
     "$HOME/.claude/references/"*) return 0 ;;
     "$HOME/.claude/commands/"*) return 0 ;;
-    "$HOME/.claude/hooks/"*)    return 0 ;;
+    "$HOME/.claude/hooks/"*) return 0 ;;
     "$HOME/.claude/wrappers/"*) return 0 ;;
     "$HOME/.claude/settings.json") return 0 ;;
-    "$HOME/.claude/CLAUDE.md")  return 0 ;;
-    *)                          return 1 ;;
+    "$HOME/.claude/CLAUDE.md") return 0 ;;
+    *) return 1 ;;
   esac
 }
 
@@ -76,7 +76,7 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "
       LOG_LABEL="write_path"
       if [ "$TOOL_NAME" = "Read" ]; then LOG_LABEL="read_path"; fi
       printf '%s | agent_type=%s | agent_id=%s | [auto-approved] %s=%s\n' \
-        "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$LOG_LABEL" "$NORMALIZED" >> "$LOG_FILE"
+        "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$LOG_LABEL" "$NORMALIZED" >>"$LOG_FILE"
       jq -n '{
         hookSpecificOutput: {
           hookEventName: "PermissionRequest",
@@ -99,10 +99,10 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "
       if [ -L "$NORMALIZED" ]; then
         RESOLVED=$(readlink -f "$NORMALIZED" 2>/dev/null)
         if [ -z "$RESOLVED" ]; then
-          exit 0  # readlink failed — fall through to manual approval
+          exit 0 # readlink failed — fall through to manual approval
         fi
         if ! is_allowed_claude_read_path "$RESOLVED"; then
-          exit 0  # Symlink target is outside allowed prefixes — fall through
+          exit 0 # Symlink target is outside allowed prefixes — fall through
         fi
       fi
       TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -110,7 +110,7 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "
       AGENT_ID=$(echo "$STDIN_DATA" | jq -r '.agent_id // "none"' 2>/dev/null)
       AGENT_TYPE=$(echo "$STDIN_DATA" | jq -r '.agent_type // "none"' 2>/dev/null)
       printf '%s | agent_type=%s | agent_id=%s | [auto-approved] read_path=%s\n' \
-        "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$NORMALIZED" >> "$LOG_FILE"
+        "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$NORMALIZED" >>"$LOG_FILE"
       jq -n '{
         hookSpecificOutput: {
           hookEventName: "PermissionRequest",
@@ -154,27 +154,27 @@ SECURITY_STRIPPED=$(printf '%s' "$COMMAND" | sed "s/'[^']*'//g")
 matches_allowed_tools() {
   local cmd="$1"
   case "$cmd" in
-    git\ *)              return 0 ;;
-    gh\ pr\ *)           return 0 ;;
-    gh\ issue\ *)        return 0 ;;
-    gh\ run\ *)          return 0 ;;
-    gh\ repo\ view\ *)   return 0 ;;
-    gh\ repo\ clone\ *)  return 0 ;;
+    git\ *) return 0 ;;
+    gh\ pr\ *) return 0 ;;
+    gh\ issue\ *) return 0 ;;
+    gh\ run\ *) return 0 ;;
+    gh\ repo\ view\ *) return 0 ;;
+    gh\ repo\ clone\ *) return 0 ;;
     gh\ release\ view\ *) return 0 ;;
     gh\ auth\ switch\ *) return 0 ;;
-    mkdir\ *)            return 0 ;;
-    rm\ *)               return 0 ;;
-    cp\ *)               return 0 ;;
-    mv\ *)               return 0 ;;
-    touch\ *)            return 0 ;;
-    ls\ *)               return 0 ;;
-    cd\ *)               return 0 ;;
-    npm\ *)              return 0 ;;
-    npx\ *)              return 0 ;;
-    pnpm\ *)             return 0 ;;
-    yarn\ *)             return 0 ;;
-    python\ *)           return 0 ;;
-    python3\ *)          return 0 ;;
+    mkdir\ *) return 0 ;;
+    rm\ *) return 0 ;;
+    cp\ *) return 0 ;;
+    mv\ *) return 0 ;;
+    touch\ *) return 0 ;;
+    ls\ *) return 0 ;;
+    cd\ *) return 0 ;;
+    npm\ *) return 0 ;;
+    npx\ *) return 0 ;;
+    pnpm\ *) return 0 ;;
+    yarn\ *) return 0 ;;
+    python\ *) return 0 ;;
+    python3\ *) return 0 ;;
     bash\ /home/placeholder/.claude/scripts/*.sh)
       # Guard: reject path traversal (.. component)
       [[ "$cmd" == */../* || "$cmd" == */.. ]] && return 1
@@ -190,9 +190,10 @@ matches_allowed_tools() {
       _script_path="${_script_path//\/home\/placeholder\//$HOME/}"
       _real="$(readlink -f "$_script_path" 2>/dev/null)" || return 1
       [[ "$_real" == "$HOME/.claude/scripts/"* ]] || return 1
-      _rel_real="${_real#$HOME/.claude/scripts/}"
+      _rel_real="${_real#"$HOME"/.claude/scripts/}"
       [[ "$_rel_real" == */* ]] && return 1
-      return 0 ;;
+      return 0
+      ;;
     bash\ /home/placeholder/.claude/scripts/*.sh\ *)
       # Guard: reject path traversal (.. component)
       [[ "$cmd" == */../* || "$cmd" == */.. ]] && return 1
@@ -208,12 +209,13 @@ matches_allowed_tools() {
       _script_path="${_script_path//\/home\/placeholder\//$HOME/}"
       _real="$(readlink -f "$_script_path" 2>/dev/null)" || return 1
       [[ "$_real" == "$HOME/.claude/scripts/"* ]] || return 1
-      _rel_real="${_real#$HOME/.claude/scripts/}"
+      _rel_real="${_real#"$HOME"/.claude/scripts/}"
       [[ "$_rel_real" == */* ]] && return 1
-      return 0 ;;
-    *\ --help)           return 0 ;;
-    *\ --version)        return 0 ;;
-    *)                   return 1 ;;
+      return 0
+      ;;
+    *\ --help) return 0 ;;
+    *\ --version) return 0 ;;
+    *) return 1 ;;
   esac
 }
 
@@ -233,6 +235,7 @@ is_simple_expansion_only() {
   fi
 
   # Reject $(...) command substitution
+  # shellcheck disable=SC2016  # '$(' is a literal search pattern, not an expansion
   if printf '%s' "$cmd" | grep -qF '$('; then
     return 1
   fi
@@ -436,7 +439,7 @@ if matches_allowed_tools "$NEUTRALIZED"; then
     TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     LOG_FILE="$HOME/.claude/permission-requests.log"
     printf '%s | agent_type=%s | agent_id=%s | [auto-approved] command=%s\n' \
-      "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$COMMAND" >> "$LOG_FILE"
+      "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$COMMAND" >>"$LOG_FILE"
     jq -n '{
       hookSpecificOutput: {
         hookEventName: "PermissionRequest",
@@ -454,6 +457,6 @@ fi
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 LOG_FILE="$HOME/.claude/permission-requests.log"
 printf '%s | agent_type=%s | agent_id=%s | command=%s\n' \
-  "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$COMMAND" >> "$LOG_FILE"
+  "$TIMESTAMP" "$AGENT_TYPE" "$AGENT_ID" "$COMMAND" >>"$LOG_FILE"
 
 exit 0

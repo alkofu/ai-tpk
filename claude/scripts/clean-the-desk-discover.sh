@@ -5,10 +5,14 @@
 
 set -euo pipefail
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { printf 'Error: not inside a git repository\n' >&2; exit 1; }
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  printf 'Error: not inside a git repository\n' >&2
+  exit 1
+}
 
 # Verify GitHub authentication.
 if ! gh auth status >/dev/null 2>&1; then
+  # shellcheck disable=SC2016  # backtick inside single-quoted printf is intentional (literal output)
   printf 'GitHub authentication is required. Run `gh auth login` and try again.\n' >&2
   exit 1
 fi
@@ -52,7 +56,7 @@ while IFS= read -r wt_line; do
     wt_path="${wt_line#worktree }"
     wt_branch=""
     wt_prunable=false
-    (( block_count++ )) || true
+    ((block_count++)) || true
   elif [[ "$wt_line" == branch\ * ]]; then
     raw_branch="${wt_line#branch }"
     wt_branch="${raw_branch#refs/heads/}"
@@ -61,7 +65,7 @@ while IFS= read -r wt_line; do
   elif [[ "$wt_line" == "prunable"* ]]; then
     wt_prunable=true
   fi
-done <<< "$worktree_raw"
+done <<<"$worktree_raw"
 
 # Flush the final block.
 if [[ $block_count -gt 1 && -n "$wt_path" && "$wt_prunable" == false ]]; then

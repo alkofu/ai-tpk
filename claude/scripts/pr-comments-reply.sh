@@ -12,7 +12,10 @@
 
 set -euo pipefail
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { printf 'Error: not inside a git repository\n' >&2; exit 1; }
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  printf 'Error: not inside a git repository\n' >&2
+  exit 1
+}
 
 # Error contract (F-004):
 #   - Exit 2 ONLY for arg-validation (no JSON emitted — the only case where stdout is empty).

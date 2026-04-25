@@ -4,7 +4,7 @@ set -euo pipefail
 # Resolve AWS profile: dotfile takes priority over env var
 DOTFILE="$HOME/.claude/.current-aws-profile"
 if [[ -f "$DOTFILE" ]] && [[ -s "$DOTFILE" ]]; then
-  IFS= read -r AWS_PROFILE < "$DOTFILE"
+  IFS= read -r AWS_PROFILE <"$DOTFILE"
   # Trim leading/trailing whitespace (bash-native, since we already require bash for [[ ]])
   AWS_PROFILE="${AWS_PROFILE#"${AWS_PROFILE%%[! $'\t']*}"}"
   AWS_PROFILE="${AWS_PROFILE%"${AWS_PROFILE##*[! $'\t']}"}"

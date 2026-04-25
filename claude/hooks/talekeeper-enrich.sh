@@ -28,7 +28,7 @@ VALID_ENTRIES=$(jq -c 'select(
 
 if [ -z "$VALID_ENTRIES" ]; then
   # No valid entries — still clear the raw log
-  truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' > "$RAW_LOG"
+  truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' >"$RAW_LOG"
   exit 0
 fi
 
@@ -59,16 +59,12 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
   cache_creation_input_tokens=0
   cache_read_input_tokens=0
 
-  if [ -n "$agent_transcript_path" ]
-  then
-    if [ -f "$agent_transcript_path" ]
-    then
-      file_size=$(wc -c < "$agent_transcript_path" 2>/dev/null || echo "0")
-      if [ "$file_size" -le 52428800 ]
-      then
+  if [ -n "$agent_transcript_path" ]; then
+    if [ -f "$agent_transcript_path" ]; then
+      file_size=$(wc -c <"$agent_transcript_path" 2>/dev/null || echo "0")
+      if [ "$file_size" -le 52428800 ]; then
         token_json=$(jq -s '[.[] | select(.type == "assistant") | .message.usage // {}] | { input_tokens: (map(.input_tokens // 0) | add // 0), output_tokens: (map(.output_tokens // 0) | add // 0), cache_creation_input_tokens: (map(.cache_creation_input_tokens // 0) | add // 0), cache_read_input_tokens: (map(.cache_read_input_tokens // 0) | add // 0) }' "$agent_transcript_path" 2>/dev/null)
-        if [ -n "$token_json" ]
-        then
+        if [ -n "$token_json" ]; then
           input_tokens=$(echo "$token_json" | jq -r '.input_tokens // 0' 2>/dev/null || echo "0")
           output_tokens=$(echo "$token_json" | jq -r '.output_tokens // 0' 2>/dev/null || echo "0")
           cache_creation_input_tokens=$(echo "$token_json" | jq -r '.cache_creation_input_tokens // 0' 2>/dev/null || echo "0")
@@ -113,11 +109,11 @@ echo "$VALID_ENTRIES" | while IFS= read -r entry; do
     --argjson cache_read_input_tokens "$cache_read_input_tokens" \
     '{timestamp: $ts, event_type: $event_type, agent_type: $agent_type, agent_id: $agent_id, session_id: $session_id, summary: $summary, verdict: $verdict, agent_transcript_path: $agent_transcript_path, input_tokens: $input_tokens, output_tokens: $output_tokens, cache_creation_input_tokens: $cache_creation_input_tokens, cache_read_input_tokens: $cache_read_input_tokens}'
 
-done >> "$OUTPUT_FILE" 2>/dev/null
+done >>"$OUTPUT_FILE" 2>/dev/null
 
 # Only clear the raw log if output was actually written
 if [ -s "$OUTPUT_FILE" ]; then
-  truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' > "$RAW_LOG"
+  truncate -s 0 "$RAW_LOG" 2>/dev/null || printf '' >"$RAW_LOG"
 fi
 
 # Pre-compute token summary for fast-path reads by token-summary.sh
@@ -126,7 +122,7 @@ fi
 if [ -s "$OUTPUT_FILE" ] && command -v jq &>/dev/null; then
   TOKEN_SUMMARY=$(jq -rs '[.[] | select(has("input_tokens"))] | reduce .[] as $r ({input:0,output:0,cw:0,cr:0}; .input += ($r.input_tokens // 0) | .output += ($r.output_tokens // 0) | .cw += ($r.cache_creation_input_tokens // 0) | .cr += ($r.cache_read_input_tokens // 0)) | "\(.input/1000 | floor)k in / \(.output/1000 | floor)k out / \(.cw/1000 | floor)k cache-write / \(.cr/1000 | floor)k cache-read"' "$OUTPUT_FILE" 2>/dev/null || true)
   if [ -n "$TOKEN_SUMMARY" ]; then
-    printf '%s\n' "$TOKEN_SUMMARY" > "$LOG_DIR/latest-token-summary.txt" 2>/dev/null || true
+    printf '%s\n' "$TOKEN_SUMMARY" >"$LOG_DIR/latest-token-summary.txt" 2>/dev/null || true
   fi
 fi
 

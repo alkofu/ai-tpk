@@ -6,3 +6,6 @@ pre-push:
     format-check:
       glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"
       run: pnpm run format:check
+    lint-md:
+      glob: "**/*.md"
+      run: pnpm run lint:md

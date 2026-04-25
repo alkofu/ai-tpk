@@ -11,6 +11,7 @@
     "@types/node": "^25.6.0",
     "esbuild": "^0.28.0",
     "lefthook": "^2.1.6",
+    "markdownlint-cli": "0.45.0",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
     "tsx": "^4.21.0",
@@ -26,6 +27,7 @@
     "launch": "tsx src/launcher/main.ts",
     "test": "node --import tsx/esm --test 'src/installer/**/*.test.ts' 'src/launcher/**/*.test.ts'",
     "lint": "oxlint src/installer/ src/launcher/",
+    "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore plans --ignore lessons --ignore 'docs/superpowers' --ignore 'claude/cache'",
     "format": "oxfmt --write src/installer/ src/launcher/",
     "format:check": "oxfmt --check src/installer/ src/launcher/"
   }

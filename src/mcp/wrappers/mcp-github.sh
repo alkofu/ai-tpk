@@ -20,7 +20,7 @@ fi
 
 # Validate python3 is available before any token extraction
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "Error: python3 not found on PATH -- the GitHub MCP wrapper requires python3 to read ~/.config/github-pats.json" >&2
+  echo "Error: python3 not found on PATH -- the GitHub MCP wrapper requires python3 to read ~/.config/tpk/github-pats.json" >&2
   exit 1
 fi
 
@@ -30,14 +30,14 @@ if ! command -v pnpx >/dev/null 2>&1; then
   exit 1
 fi
 
-# Validate ~/.config/github-pats.json exists and is readable
-if [ ! -r "$HOME/.config/github-pats.json" ]; then
-  echo 'Error: ~/.config/github-pats.json not found or not readable. Create a flat JSON object mapping account keys to PATs, e.g. {"personal": "ghp_xxx", "work": "ghp_yyy"} and run: chmod 600 ~/.config/github-pats.json' >&2
+# Validate ~/.config/tpk/github-pats.json exists and is readable
+if [ ! -r "$HOME/.config/tpk/github-pats.json" ]; then
+  echo 'Error: ~/.config/tpk/github-pats.json not found or not readable. Create a flat JSON object mapping account keys to PATs, e.g. {"personal": "ghp_xxx", "work": "ghp_yyy"} and run: chmod 600 ~/.config/tpk/github-pats.json' >&2
   exit 1
 fi
 
-# Validate ~/.config/github-pats.json mode is exactly 0600 (V-1 part 1)
-PATS_PATH="$HOME/.config/github-pats.json"
+# Validate ~/.config/tpk/github-pats.json mode is exactly 0600 (V-1 part 1)
+PATS_PATH="$HOME/.config/tpk/github-pats.json"
 mode=$(stat -f '%Lp' "$PATS_PATH" 2>/dev/null || stat -c '%a' "$PATS_PATH" 2>/dev/null || echo "")
 if [[ -z "$mode" ]]; then
   echo "Error: could not stat $PATS_PATH to check file mode" >&2
@@ -60,22 +60,22 @@ fi
 if ! TOKEN="$(python3 - <<'PY'
 import json, os, sys
 try:
-    with open(os.path.expanduser("~/.config/github-pats.json")) as f:
+    with open(os.path.expanduser("~/.config/tpk/github-pats.json")) as f:
         d = json.load(f)
 except Exception as e:
     # SECURITY: print only the exception type, never str(e) in case json
     # parsing surfaces file fragments containing the PAT (V-3, V-4).
-    sys.stderr.write(f'Error: failed to read ~/.config/github-pats.json ({type(e).__name__})\n')
+    sys.stderr.write(f'Error: failed to read ~/.config/tpk/github-pats.json ({type(e).__name__})\n')
     sys.exit(1)
 k = os.environ["GITHUB_ACCOUNT"]
 if not isinstance(d, dict):
-    sys.stderr.write('Error: ~/.config/github-pats.json must be a JSON object\n')
+    sys.stderr.write('Error: ~/.config/tpk/github-pats.json must be a JSON object\n')
     sys.exit(1)
 if k not in d:
     # SECURITY: it is safe to echo the requested key 'k' because it came
     # from the GITHUB_ACCOUNT env var (already validated above), not from
     # the PATs file. We never echo any value from the dict.
-    sys.stderr.write(f"Error: account key '{k}' not found in ~/.config/github-pats.json\n")
+    sys.stderr.write(f"Error: account key '{k}' not found in ~/.config/tpk/github-pats.json\n")
     sys.exit(1)
 v = d[k]
 if not isinstance(v, str) or not v:

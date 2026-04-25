@@ -99,4 +99,38 @@ export function installLauncherScript(
       ),
     );
   }
+
+  // 8h. Migrate: copy ~/.config/{argocd-accounts.json,github-pats.json,
+  //     grafana-clusters.yaml} -> ~/.config/tpk/<same-filename>.
+  //     Source is preserved. Runs AFTER 8e/8f so any 8e short-circuit prevents a
+  //     half-migrated state. Logs a yellow line on BOTH copy and skip paths.
+  const consolidatedConfigDir = path.join(homeDir, ".config", "tpk");
+  const filesToConsolidate = [
+    "argocd-accounts.json",
+    "github-pats.json",
+    "grafana-clusters.yaml",
+  ];
+  for (const filename of filesToConsolidate) {
+    const legacyPath = path.join(homeDir, ".config", filename);
+    const newPath = path.join(consolidatedConfigDir, filename);
+    const legacyExists = fs.existsSync(legacyPath);
+    const newExists = fs.existsSync(newPath);
+    if (legacyExists && !newExists) {
+      fs.mkdirSync(consolidatedConfigDir, { recursive: true, mode: 0o700 });
+      const srcMode = fs.statSync(legacyPath).mode & 0o777;
+      fs.copyFileSync(legacyPath, newPath);
+      fs.chmodSync(newPath, srcMode);
+      console.log(
+        c.yellow(
+          `Copied ~/.config/${filename} -> ~/.config/tpk/${filename} (legacy file left in place)`,
+        ),
+      );
+    } else if (legacyExists && newExists) {
+      console.log(
+        c.yellow(
+          `Skipping copy: ~/.config/tpk/${filename} already exists; legacy source ~/.config/${filename} left in place`,
+        ),
+      );
+    }
+  }
 }

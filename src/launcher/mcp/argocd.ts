@@ -18,6 +18,7 @@ import { writeDotfile } from '../dotfile.js';
 export const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
   '.config',
+  'tpk',
   'argocd-accounts.json',
 );
 

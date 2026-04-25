@@ -404,7 +404,7 @@ export function registerGithubAccounts(
   spawnFn: SpawnFn = defaultSpawn,
   warnFn: WarnFn = defaultWarn,
 ): Set<string> {
-  const patsPath = path.join(homedir, '.config', 'github-pats.json');
+  const patsPath = path.join(homedir, '.config', 'tpk', 'github-pats.json');
 
   // PATs file mode check at install time (V-1 part 2)
   try {
@@ -415,8 +415,8 @@ export function registerGithubAccounts(
       const normalised = modeStr.replace(/^0+/, '') || '0';
       if (normalised !== '600') {
         warnFn(
-          `Warning: ~/.config/github-pats.json mode is ${modeStr}; recommended mode is 0600.\n` +
-            `Run: chmod 600 ~/.config/github-pats.json\n` +
+          `Warning: ~/.config/tpk/github-pats.json mode is ${modeStr}; recommended mode is 0600.\n` +
+            `Run: chmod 600 ~/.config/tpk/github-pats.json\n` +
             `The wrapper will refuse to read this file at MCP server boot until the mode is fixed.`,
         );
       }
@@ -427,7 +427,7 @@ export function registerGithubAccounts(
       (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       warnFn(
-        'Warning: ~/.config/github-pats.json not found -- skipping GitHub MCP setup',
+        'Warning: ~/.config/tpk/github-pats.json not found -- skipping GitHub MCP setup',
       );
       return new Set();
     }
@@ -444,7 +444,7 @@ export function registerGithubAccounts(
       (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       warnFn(
-        'Warning: ~/.config/github-pats.json not found -- skipping GitHub MCP setup',
+        'Warning: ~/.config/tpk/github-pats.json not found -- skipping GitHub MCP setup',
       );
       return new Set();
     }
@@ -489,7 +489,7 @@ export function registerGithubAccounts(
   const sortedKeys = Object.keys(d).toSorted();
   if (sortedKeys.length === 0) {
     warnFn(
-      'Warning: ~/.config/github-pats.json is empty -- registering zero GitHub MCP servers',
+      'Warning: ~/.config/tpk/github-pats.json is empty -- registering zero GitHub MCP servers',
     );
     return new Set();
   }
@@ -511,7 +511,7 @@ export function registerGithubAccounts(
     }
 
     // Register the new server. Only GITHUB_ACCOUNT is passed as env — the PAT
-    // is never passed here (resolves from ~/.config/github-pats.json at boot time).
+    // is never passed here (resolves from ~/.config/tpk/github-pats.json at boot time).
     try {
       spawnFn('claude', [
         'mcp',

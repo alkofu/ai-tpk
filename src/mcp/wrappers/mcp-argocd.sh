@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILE="$HOME/.claude/.current-argocd-cluster"
-export ACCOUNTS_FILE="$HOME/.config/argocd-accounts.json"
+export ACCOUNTS_FILE="$HOME/.config/tpk/argocd-accounts.json"
 
 # --- Require dotfile ---
 if [[ ! -f "$DOTFILE" ]] || [[ ! -s "$DOTFILE" ]]; then

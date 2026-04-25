@@ -36,7 +36,7 @@ describe('parseArgs', () => {
         );
         assert.ok(
           (err as UnknownFlagError).message.includes(
-            'Usage: myclaude [--skip]',
+            'Usage: tpk [--skip]',
           ),
           'message should contain the usage hint',
         );
@@ -79,7 +79,7 @@ describe('parseArgs', () => {
         );
         assert.ok(
           (err as TooManyPositionalsError).message.includes(
-            'Usage: myclaude [--skip]',
+            'Usage: tpk [--skip]',
           ),
           'message should contain the usage hint',
         );

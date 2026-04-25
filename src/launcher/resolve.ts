@@ -1,5 +1,5 @@
-import type { ResolvedConfig, LauncherConfig } from "./types.js";
-import { registry, StaleResourceError } from "./mcp-command.js";
+import type { ResolvedConfig, LauncherConfig } from './types.js';
+import { registry, StaleResourceError } from './mcp-command.js';
 
 export function buildResolvedFromSaved(
   config: LauncherConfig,

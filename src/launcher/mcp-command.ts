@@ -40,15 +40,15 @@
  */
 
 // Re-export the core types so consumers can import from a single location.
-export type { McpCommand } from "./mcp-command-types.js";
-export { StaleResourceError } from "./mcp-command-types.js";
+export type { McpCommand } from './mcp-command-types.js';
+export { StaleResourceError } from './mcp-command-types.js';
 
-import type { McpCommand } from "./mcp-command-types.js";
-import { grafanaCommand } from "./mcp/grafana.js";
-import { cloudwatchCommand } from "./mcp/cloudwatch.js";
-import { gcpObservabilityCommand } from "./mcp/gcp-observability.js";
-import { kubernetesCommand } from "./mcp/kubernetes.js";
-import { argoCdCommand } from "./mcp/argocd.js";
+import type { McpCommand } from './mcp-command-types.js';
+import { grafanaCommand } from './mcp/grafana.js';
+import { cloudwatchCommand } from './mcp/cloudwatch.js';
+import { gcpObservabilityCommand } from './mcp/gcp-observability.js';
+import { kubernetesCommand } from './mcp/kubernetes.js';
+import { argoCdCommand } from './mcp/argocd.js';
 
 export const registry: McpCommand[] = [
   grafanaCommand,

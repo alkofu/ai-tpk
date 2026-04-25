@@ -16,16 +16,16 @@ export class UnknownFlagError extends Error {
     super(
       `Unknown flag: ${flag}. Usage: myclaude [--skip] [<initial-message>]`,
     );
-    this.name = "UnknownFlagError";
+    this.name = 'UnknownFlagError';
   }
 }
 
 export class TooManyPositionalsError extends Error {
   constructor() {
     super(
-      "Too many positional arguments. Only one initial message is allowed. Usage: myclaude [--skip] [<initial-message>]",
+      'Too many positional arguments. Only one initial message is allowed. Usage: myclaude [--skip] [<initial-message>]',
     );
-    this.name = "TooManyPositionalsError";
+    this.name = 'TooManyPositionalsError';
   }
 }
 
@@ -46,9 +46,9 @@ export function parseArgs(argv: string[]): {
   let skip = false;
   let initialMessage: string | undefined = undefined;
   for (const token of argv) {
-    if (token === "--skip") {
+    if (token === '--skip') {
       skip = true;
-    } else if (token.startsWith("-")) {
+    } else if (token.startsWith('-')) {
       throw new UnknownFlagError(token);
     } else if (initialMessage !== undefined) {
       throw new TooManyPositionalsError();

@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 
 // ---------------------------------------------------------------------------
 // Step 7: initialValue staleness guard logic (Finding 7)
@@ -30,85 +30,85 @@ function resolveGrafanaDefault(
 function resolveKubernetesDefault(
   list: string[],
   previous?: string,
-  currentContext: string = "",
+  currentContext: string = '',
 ): string | undefined {
   return previous && list.includes(previous)
     ? previous
     : currentContext || list[0];
 }
 
-describe("CloudWatch initialValue staleness guard", () => {
-  it("returns previousProfile when it exists in the list", () => {
+describe('CloudWatch initialValue staleness guard', () => {
+  it('returns previousProfile when it exists in the list', () => {
     assert.strictEqual(
-      resolveStringDefault(["default", "dev", "prod"], "dev"),
-      "dev",
+      resolveStringDefault(['default', 'dev', 'prod'], 'dev'),
+      'dev',
     );
   });
 
-  it("returns first profile when previousProfile is not in the list (stale)", () => {
+  it('returns first profile when previousProfile is not in the list (stale)', () => {
     assert.strictEqual(
-      resolveStringDefault(["default", "dev", "prod"], "old-profile"),
-      "default",
+      resolveStringDefault(['default', 'dev', 'prod'], 'old-profile'),
+      'default',
     );
   });
 
-  it("returns first profile when previousProfile is undefined", () => {
+  it('returns first profile when previousProfile is undefined', () => {
     assert.strictEqual(
-      resolveStringDefault(["default", "dev"], undefined),
-      "default",
-    );
-  });
-});
-
-describe("Grafana initialValue staleness guard", () => {
-  it("returns previousClusterId when it exists in the list", () => {
-    assert.strictEqual(
-      resolveGrafanaDefault(["prod", "staging", "dev"], "staging"),
-      "staging",
-    );
-  });
-
-  it("returns first cluster id when previousClusterId is not in the list (stale)", () => {
-    assert.strictEqual(
-      resolveGrafanaDefault(["prod", "staging"], "deleted-cluster"),
-      "prod",
-    );
-  });
-
-  it("returns first cluster id when previousClusterId is undefined", () => {
-    assert.strictEqual(
-      resolveGrafanaDefault(["prod", "staging"], undefined),
-      "prod",
+      resolveStringDefault(['default', 'dev'], undefined),
+      'default',
     );
   });
 });
 
-describe("Kubernetes initialValue staleness guard", () => {
-  it("returns previousContext when it exists in the list", () => {
+describe('Grafana initialValue staleness guard', () => {
+  it('returns previousClusterId when it exists in the list', () => {
     assert.strictEqual(
-      resolveKubernetesDefault(["prod", "staging", "dev"], "staging", "dev"),
-      "staging",
+      resolveGrafanaDefault(['prod', 'staging', 'dev'], 'staging'),
+      'staging',
     );
   });
 
-  it("returns currentContext when previousContext is stale and currentContext is in the list", () => {
+  it('returns first cluster id when previousClusterId is not in the list (stale)', () => {
     assert.strictEqual(
-      resolveKubernetesDefault(["prod", "staging"], "old-context", "staging"),
-      "staging",
+      resolveGrafanaDefault(['prod', 'staging'], 'deleted-cluster'),
+      'prod',
     );
   });
 
-  it("returns first context when both previousContext is stale and currentContext is empty", () => {
+  it('returns first cluster id when previousClusterId is undefined', () => {
     assert.strictEqual(
-      resolveKubernetesDefault(["prod", "staging"], "old-context", ""),
-      "prod",
+      resolveGrafanaDefault(['prod', 'staging'], undefined),
+      'prod',
+    );
+  });
+});
+
+describe('Kubernetes initialValue staleness guard', () => {
+  it('returns previousContext when it exists in the list', () => {
+    assert.strictEqual(
+      resolveKubernetesDefault(['prod', 'staging', 'dev'], 'staging', 'dev'),
+      'staging',
     );
   });
 
-  it("returns first context when previousContext is undefined and currentContext is empty", () => {
+  it('returns currentContext when previousContext is stale and currentContext is in the list', () => {
     assert.strictEqual(
-      resolveKubernetesDefault(["prod", "staging"], undefined, ""),
-      "prod",
+      resolveKubernetesDefault(['prod', 'staging'], 'old-context', 'staging'),
+      'staging',
+    );
+  });
+
+  it('returns first context when both previousContext is stale and currentContext is empty', () => {
+    assert.strictEqual(
+      resolveKubernetesDefault(['prod', 'staging'], 'old-context', ''),
+      'prod',
+    );
+  });
+
+  it('returns first context when previousContext is undefined and currentContext is empty', () => {
+    assert.strictEqual(
+      resolveKubernetesDefault(['prod', 'staging'], undefined, ''),
+      'prod',
     );
   });
 });

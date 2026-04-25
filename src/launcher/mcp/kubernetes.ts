@@ -1,11 +1,11 @@
-import { spawnSync } from "node:child_process";
-import { select } from "@clack/prompts";
-import type { KubernetesConfig } from "../types.js";
-import { handleCancel } from "../cancel.js";
-import type { McpCommand } from "../mcp-command-types.js";
-import { tryLoad } from "../utils.js";
-import { writeDotfile } from "../dotfile.js";
-import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
+import { spawnSync } from 'node:child_process';
+import { select } from '@clack/prompts';
+import type { KubernetesConfig } from '../types.js';
+import { handleCancel } from '../cancel.js';
+import type { McpCommand } from '../mcp-command-types.js';
+import { tryLoad } from '../utils.js';
+import { writeDotfile } from '../dotfile.js';
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from '../types.js';
 
 /**
  * Parses stdout from `kubectx` (no args) into a list of context names.
@@ -13,7 +13,7 @@ import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
  */
 export function parseKubectxOutput(stdout: string): string[] {
   return stdout
-    .split("\n")
+    .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 }
@@ -23,22 +23,22 @@ export function parseKubectxOutput(stdout: string): string[] {
  * Throws if kubectx is not found, exits non-zero, or returns no contexts.
  */
 export function loadKubectxContexts(): string[] {
-  const result = spawnSync("kubectx", [], { encoding: "utf8" });
+  const result = spawnSync('kubectx', [], { encoding: 'utf8' });
   if (result.error) {
     throw new Error(
       `Failed to run kubectx: ${result.error.message}\nEnsure kubectx is installed and available on your PATH.`,
     );
   }
   if (result.status !== 0) {
-    const stderr = result.stderr?.trim() ?? "";
+    const stderr = result.stderr?.trim() ?? '';
     throw new Error(
-      `kubectx exited with status ${result.status}${stderr ? `: ${stderr}` : ""}.`,
+      `kubectx exited with status ${result.status}${stderr ? `: ${stderr}` : ''}.`,
     );
   }
-  const contexts = parseKubectxOutput(result.stdout ?? "");
+  const contexts = parseKubectxOutput(result.stdout ?? '');
   if (contexts.length === 0) {
     throw new Error(
-      "No Kubernetes contexts found. Run `kubectl config get-contexts` to check your kubeconfig.",
+      'No Kubernetes contexts found. Run `kubectl config get-contexts` to check your kubeconfig.',
     );
   }
   return contexts;
@@ -50,13 +50,13 @@ export function loadKubectxContexts(): string[] {
  * (e.g., kubectl not installed, no current context set).
  */
 export function getCurrentContext(): string {
-  const result = spawnSync("kubectl", ["config", "current-context"], {
-    encoding: "utf8",
+  const result = spawnSync('kubectl', ['config', 'current-context'], {
+    encoding: 'utf8',
   });
   if (result.error || result.status !== 0) {
-    return "";
+    return '';
   }
-  return result.stdout?.trim() ?? "";
+  return result.stdout?.trim() ?? '';
 }
 
 /**
@@ -68,14 +68,14 @@ export function switchContext(selected: string, previous?: string): void {
   if (selected === previous) {
     return;
   }
-  const result = spawnSync("kubectx", [selected], { encoding: "utf8" });
+  const result = spawnSync('kubectx', [selected], { encoding: 'utf8' });
   if (result.error) {
     throw new Error(`Failed to run kubectx: ${result.error.message}`);
   }
   if (result.status !== 0) {
-    const stderr = result.stderr?.trim() ?? "";
+    const stderr = result.stderr?.trim() ?? '';
     throw new Error(
-      `kubectx exited with status ${result.status} when switching to "${selected}"${stderr ? `: ${stderr}` : ""}.`,
+      `kubectx exited with status ${result.status} when switching to "${selected}"${stderr ? `: ${stderr}` : ''}.`,
     );
   }
 }
@@ -97,7 +97,7 @@ export async function configureKubernetes(
   const options = contexts.map((ctx) => ({ value: ctx, label: ctx }));
 
   const selected = await select({
-    message: "Select Kubernetes context:",
+    message: 'Select Kubernetes context:',
     options,
     initialValue,
   });
@@ -107,19 +107,19 @@ export async function configureKubernetes(
 }
 
 export const kubernetesCommand: McpCommand = {
-  id: "kubernetes",
-  skippedKey: "kubernetes",
+  id: 'kubernetes',
+  skippedKey: 'kubernetes',
   multiselectOption: {
-    value: "kubernetes",
-    label: "Kubernetes",
-    hint: "cluster context",
+    value: 'kubernetes',
+    label: 'Kubernetes',
+    hint: 'cluster context',
   },
 
   async configureInteractive(savedConfig: LauncherConfig): Promise<{
     resolved: Partial<ResolvedConfig>;
     persistable: Partial<LauncherConfig>;
   } | null> {
-    const contexts = tryLoad(() => loadKubectxContexts(), "kubernetes");
+    const contexts = tryLoad(() => loadKubectxContexts(), 'kubernetes');
     if (contexts === null) return null;
     const result = await configureKubernetes(
       contexts,
@@ -143,10 +143,10 @@ export const kubernetesCommand: McpCommand = {
     // Takes higher priority than ~/.kube/config active context, ensuring the
     // selected context is respected even when other kubeconfig env vars
     // (KUBECONFIG, K8S_SERVER, etc.) are present in the environment.
-    env["K8S_CONTEXT"] = context;
+    env['K8S_CONTEXT'] = context;
     // Write dotfile for symmetry with cloudwatch/gcp patterns and potential
     // future use by wrapper scripts or slash commands.
-    writeDotfile("current-kube-context", context);
+    writeDotfile('current-kube-context', context);
   },
 
   buildOutroSuccessLine(resolved: ResolvedConfig): string | null {
@@ -155,16 +155,16 @@ export const kubernetesCommand: McpCommand = {
   },
 
   buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
-    if (skipped === "loader-failed")
-      return "Kubernetes: skipped (contexts unavailable)";
-    if (skipped === "switch-failed")
-      return "Kubernetes: skipped (context switch failed)";
+    if (skipped === 'loader-failed')
+      return 'Kubernetes: skipped (contexts unavailable)';
+    if (skipped === 'switch-failed')
+      return 'Kubernetes: skipped (context switch failed)';
     return null;
   },
 
   buildSummaryLine(config: LauncherConfig): string {
     if (config.kubernetes === undefined) {
-      return "Kubernetes: (not yet configured)";
+      return 'Kubernetes: (not yet configured)';
     }
     return `Kubernetes: context ${config.kubernetes.context}`;
   },
@@ -201,7 +201,7 @@ export function applyKubernetesContextSwitch(
         resolved.kubernetes!.context,
         savedConfig.kubernetes?.context,
       ),
-    "kubernetes-switch",
+    'kubernetes-switch',
     `Failed to switch Kubernetes context to "${resolved.kubernetes!.context}" — launching with the previously active context.`,
   );
   const switchFailed = switchResult === null;
@@ -209,7 +209,7 @@ export function applyKubernetesContextSwitch(
     effectiveSkipped: {
       ...skipped,
       kubernetes: switchFailed
-        ? "switch-failed"
+        ? 'switch-failed'
         : (skipped.kubernetes ?? false),
     },
     outroResolved: switchFailed

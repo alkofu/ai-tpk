@@ -1,21 +1,21 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { backupIfExists } from "./fs-utils.js";
-import { c } from "./colors.js";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { backupIfExists } from './fs-utils.js';
+import { c } from './colors.js';
 
 export function installLauncherScript(
   repoRoot: string,
   { homeDir = os.homedir() }: { homeDir?: string } = {},
 ): void {
   // 8a. Define paths
-  const srcBundle = path.join(repoRoot, "dist", "launcher.cjs");
-  const aiTpkDir = path.join(homeDir, ".ai-tpk");
-  const destBundle = path.join(aiTpkDir, "launcher.cjs");
-  const binDir = path.join(homeDir, "bin");
-  const targetBinPath = path.join(binDir, "myclaude");
-  const srcBashScript = path.join(repoRoot, "src", "launcher", "myclaude.sh");
-  const oldLauncherDir = path.join(homeDir, ".claude", "launcher");
+  const srcBundle = path.join(repoRoot, 'dist', 'launcher.cjs');
+  const aiTpkDir = path.join(homeDir, '.ai-tpk');
+  const destBundle = path.join(aiTpkDir, 'launcher.cjs');
+  const binDir = path.join(homeDir, 'bin');
+  const targetBinPath = path.join(binDir, 'myclaude');
+  const srcBashScript = path.join(repoRoot, 'src', 'launcher', 'myclaude.sh');
+  const oldLauncherDir = path.join(homeDir, '.claude', 'launcher');
 
   // 8b. Guard: verify required source files exist before any side effects
   if (!fs.existsSync(srcBundle)) {
@@ -38,12 +38,12 @@ export function installLauncherScript(
   }
 
   // 8d2. Migrate: remove stale ~/.ai-tpk/launcher.js left by pre-rename installs
-  const staleLauncherJs = path.join(aiTpkDir, "launcher.js");
+  const staleLauncherJs = path.join(aiTpkDir, 'launcher.js');
   if (fs.existsSync(staleLauncherJs)) {
     fs.rmSync(staleLauncherJs);
     console.log(
       c.yellow(
-        "Removed stale ~/.ai-tpk/launcher.js (replaced by launcher.cjs)",
+        'Removed stale ~/.ai-tpk/launcher.js (replaced by launcher.cjs)',
       ),
     );
   }

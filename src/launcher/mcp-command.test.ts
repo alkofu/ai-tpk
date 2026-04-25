@@ -11,31 +11,31 @@
  * orchestration files to use it.
  */
 
-import { describe, it, before, after } from "node:test";
-import assert from "node:assert/strict";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { registry } from "./mcp-command.js";
-import { buildEnvVars } from "./env.js";
-import { buildOutroLines } from "./outro.js";
-import { formatSummaryLines } from "./summary.js";
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { registry } from './mcp-command.js';
+import { buildEnvVars } from './env.js';
+import { buildOutroLines } from './outro.js';
+import { formatSummaryLines } from './summary.js';
 import type {
   ResolvedConfig,
   SkippedMap,
   LauncherConfig,
   GrafanaCluster,
-} from "./types.js";
+} from './types.js';
 
 // ---------------------------------------------------------------------------
 // Dotfile isolation (mirrors env.test.ts strategy)
 // ---------------------------------------------------------------------------
 
-const dotfileDir = path.join(os.homedir(), ".claude");
-const dotfilePath = path.join(dotfileDir, ".current-aws-profile");
-const gcpDotfilePath = path.join(dotfileDir, ".current-gcp-project");
-const kubeDotfilePath = path.join(dotfileDir, ".current-kube-context");
-const argocdDotfilePath = path.join(dotfileDir, ".current-argocd-cluster");
+const dotfileDir = path.join(os.homedir(), '.claude');
+const dotfilePath = path.join(dotfileDir, '.current-aws-profile');
+const gcpDotfilePath = path.join(dotfileDir, '.current-gcp-project');
+const kubeDotfilePath = path.join(dotfileDir, '.current-kube-context');
+const argocdDotfilePath = path.join(dotfileDir, '.current-argocd-cluster');
 
 let priorDotfileContent: string | null = null;
 let priorGcpDotfileContent: string | null = null;
@@ -44,16 +44,16 @@ let priorArgoCdDotfileContent: string | null = null;
 
 before(() => {
   if (fs.existsSync(dotfilePath)) {
-    priorDotfileContent = fs.readFileSync(dotfilePath, "utf8");
+    priorDotfileContent = fs.readFileSync(dotfilePath, 'utf8');
   }
   if (fs.existsSync(gcpDotfilePath)) {
-    priorGcpDotfileContent = fs.readFileSync(gcpDotfilePath, "utf8");
+    priorGcpDotfileContent = fs.readFileSync(gcpDotfilePath, 'utf8');
   }
   if (fs.existsSync(kubeDotfilePath)) {
-    priorKubeDotfileContent = fs.readFileSync(kubeDotfilePath, "utf8");
+    priorKubeDotfileContent = fs.readFileSync(kubeDotfilePath, 'utf8');
   }
   if (fs.existsSync(argocdDotfilePath)) {
-    priorArgoCdDotfileContent = fs.readFileSync(argocdDotfilePath, "utf8");
+    priorArgoCdDotfileContent = fs.readFileSync(argocdDotfilePath, 'utf8');
   }
 });
 
@@ -62,7 +62,7 @@ after(() => {
     fs.mkdirSync(dotfileDir, { recursive: true });
     fs.writeFileSync(dotfilePath, priorDotfileContent, {
       mode: 0o600,
-      encoding: "utf8",
+      encoding: 'utf8',
     });
   } else if (fs.existsSync(dotfilePath)) {
     fs.rmSync(dotfilePath);
@@ -72,7 +72,7 @@ after(() => {
     fs.mkdirSync(dotfileDir, { recursive: true });
     fs.writeFileSync(gcpDotfilePath, priorGcpDotfileContent, {
       mode: 0o600,
-      encoding: "utf8",
+      encoding: 'utf8',
     });
   } else if (fs.existsSync(gcpDotfilePath)) {
     fs.rmSync(gcpDotfilePath);
@@ -82,7 +82,7 @@ after(() => {
     fs.mkdirSync(dotfileDir, { recursive: true });
     fs.writeFileSync(kubeDotfilePath, priorKubeDotfileContent, {
       mode: 0o600,
-      encoding: "utf8",
+      encoding: 'utf8',
     });
   } else if (fs.existsSync(kubeDotfilePath)) {
     fs.rmSync(kubeDotfilePath);
@@ -92,7 +92,7 @@ after(() => {
     fs.mkdirSync(dotfileDir, { recursive: true });
     fs.writeFileSync(argocdDotfilePath, priorArgoCdDotfileContent, {
       mode: 0o600,
-      encoding: "utf8",
+      encoding: 'utf8',
     });
   } else if (fs.existsSync(argocdDotfilePath)) {
     fs.rmSync(argocdDotfilePath);
@@ -104,23 +104,23 @@ after(() => {
 // ---------------------------------------------------------------------------
 
 const fakeCluster: GrafanaCluster = {
-  id: "test-cluster",
-  name: "Test Cluster",
-  url: "https://grafana.test.example.com",
-  viewer_token: "viewer-token-abc",
-  editor_token: "editor-token-xyz",
+  id: 'test-cluster',
+  name: 'Test Cluster',
+  url: 'https://grafana.test.example.com',
+  viewer_token: 'viewer-token-abc',
+  editor_token: 'editor-token-xyz',
 };
 
 const allMcpsResolved: ResolvedConfig = {
-  grafana: { cluster: fakeCluster, role: "viewer" },
-  cloudwatch: { profile: "my-dev-profile" },
-  gcpObservability: { project: "my-gcp-project" },
-  kubernetes: { context: "my-cluster" },
+  grafana: { cluster: fakeCluster, role: 'viewer' },
+  cloudwatch: { profile: 'my-dev-profile' },
+  gcpObservability: { project: 'my-gcp-project' },
+  kubernetes: { context: 'my-cluster' },
   argocd: {
     cluster: {
-      id: "argo-prod",
-      url: "https://argocd.example.com",
-      token: "fake-token",
+      id: 'argo-prod',
+      url: 'https://argocd.example.com',
+      token: 'fake-token',
     },
   },
 };
@@ -169,7 +169,7 @@ function buildOutroLinesViaRegistry(
 // ---------------------------------------------------------------------------
 
 function formatSummaryLinesViaRegistry(config: LauncherConfig): string[] {
-  if (config.selectedMcps.length === 0) return ["No MCPs configured."];
+  if (config.selectedMcps.length === 0) return ['No MCPs configured.'];
   return config.selectedMcps.map((name) => {
     const cmd = registry.find((c) => c.id === name);
     if (cmd === undefined) return `${name}: (unknown MCP)`;
@@ -181,12 +181,12 @@ function formatSummaryLinesViaRegistry(config: LauncherConfig): string[] {
 // registry length assertion (Step 3 acceptance check)
 // ---------------------------------------------------------------------------
 
-describe("registry", () => {
-  it("contains exactly five entries in canonical order", () => {
+describe('registry', () => {
+  it('contains exactly five entries in canonical order', () => {
     assert.strictEqual(registry.length, 5);
     assert.deepStrictEqual(
       registry.map((c) => c.id),
-      ["grafana", "cloudwatch", "gcp-observability", "kubernetes", "argocd"],
+      ['grafana', 'cloudwatch', 'gcp-observability', 'kubernetes', 'argocd'],
     );
   });
 });
@@ -195,50 +195,50 @@ describe("registry", () => {
 // Env var behavioural-equivalence tests
 // ---------------------------------------------------------------------------
 
-describe("registry emitEnvVars: behavioural equivalence with buildEnvVars", () => {
-  it("all MCPs resolved: registry produces same env map as buildEnvVars", () => {
+describe('registry emitEnvVars: behavioural equivalence with buildEnvVars', () => {
+  it('all MCPs resolved: registry produces same env map as buildEnvVars', () => {
     const oracle = buildEnvVars(allMcpsResolved);
     const actual = buildEnvVarsViaRegistry(allMcpsResolved);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("Grafana viewer only: registry produces same env map as buildEnvVars", () => {
+  it('Grafana viewer only: registry produces same env map as buildEnvVars', () => {
     const resolved: ResolvedConfig = {
-      grafana: { cluster: fakeCluster, role: "viewer" },
+      grafana: { cluster: fakeCluster, role: 'viewer' },
     };
     const oracle = buildEnvVars(resolved);
     const actual = buildEnvVarsViaRegistry(resolved);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("Grafana editor only: registry produces same env map as buildEnvVars", () => {
+  it('Grafana editor only: registry produces same env map as buildEnvVars', () => {
     const resolved: ResolvedConfig = {
-      grafana: { cluster: fakeCluster, role: "editor" },
+      grafana: { cluster: fakeCluster, role: 'editor' },
     };
     const oracle = buildEnvVars(resolved);
     const actual = buildEnvVarsViaRegistry(resolved);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("CloudWatch only: registry produces same env map as buildEnvVars", () => {
+  it('CloudWatch only: registry produces same env map as buildEnvVars', () => {
     const resolved: ResolvedConfig = {
-      cloudwatch: { profile: "my-dev-profile" },
+      cloudwatch: { profile: 'my-dev-profile' },
     };
     const oracle = buildEnvVars(resolved);
     const actual = buildEnvVarsViaRegistry(resolved);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("empty config: registry produces same empty env map as buildEnvVars", () => {
+  it('empty config: registry produces same empty env map as buildEnvVars', () => {
     const resolved: ResolvedConfig = {};
     const oracle = buildEnvVars(resolved);
     const actual = buildEnvVarsViaRegistry(resolved);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("all five MCPs resolved: env map includes ARGOCD_BASE_URL from ArgoCD fixture", () => {
+  it('all five MCPs resolved: env map includes ARGOCD_BASE_URL from ArgoCD fixture', () => {
     const env = buildEnvVarsViaRegistry(allMcpsResolved);
-    assert.strictEqual(env["ARGOCD_BASE_URL"], "https://argocd.example.com");
+    assert.strictEqual(env['ARGOCD_BASE_URL'], 'https://argocd.example.com');
   });
 });
 
@@ -247,22 +247,22 @@ describe("registry emitEnvVars: behavioural equivalence with buildEnvVars", () =
 // (mirrors outro.test.ts cases (a), (b), (e), (e2), (g))
 // ---------------------------------------------------------------------------
 
-describe("registry buildOutroLines: behavioural equivalence with buildOutroLines", () => {
-  it("(a) all MCPs configured and none skipped: same lines as buildOutroLines", () => {
+describe('registry buildOutroLines: behavioural equivalence with buildOutroLines', () => {
+  it('(a) all MCPs configured and none skipped: same lines as buildOutroLines', () => {
     const resolved: ResolvedConfig = {
       grafana: {
         cluster: {
-          id: "prod-us-east",
-          name: "Production US-East",
-          url: "https://grafana.prod.example.com",
-          viewer_token: "viewer-token",
-          editor_token: "editor-token",
+          id: 'prod-us-east',
+          name: 'Production US-East',
+          url: 'https://grafana.prod.example.com',
+          viewer_token: 'viewer-token',
+          editor_token: 'editor-token',
         },
-        role: "viewer",
+        role: 'viewer',
       },
-      cloudwatch: { profile: "my-aws-profile" },
-      gcpObservability: { project: "my-gcp-project" },
-      kubernetes: { context: "prod-us-east" },
+      cloudwatch: { profile: 'my-aws-profile' },
+      gcpObservability: { project: 'my-gcp-project' },
+      kubernetes: { context: 'prod-us-east' },
     };
     const effectiveSkipped: SkippedMap = {};
     const oracle = buildOutroLines(resolved, effectiveSkipped);
@@ -270,45 +270,45 @@ describe("registry buildOutroLines: behavioural equivalence with buildOutroLines
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("(b) all MCPs skipped via loader failure: same lines as buildOutroLines", () => {
+  it('(b) all MCPs skipped via loader failure: same lines as buildOutroLines', () => {
     const resolved: ResolvedConfig = {};
     const effectiveSkipped: SkippedMap = {
-      grafana: "loader-failed",
-      cloudwatch: "loader-failed",
-      gcp: "loader-failed",
-      kubernetes: "loader-failed",
+      grafana: 'loader-failed',
+      cloudwatch: 'loader-failed',
+      gcp: 'loader-failed',
+      kubernetes: 'loader-failed',
     };
     const oracle = buildOutroLines(resolved, effectiveSkipped);
     const actual = buildOutroLinesViaRegistry(resolved, effectiveSkipped);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("(e) success lines before skip lines in canonical order: same as buildOutroLines", () => {
+  it('(e) success lines before skip lines in canonical order: same as buildOutroLines', () => {
     const resolved: ResolvedConfig = {
       grafana: {
         cluster: {
-          id: "prod-us-east",
-          name: "Production US-East",
-          url: "https://grafana.prod.example.com",
-          viewer_token: "viewer-token",
-          editor_token: "editor-token",
+          id: 'prod-us-east',
+          name: 'Production US-East',
+          url: 'https://grafana.prod.example.com',
+          viewer_token: 'viewer-token',
+          editor_token: 'editor-token',
         },
-        role: "viewer",
+        role: 'viewer',
       },
-      gcpObservability: { project: "my-gcp-project" },
-      kubernetes: { context: "prod-us-east" },
+      gcpObservability: { project: 'my-gcp-project' },
+      kubernetes: { context: 'prod-us-east' },
     };
-    const effectiveSkipped: SkippedMap = { cloudwatch: "loader-failed" };
+    const effectiveSkipped: SkippedMap = { cloudwatch: 'loader-failed' };
     const oracle = buildOutroLines(resolved, effectiveSkipped);
     const actual = buildOutroLinesViaRegistry(resolved, effectiveSkipped);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("(e2) success-first ordering when skipped MCP ranks before resolved: same as buildOutroLines", () => {
+  it('(e2) success-first ordering when skipped MCP ranks before resolved: same as buildOutroLines', () => {
     const resolved: ResolvedConfig = {
-      cloudwatch: { profile: "my-aws-profile" },
+      cloudwatch: { profile: 'my-aws-profile' },
     };
-    const effectiveSkipped: SkippedMap = { grafana: "loader-failed" };
+    const effectiveSkipped: SkippedMap = { grafana: 'loader-failed' };
     const oracle = buildOutroLines(resolved, effectiveSkipped);
     const actual = buildOutroLinesViaRegistry(resolved, effectiveSkipped);
     assert.deepStrictEqual(actual, oracle);
@@ -318,22 +318,22 @@ describe("registry buildOutroLines: behavioural equivalence with buildOutroLines
     const effectiveSkipped: SkippedMap = {};
     const lines = buildOutroLinesViaRegistry(allMcpsResolved, effectiveSkipped);
     assert.ok(
-      lines.includes("ArgoCD: argo-prod"),
+      lines.includes('ArgoCD: argo-prod'),
       `Expected outro to include "ArgoCD: argo-prod" but got: ${JSON.stringify(lines)}`,
     );
   });
 
-  it("(g) effectiveSkipped=false does not suppress success line: same as buildOutroLines", () => {
+  it('(g) effectiveSkipped=false does not suppress success line: same as buildOutroLines', () => {
     const resolved: ResolvedConfig = {
       grafana: {
         cluster: {
-          id: "prod-us-east",
-          name: "Production US-East",
-          url: "https://grafana.prod.example.com",
-          viewer_token: "viewer-token",
-          editor_token: "editor-token",
+          id: 'prod-us-east',
+          name: 'Production US-East',
+          url: 'https://grafana.prod.example.com',
+          viewer_token: 'viewer-token',
+          editor_token: 'editor-token',
         },
-        role: "viewer",
+        role: 'viewer',
       },
     };
     const effectiveSkipped: SkippedMap = { grafana: false };
@@ -347,38 +347,38 @@ describe("registry buildOutroLines: behavioural equivalence with buildOutroLines
 // Summary line behavioural-equivalence tests
 // ---------------------------------------------------------------------------
 
-describe("registry buildSummaryLine: behavioural equivalence with formatSummaryLines", () => {
-  it("empty selectedMcps: same result as formatSummaryLines", () => {
+describe('registry buildSummaryLine: behavioural equivalence with formatSummaryLines', () => {
+  it('empty selectedMcps: same result as formatSummaryLines', () => {
     const config: LauncherConfig = { selectedMcps: [] };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("all five MCPs configured: same lines as formatSummaryLines", () => {
+  it('all five MCPs configured: same lines as formatSummaryLines', () => {
     const config: LauncherConfig = {
       selectedMcps: [
-        "grafana",
-        "cloudwatch",
-        "gcp-observability",
-        "kubernetes",
-        "argocd",
+        'grafana',
+        'cloudwatch',
+        'gcp-observability',
+        'kubernetes',
+        'argocd',
       ],
-      grafana: { clusterId: "prod-us", role: "editor" },
-      cloudwatch: { profile: "prod" },
-      gcpObservability: { project: "gcp-prod" },
-      kubernetes: { context: "prod-cluster" },
-      argocd: { clusterId: "argo-prod" },
+      grafana: { clusterId: 'prod-us', role: 'editor' },
+      cloudwatch: { profile: 'prod' },
+      gcpObservability: { project: 'gcp-prod' },
+      kubernetes: { context: 'prod-cluster' },
+      argocd: { clusterId: 'argo-prod' },
     };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("single MCP cloudwatch: same line as formatSummaryLines", () => {
+  it('single MCP cloudwatch: same line as formatSummaryLines', () => {
     const config: LauncherConfig = {
-      selectedMcps: ["cloudwatch"],
-      cloudwatch: { profile: "prod" },
+      selectedMcps: ['cloudwatch'],
+      cloudwatch: { profile: 'prod' },
     };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
@@ -386,14 +386,14 @@ describe("registry buildSummaryLine: behavioural equivalence with formatSummaryL
   });
 
   it("unknown MCP in selectedMcps: same '(unknown MCP)' line as formatSummaryLines", () => {
-    const config: LauncherConfig = { selectedMcps: ["future-mcp"] };
+    const config: LauncherConfig = { selectedMcps: ['future-mcp'] };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
     assert.deepStrictEqual(actual, oracle);
   });
 
   it("MCP in selectedMcps with missing sub-object: same '(not yet configured)' line as formatSummaryLines", () => {
-    const config: LauncherConfig = { selectedMcps: ["grafana"] };
+    const config: LauncherConfig = { selectedMcps: ['grafana'] };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
     assert.deepStrictEqual(actual, oracle);

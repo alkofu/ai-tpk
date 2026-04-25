@@ -12,7 +12,7 @@
  */
 export function buildClaudeArgs(initialMessage: string | undefined): string[] {
   if (initialMessage === undefined) {
-    return ["--agent", "dungeonmaster"];
+    return ['--agent', 'dungeonmaster'];
   }
-  return ["--agent", "dungeonmaster", initialMessage];
+  return ['--agent', 'dungeonmaster', initialMessage];
 }

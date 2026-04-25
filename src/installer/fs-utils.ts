@@ -1,9 +1,9 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { c } from "./colors.js";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { c } from './colors.js';
 
-const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+const pad = (n: number, len = 2) => String(n).padStart(len, '0');
 
 function timestamp(): string {
   const now = new Date();
@@ -22,7 +22,7 @@ export function backupIfExists(targetPath: string): void {
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       return;
     }
@@ -58,7 +58,7 @@ export function installDir(
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       console.log(c.yellow(`Skipping ${srcName} (not found in repository)`));
       return;

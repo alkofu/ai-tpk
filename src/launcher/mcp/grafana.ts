@@ -1,19 +1,19 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { parse as parseYaml } from "yaml";
-import { log, select, cancel } from "@clack/prompts";
-import type { GrafanaCluster, GrafanaConfig, GrafanaRole } from "../types.js";
-import { handleCancel } from "../cancel.js";
-import type { McpCommand } from "../mcp-command-types.js";
-import { StaleResourceError } from "../mcp-command-types.js";
-import { tryLoad } from "../utils.js";
-import type { ResolvedConfig, LauncherConfig, SkippedMap } from "../types.js";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { parse as parseYaml } from 'yaml';
+import { log, select, cancel } from '@clack/prompts';
+import type { GrafanaCluster, GrafanaConfig, GrafanaRole } from '../types.js';
+import { handleCancel } from '../cancel.js';
+import type { McpCommand } from '../mcp-command-types.js';
+import { StaleResourceError } from '../mcp-command-types.js';
+import { tryLoad } from '../utils.js';
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from '../types.js';
 
 const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
-  ".config",
-  "grafana-clusters.yaml",
+  '.config',
+  'grafana-clusters.yaml',
 );
 
 interface RawCluster {
@@ -42,7 +42,7 @@ export function loadGrafanaClusters(configPath?: string): GrafanaCluster[] {
     );
   }
 
-  const raw = fs.readFileSync(resolvedPath, "utf8");
+  const raw = fs.readFileSync(resolvedPath, 'utf8');
   // maxAliasCount guards against YAML anchor/alias expansion bombs
   const parsed = parseYaml(raw, { maxAliasCount: 100 }) as {
     clusters?: RawCluster[];
@@ -61,9 +61,9 @@ export function loadGrafanaClusters(configPath?: string): GrafanaCluster[] {
   }
 
   return parsed.clusters.map((c: RawCluster, idx: number): GrafanaCluster => {
-    const id = String(c.id ?? "");
-    const name = String(c.name ?? "");
-    const url = String(c.url ?? "");
+    const id = String(c.id ?? '');
+    const name = String(c.name ?? '');
+    const url = String(c.url ?? '');
 
     if (!id || !name) {
       throw new Error(
@@ -78,15 +78,15 @@ export function loadGrafanaClusters(configPath?: string): GrafanaCluster[] {
     }
 
     // Legacy token fallback: warn and use token as viewer_token
-    let viewer_token = String(c.viewer_token ?? "");
-    let editor_token = String(c.editor_token ?? "");
+    let viewer_token = String(c.viewer_token ?? '');
+    let editor_token = String(c.editor_token ?? '');
 
     if (!viewer_token && !editor_token && c.token) {
       log.warn(
         `Cluster "${name}" uses legacy 'token' field. Add 'viewer_token' and 'editor_token' to ~/.config/grafana-clusters.yaml.`,
       );
       viewer_token = String(c.token);
-      editor_token = "";
+      editor_token = '';
     }
 
     return { id, name, url, viewer_token, editor_token };
@@ -99,7 +99,7 @@ export async function configureGrafana(
   previousRole?: GrafanaRole,
 ): Promise<GrafanaConfig> {
   const clusterValue = await select({
-    message: "Select Grafana cluster:",
+    message: 'Select Grafana cluster:',
     options: clusters.map((c) => ({
       value: c.id,
       label: c.name,
@@ -114,35 +114,35 @@ export async function configureGrafana(
 
   const selectedCluster = clusters.find((c) => c.id === clusterValue);
   if (!selectedCluster) {
-    cancel("Selected cluster not found.");
+    cancel('Selected cluster not found.');
     process.exit(1);
   }
 
   const roleValue = await select<GrafanaRole>({
-    message: "Select access role:",
+    message: 'Select access role:',
     options: [
       {
-        value: "viewer" as GrafanaRole,
-        label: "Viewer (read-only)",
-        hint: "uses --disable-write",
+        value: 'viewer' as GrafanaRole,
+        label: 'Viewer (read-only)',
+        hint: 'uses --disable-write',
       },
       {
-        value: "editor" as GrafanaRole,
-        label: "Editor (read + write)",
+        value: 'editor' as GrafanaRole,
+        label: 'Editor (read + write)',
       },
     ],
-    initialValue: previousRole ?? "viewer",
+    initialValue: previousRole ?? 'viewer',
   });
   handleCancel(roleValue);
 
-  if (roleValue === "editor" && !selectedCluster.editor_token) {
+  if (roleValue === 'editor' && !selectedCluster.editor_token) {
     cancel(
       `Cluster "${selectedCluster.name}" has no editor_token configured. Update ~/.config/grafana-clusters.yaml or select Viewer role.`,
     );
     process.exit(1);
   }
 
-  if (roleValue === "viewer" && !selectedCluster.viewer_token) {
+  if (roleValue === 'viewer' && !selectedCluster.viewer_token) {
     cancel(
       `Cluster "${selectedCluster.name}" has no viewer_token configured. Update ~/.config/grafana-clusters.yaml or select Editor role.`,
     );
@@ -156,19 +156,19 @@ export async function configureGrafana(
 }
 
 export const grafanaCommand: McpCommand = {
-  id: "grafana",
-  skippedKey: "grafana",
+  id: 'grafana',
+  skippedKey: 'grafana',
   multiselectOption: {
-    value: "grafana",
-    label: "Grafana",
-    hint: "cluster + role",
+    value: 'grafana',
+    label: 'Grafana',
+    hint: 'cluster + role',
   },
 
   async configureInteractive(savedConfig: LauncherConfig): Promise<{
     resolved: Partial<ResolvedConfig>;
     persistable: Partial<LauncherConfig>;
   } | null> {
-    const clusters = tryLoad(() => loadGrafanaClusters(), "grafana");
+    const clusters = tryLoad(() => loadGrafanaClusters(), 'grafana');
     if (clusters === null) return null;
     const result = await configureGrafana(
       clusters,
@@ -198,7 +198,7 @@ export const grafanaCommand: McpCommand = {
         `Could not load Grafana clusters: ${err instanceof Error ? err.message : String(err)}. Falling through to configure flow.`,
       );
       // Message arg is for diagnostic use only; user warning is emitted above.
-      throw new StaleResourceError("Grafana clusters file unavailable");
+      throw new StaleResourceError('Grafana clusters file unavailable');
     }
     const cluster = clusters.find((c) => c.id === config.grafana!.clusterId);
     if (cluster === undefined) {
@@ -216,13 +216,13 @@ export const grafanaCommand: McpCommand = {
   emitEnvVars(resolved: ResolvedConfig, env: Record<string, string>): void {
     if (!resolved.grafana) return;
     const { cluster, role } = resolved.grafana;
-    env["GRAFANA_URL"] = cluster.url;
-    if (role === "viewer") {
-      env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = cluster.viewer_token;
-      env["GRAFANA_DISABLE_WRITE"] = "true";
+    env['GRAFANA_URL'] = cluster.url;
+    if (role === 'viewer') {
+      env['GRAFANA_SERVICE_ACCOUNT_TOKEN'] = cluster.viewer_token;
+      env['GRAFANA_DISABLE_WRITE'] = 'true';
     } else {
       // editor role — no GRAFANA_DISABLE_WRITE
-      env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = cluster.editor_token;
+      env['GRAFANA_SERVICE_ACCOUNT_TOKEN'] = cluster.editor_token;
     }
   },
 
@@ -233,12 +233,12 @@ export const grafanaCommand: McpCommand = {
 
   buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
     if (!skipped) return null;
-    return "Grafana: skipped (clusters unavailable)";
+    return 'Grafana: skipped (clusters unavailable)';
   },
 
   buildSummaryLine(config: LauncherConfig): string {
     if (config.grafana === undefined) {
-      return "Grafana: (not yet configured)";
+      return 'Grafana: (not yet configured)';
     }
     return `Grafana: cluster ${config.grafana.clusterId}, role ${config.grafana.role}`;
   },

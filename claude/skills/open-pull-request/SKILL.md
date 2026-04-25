@@ -173,6 +173,8 @@ Optional **team prefix** (only if the repository already uses it): `username/fea
 
 Keep it short (2–5 sentences), **impact-first**: problem solved, user or system benefit, notable risks or rollout notes. Do not mirror the file list; that is visible in the PR UI. Match the tone of `commit-message-guide` bodies: explain *why* when the title is not enough; omit noise (test pass claims, AI attribution, line counts).
 
+**Closing keywords:** If the task description, session context, or commit messages on this branch contain any GitHub issue-closing keyword (`Closes #N`, `Fixes #N`, `Resolves #N`, including the `Close`/`Closed`/`Fix`/`Fixed`/`Resolve`/`Resolved` variants), append the matching line(s) verbatim to the end of the PR body so GitHub auto-closes the linked issue(s) on merge. Do not invent a closing keyword; only propagate what the upstream context supplied. If the same `Closes #N` keyword appears in multiple sources, emit it only once in the PR body.
+
 ## Examples (end-to-end)
 
 After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @me --title "feat(reports): add csv export for quarterly view" --body "..."`.
@@ -202,6 +204,7 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 - [ ] Branch matches `<prefix>/<description>` and Conventional Branch character rules
 - [ ] PR title is a conventional commit subject line (and matches the main commit when single-commit)
 - [ ] PR body adds context, not a file inventory
+- [ ] If the task description or commit history contains a closing keyword (`Closes #N` / `Fixes #N` / `Resolves #N` etc.), the PR body includes the matching line at the end (deduplicated if the same keyword appears in multiple sources)
 - [ ] PR is opened as a **draft** and **assigned to the user** (`@me` or equivalent)
 - [ ] No AI/tool attribution in title or body
 

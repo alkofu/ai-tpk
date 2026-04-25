@@ -20,9 +20,9 @@ Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,
 
 **On gh failure:** If `gh` fails, surface the exact error message and ask the user to either fix the problem and retry, or provide the feature description manually.
 
-**On empty issue body:** If the returned `body` field is empty or whitespace-only, proceed with a header-only task description and surface a brief note to the user (e.g., "Issue #N has no body — proceeding with title-only context").
+**On empty issue body:** If the returned `body` field is empty or whitespace-only, proceed with a header + closing-keyword line task description and surface a brief note to the user (e.g., "Issue #N has no body — proceeding with title and closing keyword only").
 
-**Constructing the task description:** Build a one-line header — `Issue #<number> (<url>) [<label1>, <label2>, ...]: <title>` (omit `[...]` if labels is empty) — followed by a blank line and the issue body verbatim (if non-empty).
+**Constructing the task description:** Build a one-line header — `Issue #<number> (<url>) [<label1>, <label2>, ...]: <title>` (omit `[...]` if labels is empty) — followed by a blank line, then the line `Closes #<number>`, followed by a blank line, then the issue body verbatim (if non-empty). The `Closes #<number>` line is a GitHub closing keyword: when this task description (or a derivative such as a commit message or PR body) appears on a merged PR, GitHub auto-closes the linked issue.
 
 If the `comments` array returned by `gh` is non-empty, append a blank line and a `## Comments` section after the issue body. Render each comment in array order as a sub-section: `### Comment by @<login> — <createdAt> ([link](<url>))` on one line, then a blank line, then the comment `body` verbatim, then a blank line. Use the comment's `author.login`, `createdAt`, and `url` fields for the heading and the `body` field for the content. If the `comments` array is empty, omit the `## Comments` section entirely (do not emit an empty header or a placeholder).
 

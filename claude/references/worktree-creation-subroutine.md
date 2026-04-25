@@ -10,9 +10,11 @@ identical. The H2 must exactly match the pointer anchor used by
 
 This reference is paged in by DM at the moment a routing branch in `claude/agents/dungeonmaster.md` invokes the Worktree Creation Subroutine. It contains the full subroutine procedure and the Branch Name Derivation rule used by the investigative-pipeline fix-bound routing branches.
 
+<!-- markdownlint-disable MD024 -->
 ## Worktree Creation Subroutine
+<!-- markdownlint-enable MD024 -->
 
-This subroutine is **invoked explicitly** by routing branches in this section that require a worktree. It is **not** a checkpoint — it does not run automatically. Each routing branch below states whether it invokes the subroutine. Branches that do not invoke it (the advisory branches) produce sessions with no worktree.
+This subroutine is **invoked explicitly** by routing branches in `claude/agents/dungeonmaster.md` Phase 1 that require a worktree. It is **not** a checkpoint — it does not run automatically. Each routing branch below states whether it invokes the subroutine. Branches that do not invoke it (the advisory branches) produce sessions with no worktree.
 
 **When invoked, perform the following steps in order:**
 

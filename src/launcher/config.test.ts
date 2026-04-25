@@ -30,9 +30,7 @@ const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-config-test-'));
 
 before(() => {
   originalHome = process.env.HOME;
-  fakeHome = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ai-tpk-config-test-home-'),
-  );
+  fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-config-test-home-'));
   process.env.HOME = fakeHome;
 });
 

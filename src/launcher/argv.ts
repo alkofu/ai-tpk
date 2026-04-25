@@ -13,9 +13,7 @@
 
 export class UnknownFlagError extends Error {
   constructor(flag: string) {
-    super(
-      `Unknown flag: ${flag}. Usage: tpk [--skip] [<initial-message>]`,
-    );
+    super(`Unknown flag: ${flag}. Usage: tpk [--skip] [<initial-message>]`);
     this.name = 'UnknownFlagError';
   }
 }

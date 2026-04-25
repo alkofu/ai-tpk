@@ -75,10 +75,10 @@ export function installLauncherScript(
   //     Source is preserved (user cleans up manually).
   //     Runs AFTER 8e/8f so any short-circuit return at 8e (symlink branch) prevents
   //     a half-migrated state. Logs a yellow line on BOTH copy and skip paths.
-  const legacyConfigDir = path.join(homeDir, ".config", "myclaude");
-  const legacyConfigFile = path.join(legacyConfigDir, "config.json");
-  const newConfigDir = path.join(homeDir, ".config", "tpk");
-  const newConfigFile = path.join(newConfigDir, "config.json");
+  const legacyConfigDir = path.join(homeDir, '.config', 'myclaude');
+  const legacyConfigFile = path.join(legacyConfigDir, 'config.json');
+  const newConfigDir = path.join(homeDir, '.config', 'tpk');
+  const newConfigFile = path.join(newConfigDir, 'config.json');
   const legacyConfigExists = fs.existsSync(legacyConfigFile);
   const newConfigExists = fs.existsSync(newConfigFile);
   if (legacyConfigExists && !newConfigExists) {
@@ -89,13 +89,13 @@ export function installLauncherScript(
     fs.chmodSync(newConfigFile, 0o600);
     console.log(
       c.yellow(
-        "Copied ~/.config/myclaude/config.json -> ~/.config/tpk/config.json (legacy file left in place)",
+        'Copied ~/.config/myclaude/config.json -> ~/.config/tpk/config.json (legacy file left in place)',
       ),
     );
   } else if (legacyConfigExists && newConfigExists) {
     console.log(
       c.yellow(
-        "Skipping copy: ~/.config/tpk/config.json already exists; legacy source ~/.config/myclaude/config.json left in place",
+        'Skipping copy: ~/.config/tpk/config.json already exists; legacy source ~/.config/myclaude/config.json left in place',
       ),
     );
   }
@@ -104,14 +104,14 @@ export function installLauncherScript(
   //     grafana-clusters.yaml} -> ~/.config/tpk/<same-filename>.
   //     Source is preserved. Runs AFTER 8e/8f so any 8e short-circuit prevents a
   //     half-migrated state. Logs a yellow line on BOTH copy and skip paths.
-  const consolidatedConfigDir = path.join(homeDir, ".config", "tpk");
+  const consolidatedConfigDir = path.join(homeDir, '.config', 'tpk');
   const filesToConsolidate = [
-    "argocd-accounts.json",
-    "github-pats.json",
-    "grafana-clusters.yaml",
+    'argocd-accounts.json',
+    'github-pats.json',
+    'grafana-clusters.yaml',
   ];
   for (const filename of filesToConsolidate) {
-    const legacyPath = path.join(homeDir, ".config", filename);
+    const legacyPath = path.join(homeDir, '.config', filename);
     const newPath = path.join(consolidatedConfigDir, filename);
     const legacyExists = fs.existsSync(legacyPath);
     const newExists = fs.existsSync(newPath);

@@ -35,9 +35,7 @@ describe('parseArgs', () => {
           'message should contain the offending flag',
         );
         assert.ok(
-          (err as UnknownFlagError).message.includes(
-            'Usage: tpk [--skip]',
-          ),
+          (err as UnknownFlagError).message.includes('Usage: tpk [--skip]'),
           'message should contain the usage hint',
         );
         return true;

@@ -125,34 +125,34 @@ describe('installLauncherScript', () => {
   // 8g migration block tests (test-first: written before the migration code)
   // -------------------------------------------------------------------------
 
-  it("8g: copies ~/.config/myclaude/config.json to ~/.config/tpk/config.json when source exists and dest is absent", () => {
+  it('8g: copies ~/.config/myclaude/config.json to ~/.config/tpk/config.json when source exists and dest is absent', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-happy-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-happy-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-happy-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-happy-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
-      const legacyDir = path.join(isolatedHome, ".config", "myclaude");
+      const legacyDir = path.join(isolatedHome, '.config', 'myclaude');
       fs.mkdirSync(legacyDir, { recursive: true });
-      const legacySrc = path.join(legacyDir, "config.json");
-      fs.writeFileSync(legacySrc, '{"selectedMcps":["grafana"]}', "utf8");
+      const legacySrc = path.join(legacyDir, 'config.json');
+      fs.writeFileSync(legacySrc, '{"selectedMcps":["grafana"]}', 'utf8');
       fs.chmodSync(legacySrc, 0o600);
 
       installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
 
-      const dest = path.join(isolatedHome, ".config", "tpk", "config.json");
-      assert.ok(fs.existsSync(dest), "dest config.json should exist");
+      const dest = path.join(isolatedHome, '.config', 'tpk', 'config.json');
+      assert.ok(fs.existsSync(dest), 'dest config.json should exist');
       assert.strictEqual(
-        fs.readFileSync(dest, "utf8"),
+        fs.readFileSync(dest, 'utf8'),
         '{"selectedMcps":["grafana"]}',
       );
       assert.strictEqual(fs.statSync(dest).mode & 0o777, 0o600);
       // Source must still exist
       assert.ok(
         fs.existsSync(legacySrc),
-        "source config.json must be preserved",
+        'source config.json must be preserved',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -160,30 +160,30 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8g: skips copy and logs warning when dest ~/.config/tpk/config.json already exists", () => {
+  it('8g: skips copy and logs warning when dest ~/.config/tpk/config.json already exists', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-skip-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-skip-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-skip-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-skip-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
-      const legacyDir = path.join(isolatedHome, ".config", "myclaude");
+      const legacyDir = path.join(isolatedHome, '.config', 'myclaude');
       fs.mkdirSync(legacyDir, { recursive: true });
-      const legacySrc = path.join(legacyDir, "config.json");
-      fs.writeFileSync(legacySrc, '{"selectedMcps":["grafana"]}', "utf8");
+      const legacySrc = path.join(legacyDir, 'config.json');
+      fs.writeFileSync(legacySrc, '{"selectedMcps":["grafana"]}', 'utf8');
       fs.chmodSync(legacySrc, 0o600);
 
-      const tpkDir = path.join(isolatedHome, ".config", "tpk");
+      const tpkDir = path.join(isolatedHome, '.config', 'tpk');
       fs.mkdirSync(tpkDir, { recursive: true });
-      const dest = path.join(tpkDir, "config.json");
-      fs.writeFileSync(dest, '{"selectedMcps":["argocd"]}', "utf8");
+      const dest = path.join(tpkDir, 'config.json');
+      fs.writeFileSync(dest, '{"selectedMcps":["argocd"]}', 'utf8');
       fs.chmodSync(dest, 0o600);
 
       const originalLog = console.log;
       const logLines: string[] = [];
-      console.log = (...args: unknown[]) => logLines.push(args.join(" "));
+      console.log = (...args: unknown[]) => logLines.push(args.join(' '));
       try {
         installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
       } finally {
@@ -192,17 +192,17 @@ describe('installLauncherScript', () => {
 
       // Dest must retain original content — not overwritten
       assert.strictEqual(
-        fs.readFileSync(dest, "utf8"),
+        fs.readFileSync(dest, 'utf8'),
         '{"selectedMcps":["argocd"]}',
       );
       // A log line must mention the skip
       assert.ok(
         logLines.some(
           (l) =>
-            l.includes("Skipping copy") &&
-            l.includes("~/.config/tpk/config.json"),
+            l.includes('Skipping copy') &&
+            l.includes('~/.config/tpk/config.json'),
         ),
-        `expected skip log line, got: ${logLines.join(" | ")}`,
+        `expected skip log line, got: ${logLines.join(' | ')}`,
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -210,22 +210,22 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8g: no-op when source ~/.config/myclaude/config.json is absent", () => {
+  it('8g: no-op when source ~/.config/myclaude/config.json is absent', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-noop-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-noop-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-noop-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-noop-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
 
       installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
 
-      const dest = path.join(isolatedHome, ".config", "tpk", "config.json");
+      const dest = path.join(isolatedHome, '.config', 'tpk', 'config.json');
       assert.ok(
         !fs.existsSync(dest),
-        "dest should not exist when source is absent",
+        'dest should not exist when source is absent',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -233,36 +233,36 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8g: migration does not run when 8e short-circuits via symlink", () => {
+  it('8g: migration does not run when 8e short-circuits via symlink', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-symlink-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-symlink-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8g-symlink-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8g-symlink-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
       // Pre-create ~/bin/tpk as a symlink to short-circuit 8e
-      const binDir = path.join(isolatedHome, "bin");
+      const binDir = path.join(isolatedHome, 'bin');
       fs.mkdirSync(binDir, { recursive: true });
-      fs.symlinkSync("/usr/bin/true", path.join(binDir, "tpk"));
+      fs.symlinkSync('/usr/bin/true', path.join(binDir, 'tpk'));
 
       // Pre-create source ~/.config/myclaude/config.json
-      const legacyDir = path.join(isolatedHome, ".config", "myclaude");
+      const legacyDir = path.join(isolatedHome, '.config', 'myclaude');
       fs.mkdirSync(legacyDir, { recursive: true });
       fs.writeFileSync(
-        path.join(legacyDir, "config.json"),
+        path.join(legacyDir, 'config.json'),
         '{"selectedMcps":["grafana"]}',
-        "utf8",
+        'utf8',
       );
 
       installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
 
       // 8g must NOT have run because 8e returned early
-      const dest = path.join(isolatedHome, ".config", "tpk", "config.json");
+      const dest = path.join(isolatedHome, '.config', 'tpk', 'config.json');
       assert.ok(
         !fs.existsSync(dest),
-        "config.json must not be copied when 8e short-circuits",
+        'config.json must not be copied when 8e short-circuits',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -274,25 +274,25 @@ describe('installLauncherScript', () => {
   // 8h migration block tests (test-first: written before the migration code)
   // -------------------------------------------------------------------------
 
-  it("8h: copies ~/.config/argocd-accounts.json to ~/.config/tpk/argocd-accounts.json preserving mode 0600", () => {
+  it('8h: copies ~/.config/argocd-accounts.json to ~/.config/tpk/argocd-accounts.json preserving mode 0600', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-argocd-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-argocd-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-argocd-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-argocd-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
       const legacySrc = path.join(
         isolatedHome,
-        ".config",
-        "argocd-accounts.json",
+        '.config',
+        'argocd-accounts.json',
       );
-      fs.mkdirSync(path.join(isolatedHome, ".config"), { recursive: true });
+      fs.mkdirSync(path.join(isolatedHome, '.config'), { recursive: true });
       fs.writeFileSync(
         legacySrc,
         '{"my-cluster":{"url":"https://x","token":"t"}}',
-        "utf8",
+        'utf8',
       );
       fs.chmodSync(legacySrc, 0o600);
 
@@ -300,19 +300,19 @@ describe('installLauncherScript', () => {
 
       const dest = path.join(
         isolatedHome,
-        ".config",
-        "tpk",
-        "argocd-accounts.json",
+        '.config',
+        'tpk',
+        'argocd-accounts.json',
       );
-      assert.ok(fs.existsSync(dest), "dest argocd-accounts.json should exist");
+      assert.ok(fs.existsSync(dest), 'dest argocd-accounts.json should exist');
       assert.strictEqual(
-        fs.readFileSync(dest, "utf8"),
+        fs.readFileSync(dest, 'utf8'),
         '{"my-cluster":{"url":"https://x","token":"t"}}',
       );
       assert.strictEqual(fs.statSync(dest).mode & 0o777, 0o600);
       assert.ok(
         fs.existsSync(legacySrc),
-        "source argocd-accounts.json must be preserved",
+        'source argocd-accounts.json must be preserved',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -320,37 +320,37 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8h: copies ~/.config/github-pats.json to ~/.config/tpk/github-pats.json preserving mode 0600", () => {
+  it('8h: copies ~/.config/github-pats.json to ~/.config/tpk/github-pats.json preserving mode 0600', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-github-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-github-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-github-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-github-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
-      const legacySrc = path.join(isolatedHome, ".config", "github-pats.json");
-      fs.mkdirSync(path.join(isolatedHome, ".config"), { recursive: true });
-      fs.writeFileSync(legacySrc, '{"personal":"ghp_xxx"}', "utf8");
+      const legacySrc = path.join(isolatedHome, '.config', 'github-pats.json');
+      fs.mkdirSync(path.join(isolatedHome, '.config'), { recursive: true });
+      fs.writeFileSync(legacySrc, '{"personal":"ghp_xxx"}', 'utf8');
       fs.chmodSync(legacySrc, 0o600);
 
       installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
 
       const dest = path.join(
         isolatedHome,
-        ".config",
-        "tpk",
-        "github-pats.json",
+        '.config',
+        'tpk',
+        'github-pats.json',
       );
-      assert.ok(fs.existsSync(dest), "dest github-pats.json should exist");
+      assert.ok(fs.existsSync(dest), 'dest github-pats.json should exist');
       assert.strictEqual(
-        fs.readFileSync(dest, "utf8"),
+        fs.readFileSync(dest, 'utf8'),
         '{"personal":"ghp_xxx"}',
       );
       assert.strictEqual(fs.statSync(dest).mode & 0o777, 0o600);
       assert.ok(
         fs.existsSync(legacySrc),
-        "source github-pats.json must be preserved",
+        'source github-pats.json must be preserved',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -358,40 +358,40 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8h: copies ~/.config/grafana-clusters.yaml to ~/.config/tpk/grafana-clusters.yaml preserving mode 0644", () => {
+  it('8h: copies ~/.config/grafana-clusters.yaml to ~/.config/tpk/grafana-clusters.yaml preserving mode 0644', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-grafana-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-grafana-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-grafana-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-grafana-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
       const legacySrc = path.join(
         isolatedHome,
-        ".config",
-        "grafana-clusters.yaml",
+        '.config',
+        'grafana-clusters.yaml',
       );
-      fs.mkdirSync(path.join(isolatedHome, ".config"), { recursive: true });
+      fs.mkdirSync(path.join(isolatedHome, '.config'), { recursive: true });
       const yamlContent =
-        "clusters:\n  - id: prod\n    name: Production\n    url: https://g.example.com\n    viewer_token: tok\n";
-      fs.writeFileSync(legacySrc, yamlContent, "utf8");
+        'clusters:\n  - id: prod\n    name: Production\n    url: https://g.example.com\n    viewer_token: tok\n';
+      fs.writeFileSync(legacySrc, yamlContent, 'utf8');
       fs.chmodSync(legacySrc, 0o644);
 
       installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
 
       const dest = path.join(
         isolatedHome,
-        ".config",
-        "tpk",
-        "grafana-clusters.yaml",
+        '.config',
+        'tpk',
+        'grafana-clusters.yaml',
       );
-      assert.ok(fs.existsSync(dest), "dest grafana-clusters.yaml should exist");
-      assert.strictEqual(fs.readFileSync(dest, "utf8"), yamlContent);
+      assert.ok(fs.existsSync(dest), 'dest grafana-clusters.yaml should exist');
+      assert.strictEqual(fs.readFileSync(dest, 'utf8'), yamlContent);
       assert.strictEqual(fs.statSync(dest).mode & 0o777, 0o644);
       assert.ok(
         fs.existsSync(legacySrc),
-        "source grafana-clusters.yaml must be preserved",
+        'source grafana-clusters.yaml must be preserved',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -399,35 +399,35 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8h: skips copy and logs warning when dest ~/.config/tpk/argocd-accounts.json already exists", () => {
+  it('8h: skips copy and logs warning when dest ~/.config/tpk/argocd-accounts.json already exists', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-skip-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-skip-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-skip-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-skip-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
       // Source argocd-accounts.json with content A
-      fs.mkdirSync(path.join(isolatedHome, ".config"), { recursive: true });
+      fs.mkdirSync(path.join(isolatedHome, '.config'), { recursive: true });
       const legacySrc = path.join(
         isolatedHome,
-        ".config",
-        "argocd-accounts.json",
+        '.config',
+        'argocd-accounts.json',
       );
-      fs.writeFileSync(legacySrc, '{"source":"A"}', "utf8");
+      fs.writeFileSync(legacySrc, '{"source":"A"}', 'utf8');
       fs.chmodSync(legacySrc, 0o600);
 
       // Dest already exists with content B
-      const tpkDir = path.join(isolatedHome, ".config", "tpk");
+      const tpkDir = path.join(isolatedHome, '.config', 'tpk');
       fs.mkdirSync(tpkDir, { recursive: true });
-      const dest = path.join(tpkDir, "argocd-accounts.json");
-      fs.writeFileSync(dest, '{"dest":"B"}', "utf8");
+      const dest = path.join(tpkDir, 'argocd-accounts.json');
+      fs.writeFileSync(dest, '{"dest":"B"}', 'utf8');
       fs.chmodSync(dest, 0o600);
 
       const originalLog = console.log;
       const logLines: string[] = [];
-      console.log = (...args: unknown[]) => logLines.push(args.join(" "));
+      console.log = (...args: unknown[]) => logLines.push(args.join(' '));
       try {
         installLauncherScript(isolatedRepo, { homeDir: isolatedHome });
       } finally {
@@ -435,15 +435,15 @@ describe('installLauncherScript', () => {
       }
 
       // Dest must retain content B — not overwritten
-      assert.strictEqual(fs.readFileSync(dest, "utf8"), '{"dest":"B"}');
+      assert.strictEqual(fs.readFileSync(dest, 'utf8'), '{"dest":"B"}');
       // A log line must mention the skip for argocd
       assert.ok(
         logLines.some(
           (l) =>
-            l.includes("Skipping copy") &&
-            l.includes("~/.config/tpk/argocd-accounts.json"),
+            l.includes('Skipping copy') &&
+            l.includes('~/.config/tpk/argocd-accounts.json'),
         ),
-        `expected skip log line for argocd-accounts.json, got: ${logLines.join(" | ")}`,
+        `expected skip log line for argocd-accounts.json, got: ${logLines.join(' | ')}`,
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });
@@ -451,31 +451,31 @@ describe('installLauncherScript', () => {
     }
   });
 
-  it("8h: migration does not run when 8e short-circuits via symlink", () => {
+  it('8h: migration does not run when 8e short-circuits via symlink', () => {
     const isolatedRepo = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-symlink-repo-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-symlink-repo-'),
     );
     const isolatedHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "launcher-test-8h-symlink-home-"),
+      path.join(os.tmpdir(), 'launcher-test-8h-symlink-home-'),
     );
     try {
       makeFakeRepo(isolatedRepo);
       // Pre-create ~/bin/tpk as a symlink to short-circuit 8e
-      const binDir = path.join(isolatedHome, "bin");
+      const binDir = path.join(isolatedHome, 'bin');
       fs.mkdirSync(binDir, { recursive: true });
-      fs.symlinkSync("/usr/bin/true", path.join(binDir, "tpk"));
+      fs.symlinkSync('/usr/bin/true', path.join(binDir, 'tpk'));
 
       // Pre-create source ~/.config/argocd-accounts.json
-      fs.mkdirSync(path.join(isolatedHome, ".config"), { recursive: true });
+      fs.mkdirSync(path.join(isolatedHome, '.config'), { recursive: true });
       const legacySrc = path.join(
         isolatedHome,
-        ".config",
-        "argocd-accounts.json",
+        '.config',
+        'argocd-accounts.json',
       );
       fs.writeFileSync(
         legacySrc,
         '{"cluster":{"url":"x","token":"y"}}',
-        "utf8",
+        'utf8',
       );
       fs.chmodSync(legacySrc, 0o600);
 
@@ -484,13 +484,13 @@ describe('installLauncherScript', () => {
       // 8h must NOT have run because 8e returned early
       const dest = path.join(
         isolatedHome,
-        ".config",
-        "tpk",
-        "argocd-accounts.json",
+        '.config',
+        'tpk',
+        'argocd-accounts.json',
       );
       assert.ok(
         !fs.existsSync(dest),
-        "argocd-accounts.json must not be copied when 8e short-circuits",
+        'argocd-accounts.json must not be copied when 8e short-circuits',
       );
     } finally {
       fs.rmSync(isolatedRepo, { recursive: true, force: true });

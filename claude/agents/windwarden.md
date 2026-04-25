@@ -190,7 +190,7 @@ Windwarden uses **Scale B (CRITICAL / HIGH / MEDIUM / LOW)** for performance rev
 
 ### Domain-Specific Severity Application — Performance Examples
 
-Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/references/verdict-taxonomy.md`. The examples below illustrate what each level looks like in the performance domain — they are *examples of application*, not redefinitions of what the levels mean.
+Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/references/verdict-taxonomy.md`. The examples below illustrate what each level looks like in the performance domain — they are _examples of application_, not redefinitions of what the levels mean.
 
 **CRITICAL:**
 - Unbounded loops over large datasets
@@ -222,12 +222,14 @@ Windwarden uses Scale B (CRITICAL / HIGH / MEDIUM / LOW) as defined in `claude/r
 Structure every review as follows:
 
 ### Performance Review Summary
+
 - **Artifact**: What was reviewed (plan file or code files)
 - **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Performance Impact**: CRITICAL | HIGH | MEDIUM | LOW
 - **Findings**: X CRITICAL, Y HIGH, Z MEDIUM, W LOW
 
 ### Performance Analysis
+
 Brief overview of the performance characteristics and main concerns.
 
 ### Findings
@@ -243,12 +245,15 @@ For each finding:
 - **Optimization**: Specific fix with improved approach or code example
 
 ### Performance Gaps
+
 What performance considerations are missing or unaddressed.
 
 ### Benchmark Recommendations
+
 Suggested performance tests or metrics to validate the fix.
 
 ### Verdict Rationale
+
 Brief explanation of why this verdict was chosen based on performance impact.
 
 ## Critical Constraints

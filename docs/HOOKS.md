@@ -60,6 +60,7 @@ All guards operate on single-quote-stripped input so that dangerous constructs i
 - Requires `jq`; fails gracefully if unavailable
 
 **Log format** (`~/.claude/permission-requests.log`):
+
 ```
 2026-04-09T14:27:44Z | agent_type=Bitsmith | agent_id=abc123 | [auto-approved] command=git log --format=$FORMAT
 2026-04-09T14:27:50Z | agent_type=Bitsmith | agent_id=abc123 | command=docker ps

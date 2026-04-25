@@ -234,21 +234,25 @@ Write plan to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md` using
 Each plan includes:
 
 ### Context and Objectives
+
 - Background information
 - Work objectives and goals
 - Relevant constraints
 
 ### Guardrails
+
 - **Must Have:** Required features, constraints, qualities
 - **Must NOT Have:** Explicitly excluded features/approaches
 
 ### Task Flow
+
 - 3-6 detailed, actionable steps
 - Each step includes specific TODOs
 - Clear sequence and dependencies
 - Verifiable completion criteria (Acceptance: ...)
 
 ### Success Criteria
+
 - Measurable outcomes that define completion
 - Acceptance criteria for the work
 - Testing or validation requirements
@@ -303,6 +307,7 @@ When `--consensus` is present — either passed by DM delegation or included dir
 ### Standard Consensus Output
 
 **Principles:** 3-5 key guidelines for the work
+
 ```
 - Keep authentication stateless
 - Prioritize security over convenience
@@ -310,6 +315,7 @@ When `--consensus` is present — either passed by DM delegation or included dir
 ```
 
 **Decision Drivers:** Top 3 factors influencing approach
+
 ```
 1. Security requirements
 2. Time to market
@@ -317,6 +323,7 @@ When `--consensus` is present — either passed by DM delegation or included dir
 ```
 
 **Viable Options:** 2–4 alternatives with pros/cons and reversibility
+
 ```
 **Option A: JWT-based auth**
 - Pros: Stateless, scalable, standard
@@ -330,6 +337,7 @@ When `--consensus` is present — either passed by DM delegation or included dir
 ```
 
 **Comparison Matrix:** Lightweight summary across options and key decision drivers
+
 ```
 | Driver          | Option A (JWT) | Option B (Sessions) |
 |-----------------|---------------|---------------------|
@@ -340,6 +348,7 @@ When `--consensus` is present — either passed by DM delegation or included dir
 ```
 
 **ADR Fields:** Architecture Decision Record structure
+
 ```
 **Status:** Proposed
 **Context:** {Why this decision is needed}
@@ -352,6 +361,7 @@ When `--consensus` is present — either passed by DM delegation or included dir
 For deliberate or high-risk work, add:
 
 **Pre-mortem Analysis:**
+
 ```
 What could go wrong:
 - Password hashing misconfiguration
@@ -441,16 +451,19 @@ Before considering a plan complete, verify:
 ## Examples
 
 ### Good Questions (Ask Users)
+
 - "Do you prefer simplicity or performance for this feature?"
 - "Should we support multiple authentication providers or just email/password for now?"
 - "What's more important: fast implementation or extensive testing?"
 
 ### Bad Questions (Research Instead)
+
 - "Where is the authentication code?" → Use Explore agent
 - "What database are we using?" → Use Grep/Read to find config
 - "How is error handling currently done?" → Delegate to explore agent
 
 ### Good Plan Steps
+
 ```
 ### Step 2: Registration Endpoint
 - [ ] Implement POST /api/register with email/password validation
@@ -460,6 +473,7 @@ Before considering a plan complete, verify:
 ```
 
 ### Bad Plan Steps (Too Vague)
+
 ```
 ### Step 2: Registration
 - [ ] Implement registration
@@ -467,6 +481,7 @@ Before considering a plan complete, verify:
 ```
 
 ### Bad Plan Steps (Too Granular)
+
 ```
 ### Step 2a: Define registration route
 - [ ] Add route definition

@@ -9,6 +9,7 @@ Node.js >= 18.18.0 is required to run `install.sh`. The installer is implemented
 ## Quick Install
 
 Clone the repository:
+
 ```bash
 git clone git@github.com:alkofu/ai-tpk.git
 cd ai-tpk

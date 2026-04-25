@@ -118,6 +118,7 @@ Print a consolidated review report inline. Do NOT delegate further, enter Phase 
 DM's normal review-revise loop. The summary IS the outcome.
 
 **PR header:**
+
 ```
 PR #<pr-number> — <pr-title>
 <pr-url>

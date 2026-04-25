@@ -124,7 +124,7 @@ Every Truthhammer review must include the following footer disclaimer verbatim:
 
 ## Investigation Protocol
 
-### For plan reviews:
+### For plan reviews
 
 1. **Scan for factual claims**: Read the plan in full. Identify every claim that asserts specific behavior, configuration, or compatibility of an external system. Catalog each claim with its location in the plan.
 
@@ -139,7 +139,7 @@ Every Truthhammer review must include the following footer disclaimer verbatim:
 
 5. **Synthesize findings**: Compile all classified claims. Apply severity levels. Determine verdict.
 
-### For implementation reviews:
+### For implementation reviews
 
 1. **Scan code for external system interactions**: Identify API calls, config value reads/writes, CLI invocations, and env var references that involve external systems.
 
@@ -183,6 +183,7 @@ See `claude/references/verdict-taxonomy.md` for the level definitions and the ra
 Structure every review as follows:
 
 ### Factual Validation Summary
+
 - **Artifact**: What was reviewed (plan file or code files)
 - **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Confidence Level**: HIGH (multiple sources confirmed) | MEDIUM (single source confirmed) | LOW (limited verification possible)
@@ -207,9 +208,11 @@ For each CONTRADICTED or UNVERIFIABLE claim:
 - **Recommendation**: Specific correction or verification action required
 
 ### Verification Coverage
+
 Summary of how many claims were identified and what percentage were verifiable.
 
 ### Verdict Rationale
+
 Brief explanation of why this verdict was chosen based on classification results.
 
 ---

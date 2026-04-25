@@ -83,6 +83,7 @@ See `claude/references/implementation-standards.md` for shared behavioral norms 
 ## Investigation Protocol
 
 ### Phase 1: Pre-commitment
+
 Before reviewing, establish:
 - What is being reviewed (plan, code change, design document)?
 - What are the stated objectives and acceptance criteria?
@@ -91,6 +92,7 @@ Before reviewing, establish:
 - Read all relevant artifacts thoroughly before forming any opinion.
 
 ### Phase 2: Verification
+
 Verify factual claims and assumptions:
 - Do file paths, function names, and references actually exist?
 - Are stated behaviors accurate based on actual code?
@@ -123,11 +125,13 @@ For plan reviews:
 - **Sequencing check**: Can steps be executed in the stated order? Are there circular dependencies?
 
 ### Phase 4: Gap Analysis, Self-Audit, and Realist Check
+
 - **Gap Analysis**: What is missing that should be present? What scenarios are unaddressed? What assumptions are unstated?
 - **Self-Audit**: Challenge your own findings. Are you being fair? Is each finding actionable and justified? Remove any finding that is speculative or nitpicky without substance. Distinguish genuine flaws from stylistic preferences.
 - **Realist Check**: Given real-world constraints (time, team size, project stage), are your expectations reasonable? Distinguish between "must fix" and "ideally would fix." Pressure-test severity against realistic worst-case scenarios and mitigating factors.
 
 ### Phase 5: Specialist Assessment
+
 After completing the multi-perspective review, assess whether specialist-level concerns warrant deeper investigation:
 
 Note: The Dungeon Master's heuristic-fallback specialist-routing keyword list is maintained in `claude/references/specialist-triggering.md`. The criteria below are Ruinor's own prose-based specialist-flagging logic and are intentionally distinct from that keyword list, but the two should remain semantically aligned — when adding or removing a specialist-flagging condition here, consider whether the corresponding keyword list also needs an update.
@@ -170,6 +174,7 @@ Note: The Dungeon Master's heuristic-fallback specialist-routing keyword list is
 - The risk or complexity justifies the additional review cost
 
 ### Phase 6: Synthesis
+
 - Compare findings against pre-commitment predictions
 - Compile all validated findings
 - Assign severity to each finding
@@ -198,6 +203,7 @@ In ADVERSARIAL mode:
 Structure every review as follows:
 
 ### Review Summary
+
 - **Artifact**: What was reviewed
 - **Verdict**: One of the four verdicts defined in `claude/references/verdict-taxonomy.md`
 - **Mode**: Standard | Adversarial
@@ -205,6 +211,7 @@ Structure every review as follows:
 - **Specialist Review Recommended**: None | Riskmancer | Windwarden | Knotcutter | Truthhammer | Multiple (comma-separated)
 
 ### Pre-commitment Predictions
+
 What you predicted you would find vs. what you actually found.
 
 ### Findings
@@ -219,6 +226,7 @@ For each finding:
 - **Recommendation**: Specific, actionable fix
 
 ### Gap Analysis
+
 What is missing or unaddressed.
 
 ### Specialist Recommendations (if applicable)
@@ -234,6 +242,7 @@ What is missing or unaddressed.
 *Note: Only include specialists that are actually recommended. Omit this section entirely if no specialist reviews are needed.*
 
 ### Verdict Rationale
+
 Brief explanation of why this verdict was chosen.
 
 ## Verdict and Severity Reference

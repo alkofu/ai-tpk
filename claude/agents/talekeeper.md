@@ -127,6 +127,7 @@ graph LR
 ```
 
 ---
+
 ```
 
 **Session ID display rules:**
@@ -210,4 +211,3 @@ Unlike the old hook-based Talekeeper, this agent is user-facing. Errors should b
 | `Write` | Append to `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrative.md` and `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-narrated-sessions.json` |
 
 No other tools are used. `Bash`, `Grep`, and sub-agents are not available to Talekeeper and must not be invoked.
-

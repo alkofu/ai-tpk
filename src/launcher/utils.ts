@@ -1,4 +1,4 @@
-import { log } from "@clack/prompts";
+import { log } from '@clack/prompts';
 
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);

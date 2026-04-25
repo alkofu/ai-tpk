@@ -1,13 +1,13 @@
-import { parseArgs } from "./cli.js";
-import { installDir } from "./fs-utils.js";
-import { installClaudeWhitelist } from "./claude.js";
-import { installMcpServers } from "./mcp.js";
-import { installLauncherScript } from "./launcher-install.js";
-import { c } from "./colors.js";
-import { fileURLToPath } from "node:url";
-import * as path from "node:path";
-import * as os from "node:os";
-import * as fs from "node:fs";
+import { parseArgs } from './cli.js';
+import { installDir } from './fs-utils.js';
+import { installClaudeWhitelist } from './claude.js';
+import { installMcpServers } from './mcp.js';
+import { installLauncherScript } from './launcher-install.js';
+import { c } from './colors.js';
+import { fileURLToPath } from 'node:url';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import * as fs from 'node:fs';
 
 // scriptDir = repo root; at runtime __filename is dist/installer.js so one
 // dirname reaches dist/ and a second reaches the repo root.
@@ -18,42 +18,42 @@ const scriptDir = path.dirname(installerDir);
 try {
   const { targetAgent } = parseArgs(process.argv.slice(2));
 
-  console.log(c.blue("AI TPK Installer"));
-  console.log(c.blue("====================="));
-  console.log("");
+  console.log(c.blue('AI TPK Installer'));
+  console.log(c.blue('====================='));
+  console.log('');
   console.log(`Source directory: ${scriptDir}`);
-  console.log("");
+  console.log('');
 
-  installDir(scriptDir, "cursor", ".cursor", os.homedir());
+  installDir(scriptDir, 'cursor', '.cursor', os.homedir());
 
-  if (targetAgent === "claude") {
+  if (targetAgent === 'claude') {
     installClaudeWhitelist(scriptDir, os.homedir());
-    installDir(scriptDir, "src/mcp/wrappers", ".claude/wrappers", os.homedir());
+    installDir(scriptDir, 'src/mcp/wrappers', '.claude/wrappers', os.homedir());
   }
 
   // Create ~/.ai-tpk artifact directories
-  const aiTpkDir = path.join(os.homedir(), ".ai-tpk");
-  fs.mkdirSync(path.join(aiTpkDir, "plans"), { recursive: true });
-  fs.mkdirSync(path.join(aiTpkDir, "lessons"), { recursive: true });
+  const aiTpkDir = path.join(os.homedir(), '.ai-tpk');
+  fs.mkdirSync(path.join(aiTpkDir, 'plans'), { recursive: true });
+  fs.mkdirSync(path.join(aiTpkDir, 'lessons'), { recursive: true });
   console.log(
     c.green(
       `✓ Created artifact directories: ${aiTpkDir}/plans/, ${aiTpkDir}/lessons/`,
     ),
   );
 
-  console.log("");
-  if (targetAgent === "claude") {
+  console.log('');
+  if (targetAgent === 'claude') {
     installMcpServers(scriptDir);
   }
 
-  console.log("");
+  console.log('');
   installLauncherScript(scriptDir);
 
-  console.log("");
-  console.log(c.green("✓ Installation complete!"));
-  console.log("");
+  console.log('');
+  console.log(c.green('✓ Installation complete!'));
+  console.log('');
 
-  console.log("Your configurations have been copied from this repository.");
+  console.log('Your configurations have been copied from this repository.');
   console.log(`To update: cd ${scriptDir} && git pull && ./install.sh`);
 } catch (e: unknown) {
   const msg = e instanceof Error ? e.message : String(e);

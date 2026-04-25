@@ -1,15 +1,15 @@
-import { describe, it, after } from "node:test";
-import assert from "node:assert/strict";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { loadGrafanaClusters } from "./grafana.js";
+import { describe, it, after } from 'node:test';
+import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { loadGrafanaClusters } from './grafana.js';
 
 // ---------------------------------------------------------------------------
 // Shared temp directory — cleaned up after all tests complete
 // ---------------------------------------------------------------------------
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-tpk-grafana-test-"));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-grafana-test-'));
 
 after(() => {
   fs.rmSync(tmpDir, { recursive: true });
@@ -21,7 +21,7 @@ after(() => {
 
 function writeYaml(name: string, content: string): string {
   const filePath = path.join(tmpDir, name);
-  fs.writeFileSync(filePath, content, "utf8");
+  fs.writeFileSync(filePath, content, 'utf8');
   return filePath;
 }
 
@@ -29,10 +29,10 @@ function writeYaml(name: string, content: string): string {
 // loadGrafanaClusters
 // ---------------------------------------------------------------------------
 
-describe("loadGrafanaClusters", () => {
-  it("parses a valid YAML file with viewer_token and editor_token fields", () => {
+describe('loadGrafanaClusters', () => {
+  it('parses a valid YAML file with viewer_token and editor_token fields', () => {
     const filePath = writeYaml(
-      "valid.yaml",
+      'valid.yaml',
       `
 clusters:
   - id: prod
@@ -45,18 +45,18 @@ clusters:
     const clusters = loadGrafanaClusters(filePath);
     assert.strictEqual(clusters.length, 1);
     assert.deepStrictEqual(clusters[0], {
-      id: "prod",
-      name: "Production",
-      url: "https://grafana.example.com",
-      viewer_token: "viewer-tok-123",
-      editor_token: "editor-tok-456",
+      id: 'prod',
+      name: 'Production',
+      url: 'https://grafana.example.com',
+      viewer_token: 'viewer-tok-123',
+      editor_token: 'editor-tok-456',
     });
   });
 
-  it("falls back when a cluster has legacy token but no viewer_token/editor_token", () => {
+  it('falls back when a cluster has legacy token but no viewer_token/editor_token', () => {
     // The log.warn call from @clack/prompts may emit to stdout — this is acceptable.
     const filePath = writeYaml(
-      "legacy.yaml",
+      'legacy.yaml',
       `
 clusters:
   - id: staging
@@ -67,23 +67,23 @@ clusters:
     );
     const clusters = loadGrafanaClusters(filePath);
     assert.strictEqual(clusters.length, 1);
-    assert.strictEqual(clusters[0]?.viewer_token, "legacy-tok-789");
-    assert.strictEqual(clusters[0]?.editor_token, "");
+    assert.strictEqual(clusters[0]?.viewer_token, 'legacy-tok-789');
+    assert.strictEqual(clusters[0]?.editor_token, '');
   });
 
-  it("throws when the config file does not exist", () => {
-    const missingPath = path.join(tmpDir, "does-not-exist.yaml");
+  it('throws when the config file does not exist', () => {
+    const missingPath = path.join(tmpDir, 'does-not-exist.yaml');
     assert.throws(
       () => loadGrafanaClusters(missingPath),
       (err: unknown) =>
         err instanceof Error &&
-        err.message.includes("Grafana clusters config not found"),
+        err.message.includes('Grafana clusters config not found'),
     );
   });
 
-  it("throws when the file has no clusters key", () => {
+  it('throws when the file has no clusters key', () => {
     const filePath = writeYaml(
-      "no-clusters.yaml",
+      'no-clusters.yaml',
       `
 something_else:
   - id: x
@@ -96,9 +96,9 @@ something_else:
     );
   });
 
-  it("throws when the clusters array is empty", () => {
+  it('throws when the clusters array is empty', () => {
     const filePath = writeYaml(
-      "empty-clusters.yaml",
+      'empty-clusters.yaml',
       `
 clusters: []
 `,
@@ -110,9 +110,9 @@ clusters: []
     );
   });
 
-  it("throws when a cluster entry is missing required id or name fields", () => {
+  it('throws when a cluster entry is missing required id or name fields', () => {
     const filePath = writeYaml(
-      "missing-fields.yaml",
+      'missing-fields.yaml',
       `
 clusters:
   - url: https://grafana.example.com
@@ -123,13 +123,13 @@ clusters:
     assert.throws(
       () => loadGrafanaClusters(filePath),
       (err: unknown) =>
-        err instanceof Error && err.message.includes("missing required fields"),
+        err instanceof Error && err.message.includes('missing required fields'),
     );
   });
 
-  it("throws when a cluster entry has an invalid or missing url", () => {
+  it('throws when a cluster entry has an invalid or missing url', () => {
     const filePath = writeYaml(
-      "bad-url.yaml",
+      'bad-url.yaml',
       `
 clusters:
   - id: broken
@@ -142,7 +142,7 @@ clusters:
     assert.throws(
       () => loadGrafanaClusters(filePath),
       (err: unknown) =>
-        err instanceof Error && err.message.includes("missing or invalid url"),
+        err instanceof Error && err.message.includes('missing or invalid url'),
     );
   });
 });

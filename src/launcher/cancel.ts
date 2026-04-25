@@ -1,4 +1,4 @@
-import { isCancel, cancel } from "@clack/prompts";
+import { isCancel, cancel } from '@clack/prompts';
 
 /**
  * Asserts that a prompt value is not a cancellation signal.
@@ -13,7 +13,7 @@ export function handleCancel(
   value: unknown,
 ): asserts value is NonNullable<unknown> {
   if (isCancel(value)) {
-    cancel("Operation cancelled.");
+    cancel('Operation cancelled.');
     process.exit(0);
   }
 }

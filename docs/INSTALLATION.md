@@ -67,7 +67,7 @@ This runs all test files colocated with source under `src/installer/` and `src/l
 
 ### Code Quality: Linting and Formatting
 
-The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) to maintain consistent code quality.
+The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) to maintain consistent code quality. An `.editorconfig` file at the repo root configures indent style, line endings, charset, trailing whitespace, and final newlines for editors that support it.
 
 **pnpm scripts:**
 

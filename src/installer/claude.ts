@@ -1,34 +1,34 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { c } from "./colors.js";
-import { installPath } from "./fs-utils.js";
-import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from "./constants.js";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { c } from './colors.js';
+import { installPath } from './fs-utils.js';
+import { CLAUDE_WHITELIST_DIRS, CLAUDE_WHITELIST_FILES } from './constants.js';
 
 export function installClaudeWhitelist(
   scriptDir: string,
   destRoot: string = os.homedir(),
 ): void {
-  const claudeSrc = path.join(scriptDir, "claude");
+  const claudeSrc = path.join(scriptDir, 'claude');
 
   try {
     const claudeSrcStat = fs.statSync(claudeSrc);
     if (!claudeSrcStat.isDirectory()) {
-      console.log(c.yellow("Skipping claude/ (not found in repository)"));
+      console.log(c.yellow('Skipping claude/ (not found in repository)'));
       return;
     }
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
-      console.log(c.yellow("Skipping claude/ (not found in repository)"));
+      console.log(c.yellow('Skipping claude/ (not found in repository)'));
       return;
     }
     throw err;
   }
 
-  const dotClaudePath = path.join(destRoot, ".claude");
+  const dotClaudePath = path.join(destRoot, '.claude');
 
   fs.mkdirSync(dotClaudePath, { recursive: true });
 
@@ -48,7 +48,7 @@ export function installClaudeWhitelist(
     } catch (err: unknown) {
       if (
         err instanceof Error &&
-        (err as NodeJS.ErrnoException).code === "ENOENT"
+        (err as NodeJS.ErrnoException).code === 'ENOENT'
       ) {
         console.log(
           c.yellow(`Skipping claude/${fileName} (not found in repository)`),
@@ -74,7 +74,7 @@ export function installClaudeWhitelist(
     } catch (err: unknown) {
       if (
         err instanceof Error &&
-        (err as NodeJS.ErrnoException).code === "ENOENT"
+        (err as NodeJS.ErrnoException).code === 'ENOENT'
       ) {
         console.log(
           c.yellow(`Skipping claude/${name}/ (not found in repository)`),

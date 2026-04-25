@@ -11,7 +11,7 @@
  * file to avoid the cycle.
  */
 
-import type { ResolvedConfig, LauncherConfig, SkippedMap } from "./types.js";
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from './types.js';
 
 /**
  * Thrown by an McpCommand's resolveFromSaved when a saved resource is no
@@ -22,7 +22,7 @@ import type { ResolvedConfig, LauncherConfig, SkippedMap } from "./types.js";
 export class StaleResourceError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "StaleResourceError";
+    this.name = 'StaleResourceError';
   }
 }
 

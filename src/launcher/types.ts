@@ -1,4 +1,4 @@
-export type GrafanaRole = "viewer" | "editor";
+export type GrafanaRole = 'viewer' | 'editor';
 
 export interface GrafanaCluster {
   id: string;
@@ -44,11 +44,11 @@ export interface ResolvedConfig {
 }
 
 export type SkippedMap = {
-  grafana?: false | "loader-failed";
-  cloudwatch?: false | "loader-failed";
-  gcp?: false | "loader-failed";
-  kubernetes?: false | "loader-failed" | "switch-failed";
-  argocd?: false | "loader-failed";
+  grafana?: false | 'loader-failed';
+  cloudwatch?: false | 'loader-failed';
+  gcp?: false | 'loader-failed';
+  kubernetes?: false | 'loader-failed' | 'switch-failed';
+  argocd?: false | 'loader-failed';
 };
 
 export interface LauncherConfig {

@@ -1,24 +1,24 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { log, select } from "@clack/prompts";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { log, select } from '@clack/prompts';
 import type {
   ArgoCdCluster,
   ArgoCdConfig,
   ResolvedConfig,
   LauncherConfig,
   SkippedMap,
-} from "../types.js";
-import { handleCancel } from "../cancel.js";
-import type { McpCommand } from "../mcp-command-types.js";
-import { StaleResourceError } from "../mcp-command-types.js";
-import { tryLoad } from "../utils.js";
-import { writeDotfile } from "../dotfile.js";
+} from '../types.js';
+import { handleCancel } from '../cancel.js';
+import type { McpCommand } from '../mcp-command-types.js';
+import { StaleResourceError } from '../mcp-command-types.js';
+import { tryLoad } from '../utils.js';
+import { writeDotfile } from '../dotfile.js';
 
 export const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
-  ".config",
-  "argocd-accounts.json",
+  '.config',
+  'argocd-accounts.json',
 );
 
 /**
@@ -45,7 +45,7 @@ export function loadArgoCdAccounts(configPath?: string): ArgoCdCluster[] {
 
   let parsed: unknown;
   try {
-    const raw = fs.readFileSync(resolvedPath, "utf8");
+    const raw = fs.readFileSync(resolvedPath, 'utf8');
     parsed = JSON.parse(raw);
   } catch {
     throw new Error(
@@ -53,7 +53,7 @@ export function loadArgoCdAccounts(configPath?: string): ArgoCdCluster[] {
     );
   }
 
-  if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
+  if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
     throw new Error(
       `ArgoCD accounts file at ${resolvedPath} must be a flat JSON object mapping cluster names to {url, token} objects.`,
     );
@@ -76,17 +76,17 @@ export function loadArgoCdAccounts(configPath?: string): ArgoCdCluster[] {
     }
 
     const value = record[id];
-    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
       throw new Error(
         `ArgoCD cluster "${id}" must have string fields "url" and "token".`,
       );
     }
 
     const entry = value as Record<string, unknown>;
-    const url = entry["url"];
-    const token = entry["token"];
+    const url = entry['url'];
+    const token = entry['token'];
 
-    if (typeof url !== "string" || typeof token !== "string") {
+    if (typeof url !== 'string' || typeof token !== 'string') {
       throw new Error(
         `ArgoCD cluster "${id}" must have string fields "url" and "token".`,
       );
@@ -98,7 +98,7 @@ export function loadArgoCdAccounts(configPath?: string): ArgoCdCluster[] {
       );
     }
 
-    if (token === "") {
+    if (token === '') {
       throw new Error(`ArgoCD cluster "${id}" has an empty token.`);
     }
 
@@ -120,7 +120,7 @@ export async function configureArgoCd(
       : clusters[0]?.id;
 
   const selected = await select({
-    message: "Select ArgoCD cluster:",
+    message: 'Select ArgoCD cluster:',
     options: clusters.map((c) => ({ value: c.id, label: c.id, hint: c.url })),
     initialValue,
   });
@@ -135,19 +135,19 @@ export async function configureArgoCd(
 }
 
 export const argoCdCommand: McpCommand = {
-  id: "argocd",
-  skippedKey: "argocd" as keyof SkippedMap,
+  id: 'argocd',
+  skippedKey: 'argocd' as keyof SkippedMap,
   multiselectOption: {
-    value: "argocd",
-    label: "ArgoCD",
-    hint: "cluster",
+    value: 'argocd',
+    label: 'ArgoCD',
+    hint: 'cluster',
   },
 
   async configureInteractive(savedConfig: LauncherConfig): Promise<{
     resolved: Partial<ResolvedConfig>;
     persistable: Partial<LauncherConfig>;
   } | null> {
-    const clusters = tryLoad(() => loadArgoCdAccounts(), "argocd");
+    const clusters = tryLoad(() => loadArgoCdAccounts(), 'argocd');
     if (clusters === null) return null;
     const result = await configureArgoCd(
       clusters,
@@ -174,7 +174,7 @@ export const argoCdCommand: McpCommand = {
       log.warn(
         `Could not load ArgoCD accounts: ${err instanceof Error ? err.message : String(err)}. Falling through to configure flow.`,
       );
-      throw new StaleResourceError("ArgoCD accounts file unavailable");
+      throw new StaleResourceError('ArgoCD accounts file unavailable');
     }
     const cluster = clusters.find((c) => c.id === config.argocd!.clusterId);
     if (cluster === undefined) {
@@ -190,9 +190,9 @@ export const argoCdCommand: McpCommand = {
 
   emitEnvVars(resolved: ResolvedConfig, env: Record<string, string>): void {
     if (!resolved.argocd) return;
-    env["ARGOCD_BASE_URL"] = resolved.argocd.cluster.url;
-    env["ARGOCD_API_TOKEN"] = resolved.argocd.cluster.token;
-    writeDotfile("current-argocd-cluster", resolved.argocd.cluster.id);
+    env['ARGOCD_BASE_URL'] = resolved.argocd.cluster.url;
+    env['ARGOCD_API_TOKEN'] = resolved.argocd.cluster.token;
+    writeDotfile('current-argocd-cluster', resolved.argocd.cluster.id);
   },
 
   buildOutroSuccessLine(resolved: ResolvedConfig): string | null {
@@ -201,14 +201,14 @@ export const argoCdCommand: McpCommand = {
   },
 
   buildOutroSkipLine(skipped: SkippedMap[keyof SkippedMap]): string | null {
-    if (skipped === "loader-failed")
-      return "ArgoCD: skipped (accounts unavailable)";
+    if (skipped === 'loader-failed')
+      return 'ArgoCD: skipped (accounts unavailable)';
     return null;
   },
 
   buildSummaryLine(config: LauncherConfig): string {
     if (config.argocd === undefined) {
-      return "ArgoCD: (not yet configured)";
+      return 'ArgoCD: (not yet configured)';
     }
     return `ArgoCD: cluster ${config.argocd.clusterId}`;
   },

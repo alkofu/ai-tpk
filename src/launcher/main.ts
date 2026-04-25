@@ -1,20 +1,20 @@
-import { spawnSync } from "node:child_process";
-import { intro, outro } from "@clack/prompts";
-import { loadConfig, saveConfig } from "./config.js";
-import { selectMcps } from "./prompts.js";
-import { buildEnvVars } from "./env.js";
-import { buildOutroLines } from "./outro.js";
-import { promptSummaryAction } from "./summary.js";
-import { buildResolvedFromSaved } from "./resolve.js";
-import { registry } from "./mcp-command.js";
-import { applyKubernetesContextSwitch } from "./mcp/kubernetes.js";
+import { spawnSync } from 'node:child_process';
+import { intro, outro } from '@clack/prompts';
+import { loadConfig, saveConfig } from './config.js';
+import { selectMcps } from './prompts.js';
+import { buildEnvVars } from './env.js';
+import { buildOutroLines } from './outro.js';
+import { promptSummaryAction } from './summary.js';
+import { buildResolvedFromSaved } from './resolve.js';
+import { registry } from './mcp-command.js';
+import { applyKubernetesContextSwitch } from './mcp/kubernetes.js';
 import {
   parseArgs,
   UnknownFlagError,
   TooManyPositionalsError,
-} from "./argv.js";
-import { buildClaudeArgs } from "./claude-args.js";
-import type { ResolvedConfig, LauncherConfig, SkippedMap } from "./types.js";
+} from './argv.js';
+import { buildClaudeArgs } from './claude-args.js';
+import type { ResolvedConfig, LauncherConfig, SkippedMap } from './types.js';
 
 function launchClaude(
   resolved: ResolvedConfig,
@@ -33,21 +33,21 @@ function launchClaude(
   const envVars = buildEnvVars(outroResolved);
   const lines = buildOutroLines(outroResolved, effectiveSkipped);
   if (lines.length === 0) {
-    lines.push("No MCPs configured — launching Claude with current env.");
+    lines.push('No MCPs configured — launching Claude with current env.');
   }
 
   // Clear terminal so the Claude session starts on a clean screen.
   // The return value is intentionally ignored: if `clear` is missing from PATH
   // or exits non-zero, the launch must still proceed.
   // stderr is suppressed to silence noise from a potentially misconfigured binary.
-  spawnSync("clear", [], { stdio: ["inherit", "inherit", "ignore"] });
-  outro(`Launching: ${lines.join(" · ")}`);
+  spawnSync('clear', [], { stdio: ['inherit', 'inherit', 'ignore'] });
+  outro(`Launching: ${lines.join(' · ')}`);
 
   // Launch Claude with merged env vars
   const env = { ...process.env, ...envVars };
   const claudeArgs = buildClaudeArgs(initialMessage);
-  const result = spawnSync("claude", claudeArgs, {
-    stdio: "inherit",
+  const result = spawnSync('claude', claudeArgs, {
+    stdio: 'inherit',
     env,
   });
   process.exit(result.status ?? 1);
@@ -59,14 +59,14 @@ function runSkipLaunch(
 ): never {
   if (savedConfig.selectedMcps.length === 0) {
     console.error(
-      "No saved config found — run myclaude without --skip first to configure.",
+      'No saved config found — run myclaude without --skip first to configure.',
     );
     process.exit(1);
   }
   const resolved = buildResolvedFromSaved(savedConfig);
   if (resolved === null) {
     console.error(
-      "Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run myclaude without --skip to reconfigure.",
+      'Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run myclaude without --skip to reconfigure.',
     );
     process.exit(1);
   }
@@ -93,12 +93,12 @@ async function main(): Promise<void> {
 
   if (initialMessage !== undefined && !skip) {
     console.error(
-      "Initial message requires --skip. Usage: myclaude --skip <initial-message>",
+      'Initial message requires --skip. Usage: myclaude --skip <initial-message>',
     );
     process.exit(2);
   }
 
-  intro("myclaude — Session Launcher");
+  intro('myclaude — Session Launcher');
 
   const savedConfig = loadConfig();
 
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
   if (hasExistingConfig) {
     const action = await promptSummaryAction(savedConfig);
 
-    if (action === "launch") {
+    if (action === 'launch') {
       const resolved = buildResolvedFromSaved(savedConfig);
       if (resolved === null) {
         // Fall through to configure flow.
@@ -147,7 +147,7 @@ async function main(): Promise<void> {
     if (!selectedMcps.includes(cmd.id)) continue;
     const result = await cmd.configureInteractive(updatedConfig); // eslint-disable-line no-await-in-loop
     if (result === null) {
-      skipped[cmd.skippedKey] = "loader-failed";
+      skipped[cmd.skippedKey] = 'loader-failed';
       continue;
     }
     Object.assign(resolved, result.resolved);

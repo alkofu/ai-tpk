@@ -1,85 +1,85 @@
-import { describe, it, after } from "node:test";
-import assert from "node:assert/strict";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { backupIfExists, installPath, installDir } from "./fs-utils.js";
+import { describe, it, after } from 'node:test';
+import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { backupIfExists, installPath, installDir } from './fs-utils.js';
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-tpk-test-"));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-test-'));
 
 after(() => {
   fs.rmSync(tmpDir, { recursive: true });
 });
 
-describe("backupIfExists", () => {
-  it("renames an existing file", () => {
-    const target = path.join(tmpDir, "backup-file.txt");
-    fs.writeFileSync(target, "hello");
+describe('backupIfExists', () => {
+  it('renames an existing file', () => {
+    const target = path.join(tmpDir, 'backup-file.txt');
+    fs.writeFileSync(target, 'hello');
     backupIfExists(target);
-    assert.ok(!fs.existsSync(target), "original path should be gone");
+    assert.ok(!fs.existsSync(target), 'original path should be gone');
     const backups = fs
       .readdirSync(tmpDir)
-      .filter((f) => f.startsWith("backup-file.txt.backup."));
+      .filter((f) => f.startsWith('backup-file.txt.backup.'));
     assert.strictEqual(backups.length, 1);
   });
 
-  it("renames an existing directory", () => {
-    const target = path.join(tmpDir, "backup-dir");
+  it('renames an existing directory', () => {
+    const target = path.join(tmpDir, 'backup-dir');
     fs.mkdirSync(target);
     backupIfExists(target);
     assert.ok(!fs.existsSync(target));
     const backups = fs
       .readdirSync(tmpDir)
-      .filter((f) => f.startsWith("backup-dir.backup."));
+      .filter((f) => f.startsWith('backup-dir.backup.'));
     assert.strictEqual(backups.length, 1);
   });
 
-  it("is a no-op for a non-existent path", () => {
-    const target = path.join(tmpDir, "does-not-exist");
+  it('is a no-op for a non-existent path', () => {
+    const target = path.join(tmpDir, 'does-not-exist');
     assert.doesNotThrow(() => backupIfExists(target));
     assert.ok(!fs.existsSync(target));
   });
 });
 
-describe("installPath", () => {
-  it("recursively copies a directory", () => {
-    const srcDir = path.join(tmpDir, "copy-src");
-    const destDir = path.join(tmpDir, "copy-dest");
+describe('installPath', () => {
+  it('recursively copies a directory', () => {
+    const srcDir = path.join(tmpDir, 'copy-src');
+    const destDir = path.join(tmpDir, 'copy-dest');
     fs.mkdirSync(srcDir);
-    fs.writeFileSync(path.join(srcDir, "nested.txt"), "nested");
+    fs.writeFileSync(path.join(srcDir, 'nested.txt'), 'nested');
     installPath(srcDir, destDir);
-    assert.ok(fs.existsSync(path.join(destDir, "nested.txt")));
+    assert.ok(fs.existsSync(path.join(destDir, 'nested.txt')));
   });
 
-  it("backs up existing copy on second call", () => {
-    const srcDir = path.join(tmpDir, "copy-src2");
-    const destDir = path.join(tmpDir, "copy-dest2");
+  it('backs up existing copy on second call', () => {
+    const srcDir = path.join(tmpDir, 'copy-src2');
+    const destDir = path.join(tmpDir, 'copy-dest2');
     fs.mkdirSync(srcDir);
     installPath(srcDir, destDir);
     installPath(srcDir, destDir);
     const backups = fs
       .readdirSync(tmpDir)
-      .filter((f) => f.startsWith("copy-dest2.backup."));
+      .filter((f) => f.startsWith('copy-dest2.backup.'));
     assert.strictEqual(backups.length, 1);
   });
 });
 
-describe("installDir", () => {
-  it("skips when source directory does not exist", () => {
-    const destPath = path.join(tmpDir, ".nonexistent-dest");
-    installDir(tmpDir, "nonexistent-src", ".nonexistent-dest", tmpDir);
+describe('installDir', () => {
+  it('skips when source directory does not exist', () => {
+    const destPath = path.join(tmpDir, '.nonexistent-dest');
+    installDir(tmpDir, 'nonexistent-src', '.nonexistent-dest', tmpDir);
     assert.ok(
       !fs.existsSync(destPath),
-      "dest should not be created when src is missing",
+      'dest should not be created when src is missing',
     );
   });
 
-  it("installs when source directory exists", () => {
-    const srcDir = path.join(tmpDir, "real-src");
+  it('installs when source directory exists', () => {
+    const srcDir = path.join(tmpDir, 'real-src');
     fs.mkdirSync(srcDir);
-    fs.writeFileSync(path.join(srcDir, "file.txt"), "data");
-    installDir(tmpDir, "real-src", ".real-dest", tmpDir);
-    const destPath = path.join(tmpDir, ".real-dest");
+    fs.writeFileSync(path.join(srcDir, 'file.txt'), 'data');
+    installDir(tmpDir, 'real-src', '.real-dest', tmpDir);
+    const destPath = path.join(tmpDir, '.real-dest');
     assert.ok(fs.statSync(destPath).isDirectory());
   });
 });

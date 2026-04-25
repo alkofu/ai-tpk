@@ -1,14 +1,14 @@
-import { execFileSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { c } from "./colors.js";
+import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { c } from './colors.js';
 
 interface McpServerConfig {
   name: string;
-  scope: "user" | "project";
-  transport: "stdio" | "sse" | "streamable-http";
+  scope: 'user' | 'project';
+  transport: 'stdio' | 'sse' | 'streamable-http';
   prereq?: string;
   env?: Record<string, string>;
   command?: string;
@@ -39,19 +39,19 @@ export function expandVars(value: string): string {
  * - Throws on malformed JSON or schema violations.
  */
 export function loadMcpServers(repoRoot: string): McpServerConfig[] {
-  const filePath = path.join(repoRoot, "src/mcp/mcp-servers.json");
+  const filePath = path.join(repoRoot, 'src/mcp/mcp-servers.json');
 
   let raw: string;
   try {
-    raw = fs.readFileSync(filePath, "utf8");
+    raw = fs.readFileSync(filePath, 'utf8');
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       console.log(
         c.yellow(
-          "Warning: mcp-servers.json not found -- skipping MCP server setup",
+          'Warning: mcp-servers.json not found -- skipping MCP server setup',
         ),
       );
       return [];
@@ -66,7 +66,7 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
     throw new Error(`mcp-servers.json: invalid JSON in ${filePath}`);
   }
 
-  if (typeof parsed !== "object" || parsed === null || !("servers" in parsed)) {
+  if (typeof parsed !== 'object' || parsed === null || !('servers' in parsed)) {
     throw new Error("mcp-servers.json: missing top-level 'servers' field");
   }
 
@@ -76,46 +76,46 @@ export function loadMcpServers(repoRoot: string): McpServerConfig[] {
     throw new Error("mcp-servers.json: 'servers' must be an array");
   }
 
-  const validScopes = ["user", "project"] as const;
-  const validTransports = ["stdio", "sse", "streamable-http"] as const;
+  const validScopes = ['user', 'project'] as const;
+  const validTransports = ['stdio', 'sse', 'streamable-http'] as const;
 
   for (const entry of servers as unknown[]) {
-    if (typeof entry !== "object" || entry === null) {
-      throw new Error("mcp-servers.json: each server entry must be an object");
+    if (typeof entry !== 'object' || entry === null) {
+      throw new Error('mcp-servers.json: each server entry must be an object');
     }
     const server = entry as Record<string, unknown>;
 
-    if (typeof server["name"] !== "string" || server["name"].trim() === "") {
+    if (typeof server['name'] !== 'string' || server['name'].trim() === '') {
       throw new Error(
         "mcp-servers.json: server entry missing required non-empty 'name' field",
       );
     }
-    const name = server["name"] as string;
+    const name = server['name'] as string;
 
     if (
-      !validScopes.includes(server["scope"] as (typeof validScopes)[number])
+      !validScopes.includes(server['scope'] as (typeof validScopes)[number])
     ) {
       throw new Error(
-        `mcp-servers.json: server '${name}' has invalid scope '${String(server["scope"])}' -- must be 'user' or 'project'`,
+        `mcp-servers.json: server '${name}' has invalid scope '${String(server['scope'])}' -- must be 'user' or 'project'`,
       );
     }
 
     if (
       !validTransports.includes(
-        server["transport"] as (typeof validTransports)[number],
+        server['transport'] as (typeof validTransports)[number],
       )
     ) {
       throw new Error(
-        `mcp-servers.json: server '${name}' has invalid transport '${String(server["transport"])}' -- must be 'stdio', 'sse', or 'streamable-http'`,
+        `mcp-servers.json: server '${name}' has invalid transport '${String(server['transport'])}' -- must be 'stdio', 'sse', or 'streamable-http'`,
       );
     }
 
     const hasWrapper =
-      typeof server["wrapper"] === "string" &&
-      (server["wrapper"] as string).trim() !== "";
+      typeof server['wrapper'] === 'string' &&
+      (server['wrapper'] as string).trim() !== '';
     const hasCommand =
-      typeof server["command"] === "string" &&
-      (server["command"] as string).trim() !== "";
+      typeof server['command'] === 'string' &&
+      (server['command'] as string).trim() !== '';
 
     if (hasWrapper && hasCommand) {
       throw new Error(
@@ -147,15 +147,15 @@ export function buildAddArgs(
 ): string[] {
   if (server.wrapper !== undefined) {
     const absoluteWrapperPath =
-      server.scope === "user"
-        ? path.join(homedir, ".claude", server.wrapper)
+      server.scope === 'user'
+        ? path.join(homedir, '.claude', server.wrapper)
         : path.join(repoRoot, server.wrapper);
     try {
       fs.statSync(absoluteWrapperPath);
     } catch (err: unknown) {
       if (
         err instanceof Error &&
-        (err as NodeJS.ErrnoException).code === "ENOENT"
+        (err as NodeJS.ErrnoException).code === 'ENOENT'
       ) {
         throw new Error(
           `Wrapper script not found: ${absoluteWrapperPath} (defined in server '${server.name}')`,
@@ -165,20 +165,20 @@ export function buildAddArgs(
       throw err;
     }
     return [
-      "-s",
+      '-s',
       server.scope,
-      "-t",
+      '-t',
       server.transport,
-      "--",
+      '--',
       server.name,
       absoluteWrapperPath,
     ];
   }
 
-  const result: string[] = ["-s", server.scope, "-t", server.transport];
+  const result: string[] = ['-s', server.scope, '-t', server.transport];
 
   for (const [key, value] of Object.entries(server.env ?? {})) {
-    result.push("-e", `${key}=${expandVars(value)}`);
+    result.push('-e', `${key}=${expandVars(value)}`);
   }
 
   if (!server.command) {
@@ -186,7 +186,7 @@ export function buildAddArgs(
     throw new Error(`Server '${server.name}' has no command or wrapper field`);
   }
 
-  result.push("--", server.name, server.command);
+  result.push('--', server.name, server.command);
 
   for (const arg of server.args ?? []) {
     result.push(expandVars(arg));
@@ -198,8 +198,8 @@ export function buildAddArgs(
 // Path where install stamps are persisted across runs.
 const STAMPS_PATH = path.join(
   os.homedir(),
-  ".claude",
-  ".mcp-install-stamps.json",
+  '.claude',
+  '.mcp-install-stamps.json',
 );
 
 /**
@@ -220,8 +220,8 @@ export function computeConfigSignature(
     );
   }
   const wrapperPath =
-    server.scope === "user"
-      ? path.join(homedir, ".claude", server.wrapper)
+    server.scope === 'user'
+      ? path.join(homedir, '.claude', server.wrapper)
       : path.join(repoRoot, server.wrapper);
   return JSON.stringify({
     name: server.name,
@@ -239,11 +239,11 @@ export function computeConfigSignature(
 export function readStamps(stampsPath: string): Record<string, string> {
   let raw: string;
   try {
-    raw = fs.readFileSync(stampsPath, "utf8");
+    raw = fs.readFileSync(stampsPath, 'utf8');
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       return {};
     }
@@ -270,7 +270,7 @@ export function writeStamps(
   stamps: Record<string, string>,
 ): void {
   try {
-    fs.writeFileSync(stampsPath, JSON.stringify(stamps, null, 2), "utf8");
+    fs.writeFileSync(stampsPath, JSON.stringify(stamps, null, 2), 'utf8');
   } catch {
     console.log(
       c.yellow(
@@ -291,13 +291,13 @@ export function writeStamps(
  */
 function readFileModeOctal(filePath: string): string | null {
   try {
-    return execFileSync("stat", ["-f", "%Lp", filePath], {
-      encoding: "utf8",
+    return execFileSync('stat', ['-f', '%Lp', filePath], {
+      encoding: 'utf8',
     }).trim();
   } catch {
     try {
-      return execFileSync("stat", ["-c", "%a", filePath], {
-        encoding: "utf8",
+      return execFileSync('stat', ['-c', '%a', filePath], {
+        encoding: 'utf8',
       }).trim();
     } catch {
       return null;
@@ -317,7 +317,7 @@ type SpawnFn = (cmd: string, args: string[]) => void;
  * Default spawnFn that calls execFileSync with stdio: "pipe".
  */
 function defaultSpawn(cmd: string, args: string[]): void {
-  execFileSync(cmd, args, { stdio: "pipe" });
+  execFileSync(cmd, args, { stdio: 'pipe' });
 }
 
 /**
@@ -342,7 +342,7 @@ export function removeLegacyGithubRegistration(
   spawnFn: SpawnFn = defaultSpawn,
 ): void {
   try {
-    spawnFn("claude", ["mcp", "remove", "-s", "user", "github"]);
+    spawnFn('claude', ['mcp', 'remove', '-s', 'user', 'github']);
     console.log(c.green("Removed legacy 'github' MCP registration"));
   } catch {
     // Registration was not present — that is fine
@@ -361,7 +361,7 @@ export function assertWrappersDirNotWorldWritable(
   homedir: string = os.homedir(),
   warnFn: WarnFn = defaultWarn,
 ): void {
-  const wrappersDir = path.join(homedir, ".claude", "wrappers");
+  const wrappersDir = path.join(homedir, '.claude', 'wrappers');
   const modeStr = readFileModeOctal(wrappersDir);
   if (modeStr === null) {
     // Can't stat the dir — skip silently (may not exist yet on a fresh install)
@@ -404,7 +404,7 @@ export function registerGithubAccounts(
   spawnFn: SpawnFn = defaultSpawn,
   warnFn: WarnFn = defaultWarn,
 ): Set<string> {
-  const patsPath = path.join(homedir, ".config", "github-pats.json");
+  const patsPath = path.join(homedir, '.config', 'github-pats.json');
 
   // PATs file mode check at install time (V-1 part 2)
   try {
@@ -412,8 +412,8 @@ export function registerGithubAccounts(
     const modeStr = readFileModeOctal(patsPath);
     if (modeStr !== null) {
       // Normalise: strip leading zero for comparison
-      const normalised = modeStr.replace(/^0+/, "") || "0";
-      if (normalised !== "600") {
+      const normalised = modeStr.replace(/^0+/, '') || '0';
+      if (normalised !== '600') {
         warnFn(
           `Warning: ~/.config/github-pats.json mode is ${modeStr}; recommended mode is 0600.\n` +
             `Run: chmod 600 ~/.config/github-pats.json\n` +
@@ -424,10 +424,10 @@ export function registerGithubAccounts(
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       warnFn(
-        "Warning: ~/.config/github-pats.json not found -- skipping GitHub MCP setup",
+        'Warning: ~/.config/github-pats.json not found -- skipping GitHub MCP setup',
       );
       return new Set();
     }
@@ -437,14 +437,14 @@ export function registerGithubAccounts(
   // Read the PATs file
   let raw: string;
   try {
-    raw = fs.readFileSync(patsPath, "utf8");
+    raw = fs.readFileSync(patsPath, 'utf8');
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       warnFn(
-        "Warning: ~/.config/github-pats.json not found -- skipping GitHub MCP setup",
+        'Warning: ~/.config/github-pats.json not found -- skipping GitHub MCP setup',
       );
       return new Set();
     }
@@ -463,7 +463,7 @@ export function registerGithubAccounts(
   }
 
   // Validate shape
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error(`github-pats.json: ${patsPath} must be a flat JSON object`);
   }
 
@@ -477,7 +477,7 @@ export function registerGithubAccounts(
         `github-pats.json: key '${key}' contains characters outside [a-zA-Z0-9_.-]`,
       );
     }
-    if (typeof value !== "string" || value === "") {
+    if (typeof value !== 'string' || value === '') {
       // SECURITY: identify the offending entry by key only, never by value (V-4)
       throw new Error(
         `github-pats.json: PAT for account '${key}' must be a non-empty string`,
@@ -489,23 +489,23 @@ export function registerGithubAccounts(
   const sortedKeys = Object.keys(d).toSorted();
   if (sortedKeys.length === 0) {
     warnFn(
-      "Warning: ~/.config/github-pats.json is empty -- registering zero GitHub MCP servers",
+      'Warning: ~/.config/github-pats.json is empty -- registering zero GitHub MCP servers',
     );
     return new Set();
   }
 
   const wrapperPath = path.join(
     homedir,
-    ".claude",
-    "wrappers",
-    "mcp-github.sh",
+    '.claude',
+    'wrappers',
+    'mcp-github.sh',
   );
   const registered = new Set<string>();
 
   for (const key of sortedKeys) {
     // Best-effort remove any prior registration for this key (idempotent re-add)
     try {
-      spawnFn("claude", ["mcp", "remove", "-s", "user", `github-${key}`]);
+      spawnFn('claude', ['mcp', 'remove', '-s', 'user', `github-${key}`]);
     } catch {
       // Not previously registered — fine
     }
@@ -513,16 +513,16 @@ export function registerGithubAccounts(
     // Register the new server. Only GITHUB_ACCOUNT is passed as env — the PAT
     // is never passed here (resolves from ~/.config/github-pats.json at boot time).
     try {
-      spawnFn("claude", [
-        "mcp",
-        "add",
-        "-s",
-        "user",
-        "-t",
-        "stdio",
-        "-e",
+      spawnFn('claude', [
+        'mcp',
+        'add',
+        '-s',
+        'user',
+        '-t',
+        'stdio',
+        '-e',
         `GITHUB_ACCOUNT=${key}`,
-        "--",
+        '--',
         `github-${key}`,
         wrapperPath,
       ]);
@@ -562,15 +562,15 @@ export function removeStaleGithubRegistrations(
   spawnFn: SpawnFn = defaultSpawn,
   warnFn: WarnFn = defaultWarn,
 ): void {
-  const claudeStorePath = path.join(homedir, ".claude.json");
+  const claudeStorePath = path.join(homedir, '.claude.json');
 
   let raw: string;
   try {
-    raw = fs.readFileSync(claudeStorePath, "utf8");
+    raw = fs.readFileSync(claudeStorePath, 'utf8');
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       // No Claude CLI state present — nothing to clean
       return;
@@ -589,16 +589,16 @@ export function removeStaleGithubRegistrations(
   }
 
   if (
-    typeof parsed !== "object" ||
+    typeof parsed !== 'object' ||
     parsed === null ||
-    !("mcpServers" in parsed)
+    !('mcpServers' in parsed)
   ) {
     // No mcpServers key — nothing to clean
     return;
   }
 
-  const mcpServers = (parsed as Record<string, unknown>)["mcpServers"];
-  if (typeof mcpServers !== "object" || mcpServers === null) {
+  const mcpServers = (parsed as Record<string, unknown>)['mcpServers'];
+  if (typeof mcpServers !== 'object' || mcpServers === null) {
     return;
   }
 
@@ -614,7 +614,7 @@ export function removeStaleGithubRegistrations(
 
     // This registration is stale — remove it
     try {
-      spawnFn("claude", ["mcp", "remove", "-s", "user", serverName]);
+      spawnFn('claude', ['mcp', 'remove', '-s', 'user', serverName]);
       console.log(c.green(`Removed stale MCP registration '${serverName}'`));
     } catch {
       // Best-effort — do not abort
@@ -646,15 +646,15 @@ export function updateGithubAllowList(
   homedir: string = os.homedir(),
   warnFn: WarnFn = defaultWarn,
 ): void {
-  const settingsPath = path.join(homedir, ".claude", "settings.json");
+  const settingsPath = path.join(homedir, '.claude', 'settings.json');
 
   let raw: string;
   try {
-    raw = fs.readFileSync(settingsPath, "utf8");
+    raw = fs.readFileSync(settingsPath, 'utf8');
   } catch (err: unknown) {
     if (
       err instanceof Error &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
     ) {
       warnFn(
         `Warning: ~/.claude/settings.json not found -- skipping GitHub allow-list update`,
@@ -674,13 +674,13 @@ export function updateGithubAllowList(
     );
   }
 
-  if (typeof parsed !== "object" || parsed === null) {
+  if (typeof parsed !== 'object' || parsed === null) {
     throw new Error(`settings.json: expected a JSON object in ${settingsPath}`);
   }
 
   const settings = parsed as Record<string, unknown>;
-  const existingTools: string[] = Array.isArray(settings["allowedTools"])
-    ? (settings["allowedTools"] as string[])
+  const existingTools: string[] = Array.isArray(settings['allowedTools'])
+    ? (settings['allowedTools'] as string[])
     : [];
 
   // Compute desired set of GitHub patterns
@@ -713,12 +713,12 @@ export function updateGithubAllowList(
     .toSorted();
   const updatedTools = [...kept, ...toAdd];
 
-  settings["allowedTools"] = updatedTools;
+  settings['allowedTools'] = updatedTools;
 
   // Atomic write via temp + rename
-  const tmpPath = `${settingsPath}.tmp.${process.pid}.${randomBytes(8).toString("hex")}`;
+  const tmpPath = `${settingsPath}.tmp.${process.pid}.${randomBytes(8).toString('hex')}`;
   try {
-    fs.writeFileSync(tmpPath, JSON.stringify(settings, null, 2) + "\n", "utf8");
+    fs.writeFileSync(tmpPath, JSON.stringify(settings, null, 2) + '\n', 'utf8');
     fs.renameSync(tmpPath, settingsPath);
   } catch (err: unknown) {
     try {
@@ -733,9 +733,9 @@ export function updateGithubAllowList(
 export function installMcpServers(repoRoot: string): void {
   // Check claude CLI availability
   try {
-    execFileSync("claude", ["--version"], { stdio: "pipe" });
+    execFileSync('claude', ['--version'], { stdio: 'pipe' });
   } catch {
-    console.log(c.yellow("Skipping MCP server setup (claude CLI not found)"));
+    console.log(c.yellow('Skipping MCP server setup (claude CLI not found)'));
     return;
   }
 
@@ -749,7 +749,7 @@ export function installMcpServers(repoRoot: string): void {
     servers.filter((s) => s.wrapper !== undefined).map((s) => s.name),
   );
 
-  console.log(c.blue("Configuring MCP servers (user scope)..."));
+  console.log(c.blue('Configuring MCP servers (user scope)...'));
 
   for (const server of servers) {
     if (server.wrapper !== undefined) {
@@ -759,8 +759,8 @@ export function installMcpServers(repoRoot: string): void {
       if (stamps[server.name] === signature) {
         // Stamp matches — check that the registration is actually present.
         try {
-          execFileSync("claude", ["mcp", "get", server.name], {
-            stdio: "pipe",
+          execFileSync('claude', ['mcp', 'get', server.name], {
+            stdio: 'pipe',
           });
           console.log(
             c.green(`MCP server '${server.name}' already configured, skipping`),
@@ -777,8 +777,8 @@ export function installMcpServers(repoRoot: string): void {
       } else {
         // Stamp is absent or stale — remove any existing registration and re-add.
         try {
-          execFileSync("claude", ["mcp", "remove", server.name], {
-            stdio: "pipe",
+          execFileSync('claude', ['mcp', 'remove', server.name], {
+            stdio: 'pipe',
           });
         } catch {
           // Server was not registered — that is fine, proceed to add
@@ -792,7 +792,7 @@ export function installMcpServers(repoRoot: string): void {
         } catch (err: unknown) {
           if (
             err instanceof Error &&
-            (err as NodeJS.ErrnoException).code === "ENOENT"
+            (err as NodeJS.ErrnoException).code === 'ENOENT'
           ) {
             // prereq check is advisory: warn if missing, but always proceed to add
             console.log(
@@ -807,10 +807,10 @@ export function installMcpServers(repoRoot: string): void {
       // Add the server
       try {
         execFileSync(
-          "claude",
-          ["mcp", "add", ...buildAddArgs(server, repoRoot)],
+          'claude',
+          ['mcp', 'add', ...buildAddArgs(server, repoRoot)],
           {
-            stdio: "pipe",
+            stdio: 'pipe',
           },
         );
         updatedStamps[server.name] = signature;
@@ -822,7 +822,7 @@ export function installMcpServers(repoRoot: string): void {
     } else {
       // Command-based servers: skip if already configured
       try {
-        execFileSync("claude", ["mcp", "get", server.name], { stdio: "pipe" });
+        execFileSync('claude', ['mcp', 'get', server.name], { stdio: 'pipe' });
         console.log(
           c.green(`MCP server '${server.name}' already configured, skipping`),
         );
@@ -838,7 +838,7 @@ export function installMcpServers(repoRoot: string): void {
         } catch (err: unknown) {
           if (
             err instanceof Error &&
-            (err as NodeJS.ErrnoException).code === "ENOENT"
+            (err as NodeJS.ErrnoException).code === 'ENOENT'
           ) {
             // prereq check is advisory: warn if missing, but always proceed to add
             console.log(
@@ -853,10 +853,10 @@ export function installMcpServers(repoRoot: string): void {
       // Add the server
       try {
         execFileSync(
-          "claude",
-          ["mcp", "add", ...buildAddArgs(server, repoRoot)],
+          'claude',
+          ['mcp', 'add', ...buildAddArgs(server, repoRoot)],
           {
-            stdio: "pipe",
+            stdio: 'pipe',
           },
         );
         console.log(c.green(`MCP server '${server.name}' added`));

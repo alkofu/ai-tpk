@@ -1,5 +1,5 @@
-import type { ResolvedConfig, SkippedMap } from "./types.js";
-import { registry } from "./mcp-command.js";
+import type { ResolvedConfig, SkippedMap } from './types.js';
+import { registry } from './mcp-command.js';
 
 export function buildOutroLines(
   resolved: ResolvedConfig,

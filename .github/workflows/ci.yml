@@ -38,6 +38,12 @@ jobs:
       - name: Spell check
         run: pnpm run spellcheck
 
+      - name: Install yamllint
+        run: sudo apt-get install -y yamllint
+
+      - name: Lint YAML
+        run: pnpm run lint:yaml
+
       - name: Format check
         run: pnpm run format:check
 

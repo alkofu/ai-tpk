@@ -41,6 +41,8 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 - **`conflict-resolution-rebase.md`** — Canonical algorithm for resolving merge conflicts during a `git rebase`. Covers conflict detection, per-file resolution strategy (preserving the incoming branch's intent), round-limit guardrails, abort conditions, and the rebase-continue loop. Consumed by the `open-pull-request` skill (sub-step 6c) and the `/resolve-conflicts` command as thin pointers to this single authoritative source.
 
+- **`constitution-injection-mechanics.md`** — Implementation mechanics for project-constitution injection in Dungeon Master delegations. Covers the bootstrap exception (when injection begins firing relative to file creation), mid-session amendment behavior (re-reading the file at each delegation), conditional/no-op behavior (silent skip when the file is absent), and the full injection placement ordering rules for Pathfinder, Bitsmith, and Ruinor delegation prompts. Loaded on-demand by DM; extracted from `dungeonmaster.md` to reduce always-on token cost.
+
 When updating a reference file, changes apply automatically to all agents that load it — no individual agent files need modification.
 
 ## Skills (`claude/skills/`)

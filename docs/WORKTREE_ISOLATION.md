@@ -57,7 +57,7 @@ For the authoritative Phase 0 specification — including the exact variable def
 
 Worktree creation happens in **Phase 1**, not Phase 0. After intent classification, the routing branch invokes the **Worktree Creation Subroutine** when required.
 
-For the authoritative subroutine specification — including branch-name derivation rules with conventional commit prefixes, the exact Bash command sequence delegated to Bitsmith, branch-collision retry logic (numeric suffix retries, fallback after 3 failures), and session-context propagation — see [`claude/agents/dungeonmaster.md`](/claude/agents/dungeonmaster.md#phase-1-planning).
+For the authoritative subroutine specification — including branch-name derivation rules with conventional commit prefixes, the exact Bash command sequence delegated to Bitsmith, branch-collision retry logic (numeric suffix retries, fallback after 3 failures), and session-context propagation — see [`claude/references/worktree-creation-subroutine.md`](/claude/references/worktree-creation-subroutine.md).
 
 ### When a Worktree is Created vs. Not Created
 

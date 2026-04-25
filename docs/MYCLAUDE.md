@@ -59,7 +59,7 @@ batch-open-issues.sh 42 123 https://github.com/owner/repo/issues/7
 
 Each argument can be a bare integer (`42`) or a GitHub issue URL in the form `https://github.com/<owner>/<repo>/issues/<n>` (with an optional trailing `/`, `?query`, or `#anchor`).
 
-**Supported terminals:** tmux (new window with `-c "$PWD"`) and iTerm2 (new tab via AppleScript, inherits current session CWD). cmux and Ghostty are not supported and produce a clear error with exit code 3.
+**Supported terminals:** tmux (new window with `-c "$PWD"`), iTerm2 (new tab via AppleScript, inherits current session CWD), and cmux (new workspace via `cmux new-workspace --cwd "$PWD" --name "issue-<n>" --command "<cmd>"`). cmux is detected via `$CMUX_WORKSPACE_ID` (set automatically inside any cmux terminal session). The cmux binary is located by searching `$PATH` first, then falling back to the bundled CLI at `/Applications/cmux.app/Contents/Resources/bin/cmux`. If neither resolves, that issue's spawn fails (recorded in the partial-failure summary) but other issues continue. Standalone Ghostty (Ghostty running without cmux) is not supported and produces exit code 3.
 
 **Exit codes:**
 
@@ -67,7 +67,7 @@ Each argument can be a bare integer (`42`) or a GitHub issue URL in the form `ht
 |------|---------|
 | 0 | All tabs spawned successfully |
 | 2 | Missing or unparseable arguments, or required library not found |
-| 3 | Unsupported or undetected terminal |
+| 3 | Unsupported terminal (standalone Ghostty) or undetected terminal |
 | 4 | One or more tab spawns failed (partial success) |
 
 **Prerequisite:** Requires the `feat/forward-initial-command-to-claude-from-myclaude-cli` PR to be merged before use. That PR extends `myclaude` to accept an initial-message positional argument alongside `--skip`. If your installed `myclaude` predates that merge, the tabs will open but each session will fail silently — re-run `install.sh` against an updated checkout to fix.

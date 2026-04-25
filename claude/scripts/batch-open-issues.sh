@@ -13,8 +13,15 @@ set -euo pipefail
 # Exit codes:
 #   0 — success (all tabs spawned)
 #   2 — missing/invalid args, or required lib not found
-#   3 — unsupported terminal (cmux, Ghostty, or no recognized terminal)
+#   3 — unsupported terminal (standalone Ghostty, or no recognized terminal)
 #   4 — one or more tabs failed to spawn (partial success)
+#
+# Supported terminals:
+#   tmux   — new window via `tmux new-window -c "$PWD"`
+#   iTerm2 — new tab via AppleScript (inherits current session CWD)
+#   cmux   — new workspace via `cmux new-workspace --cwd "$PWD" --name "issue-<n>" --command "<cmd>"`
+#            cmux binary is located via $PATH first, falling back to
+#            /Applications/cmux.app/Contents/Resources/bin/cmux
 #
 # Dependencies:
 #   ~/.claude/hooks/lib-tab-rename.sh — sources _tab_rename_detect_terminal to
@@ -81,8 +88,8 @@ _tab_rename_detect_terminal
 
 # open_tab_for_issue <issue-number>
 # Dispatches a single tab/window spawn for the given issue number.
-# Handles ONLY the supported terminals (tmux, iterm2). The unsupported-terminal
-# cases (cmux, Ghostty-via-cmux, empty $TERMINAL) are handled by the pre-loop
+# Handles ONLY the supported terminals (tmux, iterm2, cmux). The unsupported-terminal
+# cases (standalone Ghostty, empty $TERMINAL) are handled by the pre-loop
 # check in the main loop and must never be reached here.
 # This function NEVER calls `exit` — it only `return`s. Returns 0 on successful
 # spawn, non-zero on spawn failure (or on the defensive default-branch case
@@ -103,6 +110,19 @@ open_tab_for_issue() {
         -e "tell current session of current tab of current window to write text \"myclaude --skip '/feature-issue ${n}'\""
       return $?
       ;;
+    cmux)
+      local cmux_bin=""
+      if command -v cmux >/dev/null 2>&1; then
+        cmux_bin="$(command -v cmux)"
+      elif [[ -x /Applications/cmux.app/Contents/Resources/bin/cmux ]]; then
+        cmux_bin="/Applications/cmux.app/Contents/Resources/bin/cmux"
+      else
+        printf 'batch-open-issues: cmux binary not found in PATH or at /Applications/cmux.app/Contents/Resources/bin/cmux — install cmux or ensure /Applications/cmux.app exists, then retry\n' >&2
+        return 1
+      fi
+      "$cmux_bin" new-workspace --cwd "$PWD" --name "issue-${n}" --command "myclaude --skip '/feature-issue ${n}'"
+      return $?
+      ;;
     *)
       # Defensive default — should be unreachable because the pre-loop check
       # exits before entering the loop for unsupported terminals.
@@ -113,12 +133,12 @@ open_tab_for_issue() {
 }
 
 # Pre-loop unsupported-terminal check — exits before any tab spawning.
-if [[ "$TERMINAL" == "cmux" ]]; then
-  if [[ "${TERM_PROGRAM:-}" == "ghostty" ]]; then
-    printf "batch-open-issues: ghostty is not supported (detected via cmux family) — open tabs manually and run \`myclaude --skip '/feature-issue <n>'\` in each\n" >&2
-  else
-    printf "batch-open-issues: cmux is not supported — open tabs manually and run \`myclaude --skip '/feature-issue <n>'\` in each\n" >&2
-  fi
+if [[ "$TERMINAL" == "cmux" && -z "${CMUX_WORKSPACE_ID:-}" ]]; then
+  # TERMINAL=cmux without CMUX_WORKSPACE_ID means lib-tab-rename detected
+  # standalone Ghostty (TERM_PROGRAM=ghostty without cmux running). cmux's
+  # new-workspace command requires a cmux instance, so this case is genuinely
+  # unsupported.
+  printf "batch-open-issues: standalone Ghostty (without cmux running) is not supported — open tabs manually and run \`myclaude --skip '/feature-issue <n>'\` in each\n" >&2
   exit 3
 elif [[ -z "$TERMINAL" ]]; then
   printf 'batch-open-issues: no supported terminal detected (TMUX, CMUX_WORKSPACE_ID, and the terminal program env var all unset or unrecognized)\n' >&2

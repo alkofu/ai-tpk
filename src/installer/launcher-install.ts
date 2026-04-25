@@ -13,8 +13,8 @@ export function installLauncherScript(
   const aiTpkDir = path.join(homeDir, '.ai-tpk');
   const destBundle = path.join(aiTpkDir, 'launcher.cjs');
   const binDir = path.join(homeDir, 'bin');
-  const targetBinPath = path.join(binDir, 'myclaude');
-  const srcBashScript = path.join(repoRoot, 'src', 'launcher', 'myclaude.sh');
+  const targetBinPath = path.join(binDir, 'tpk');
+  const srcBashScript = path.join(repoRoot, 'src', 'launcher', 'tpk.sh');
   const oldLauncherDir = path.join(homeDir, '.claude', 'launcher');
 
   // 8b. Guard: verify required source files exist before any side effects
@@ -23,7 +23,7 @@ export function installLauncherScript(
   }
   if (!fs.existsSync(srcBashScript)) {
     throw new Error(
-      `src/launcher/myclaude.sh not found. The repository may be incomplete.`,
+      `src/launcher/tpk.sh not found. The repository may be incomplete.`,
     );
   }
 
@@ -48,7 +48,7 @@ export function installLauncherScript(
     );
   }
 
-  // 8e. Install ~/bin/myclaude — refuse symlinks, backup existing
+  // 8e. Install ~/bin/tpk — refuse symlinks, backup existing
   fs.mkdirSync(binDir, { recursive: true });
   try {
     const stat = fs.lstatSync(targetBinPath);
@@ -68,6 +68,35 @@ export function installLauncherScript(
   fs.chmodSync(targetBinPath, 0o755);
 
   // 8f. Print success messages
-  console.log(c.green(`Launcher installed to ~/bin/myclaude`));
+  console.log(c.green(`Launcher installed to ~/bin/tpk`));
   console.log(c.green(`Launcher bundle installed to ~/.ai-tpk/launcher.cjs`));
+
+  // 8g. Migrate: copy ~/.config/myclaude/config.json -> ~/.config/tpk/config.json.
+  //     Source is preserved (user cleans up manually).
+  //     Runs AFTER 8e/8f so any short-circuit return at 8e (symlink branch) prevents
+  //     a half-migrated state. Logs a yellow line on BOTH copy and skip paths.
+  const legacyConfigDir = path.join(homeDir, ".config", "myclaude");
+  const legacyConfigFile = path.join(legacyConfigDir, "config.json");
+  const newConfigDir = path.join(homeDir, ".config", "tpk");
+  const newConfigFile = path.join(newConfigDir, "config.json");
+  const legacyConfigExists = fs.existsSync(legacyConfigFile);
+  const newConfigExists = fs.existsSync(newConfigFile);
+  if (legacyConfigExists && !newConfigExists) {
+    fs.mkdirSync(newConfigDir, { recursive: true, mode: 0o700 });
+    fs.copyFileSync(legacyConfigFile, newConfigFile);
+    // Always set 0o600 regardless of source mode — matches the saveConfig() posture
+    // and is the same mode the launcher would write next time it persists.
+    fs.chmodSync(newConfigFile, 0o600);
+    console.log(
+      c.yellow(
+        "Copied ~/.config/myclaude/config.json -> ~/.config/tpk/config.json (legacy file left in place)",
+      ),
+    );
+  } else if (legacyConfigExists && newConfigExists) {
+    console.log(
+      c.yellow(
+        "Skipping copy: ~/.config/tpk/config.json already exists; legacy source ~/.config/myclaude/config.json left in place",
+      ),
+    );
+  }
 }

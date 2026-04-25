@@ -23,7 +23,7 @@ fi
 
 # Neither dotfile nor env var provided a project -- fail helpfully
 printf 'Error: no GCP project set.\n' >&2
-printf 'Set one by running the myclaude launcher, or:\n' >&2
+printf 'Set one by running the tpk launcher, or:\n' >&2
 printf '  echo "my-project-id" > ~/.claude/.current-gcp-project\n\n' >&2
 printf 'To find your project IDs, run: gcloud projects list\n' >&2
 exit 1

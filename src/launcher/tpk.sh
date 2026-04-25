@@ -4,7 +4,7 @@ set -euo pipefail
 LAUNCHER_BUNDLE="$HOME/.ai-tpk/launcher.cjs"
 
 if [[ ! -f "$LAUNCHER_BUNDLE" ]]; then
-  printf 'Error: myclaude launcher not found at %s\n' "$LAUNCHER_BUNDLE" >&2
+  printf 'Error: tpk launcher not found at %s\n' "$LAUNCHER_BUNDLE" >&2
   printf 'Re-run install.sh to reinstall it.\n' >&2
   exit 1
 fi
@@ -17,7 +17,7 @@ fi
 case ":$PATH:" in
   *":${HOME}/bin:"*) ;;
   *)
-    printf 'Warning: ~/bin is not in PATH. Add it to your shell profile to use the myclaude command.\n' >&2
+    printf 'Warning: ~/bin is not in PATH. Add it to your shell profile to use the tpk command.\n' >&2
     ;;
 esac
 

@@ -7,7 +7,7 @@ export ACCOUNTS_FILE="$HOME/.config/argocd-accounts.json"
 # --- Require dotfile ---
 if [[ ! -f "$DOTFILE" ]] || [[ ! -s "$DOTFILE" ]]; then
   printf 'Error: no ArgoCD cluster selected.\n' >&2
-  printf 'Run: myclaude (and select ArgoCD)\n' >&2
+  printf 'Run: tpk (and select ArgoCD)\n' >&2
   printf 'Or: echo "my-cluster" > %s\n' "$DOTFILE" >&2
   exit 1
 fi

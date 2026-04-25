@@ -31,7 +31,7 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-# shellcheck disable=SC2010  # ls | grep deferred: see open-questions; filenames use fixed timestamp format with no spaces
+# shellcheck disable=SC2010  # ls | grep is acceptable here: filenames use a fixed timestamp format with no spaces or newlines
 LATEST=$(ls -t "$LOG_DIR"/talekeeper-*.jsonl 2>/dev/null | grep -v '/talekeeper-raw\.jsonl$' | head -n1 || true)
 if [[ -z "$LATEST" ]]; then
   printf 'unavailable\n'

@@ -45,7 +45,7 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 
 ## Documentation
 
-- [docs/INSTALLATION.md](/docs/INSTALLATION.md) — Install lifecycle: clone, run install.sh, set up a dev environment, update, recover and clean backups, clean agent artifacts.
+- [docs/INSTALLATION.md](/docs/INSTALLATION.md) — Install lifecycle: clone, run install.sh, set up a dev environment (including JS and shell tooling), update, recover and clean backups, clean agent artifacts.
 - [docs/DEMO.md](/docs/DEMO.md) — A short, screenshot-driven tour of what an AI TPK session looks like in practice.
 - [docs/HOOKS.md](/docs/HOOKS.md) — Settings, marketplaces, and the four Claude Code hooks (PermissionRequest, SessionStart, SubagentStop, Stop).
 - [docs/INSTRUCTIONS.md](/docs/INSTRUCTIONS.md) — How user-global (`claude/CLAUDE.md`) and project-level (`.claude/CLAUDE.md`) instructions interact.

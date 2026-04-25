@@ -4,7 +4,7 @@ set -euo pipefail
 # Resolve GCP project: dotfile takes priority over env var
 DOTFILE="$HOME/.claude/.current-gcp-project"
 if [[ -f "$DOTFILE" ]] && [[ -s "$DOTFILE" ]]; then
-  IFS= read -r GOOGLE_CLOUD_PROJECT < "$DOTFILE"
+  IFS= read -r GOOGLE_CLOUD_PROJECT <"$DOTFILE"
   # Trim leading/trailing whitespace
   GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT#"${GOOGLE_CLOUD_PROJECT%%[! $'\t']*}"}"
   GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT%"${GOOGLE_CLOUD_PROJECT##*[! $'\t']}"}"

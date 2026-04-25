@@ -79,6 +79,7 @@ TITLE=$(claude -p --bare --model haiku \
   --system-prompt "Respond with ONLY 2-5 words. No punctuation, no quotes, no explanation. Generate a short natural-language title summarizing this coding session based on the user's request and the assistant's work." \
   "Project: ${REPO_NAME}, User asked: ${FIRST_PROMPT}, Assistant did: ${LAST_RESPONSE}" \
   </dev/null 2>/dev/null)
+# shellcheck disable=SC2181  # $? intentionally captured after assignment; compound condition requires separate check
 if [ $? -ne 0 ] || [ -z "$TITLE" ]; then
   exit 0
 fi
@@ -92,7 +93,7 @@ fi
 
 # Store title (atomic enough for this use case)
 mkdir -p "$TITLE_DIR"
-printf '%s' "$TITLE" > "$TITLE_FILE"
+printf '%s' "$TITLE" >"$TITLE_FILE"
 
 # Detect terminal and apply title
 _tab_rename_detect_terminal

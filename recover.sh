@@ -22,10 +22,12 @@ done < <(
 )
 
 if [ "${#backups[@]}" -eq 0 ]; then
+  # shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
   printf "${YELLOW}No backups found in ${SCAN_DIRS[*]}.${NC}\n"
   exit 0
 fi
 
+# shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
 printf "${BLUE}Discovered backups (newest first):${NC}\n\n"
 
 for i in "${!backups[@]}"; do
@@ -48,10 +50,12 @@ for i in "${!backups[@]}"; do
     "$((i + 1))" "$backup" "$original" "$human_ts"
 done
 
+# shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
 printf "${BLUE}Enter the number of the backup to restore (or press Enter to cancel):${NC} "
 read -r input || true
 
 if [ -z "$input" ]; then
+  # shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
   printf "${YELLOW}No selection made. Exiting.${NC}\n"
   exit 0
 fi
@@ -75,4 +79,5 @@ if [ -e "$original_path" ] || [ -L "$original_path" ]; then
 fi
 
 mv "$selected_backup" "$original_path"
+# shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
 printf "${GREEN}Restored successfully.${NC}\n"

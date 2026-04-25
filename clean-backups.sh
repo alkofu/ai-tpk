@@ -3,7 +3,6 @@ set -euo pipefail
 
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-RED='\033[0;31m'
 NC='\033[0m'
 
 SCAN_DIRS=("$HOME/.claude" "$HOME/.cursor")
@@ -24,6 +23,7 @@ done < <(
 )
 
 if [ "${#all_backups[@]}" -eq 0 ]; then
+  # shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
   printf "${YELLOW}No backups found in ${SCAN_DIRS[*]}.${NC}\n"
   exit 0
 fi
@@ -42,7 +42,7 @@ flush_group() {
   if [ "$count" -ge 2 ]; then
     # Keep the last element (newest); mark the rest for deletion.
     local i
-    for (( i = 0; i < count - 1; i++ )); do
+    for ((i = 0; i < count - 1; i++)); do
       to_delete+=("${current_group[$i]}")
     done
   fi
@@ -67,10 +67,12 @@ if [ -n "$current_original" ]; then
 fi
 
 if [ "${#to_delete[@]}" -eq 0 ]; then
+  # shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
   printf "${GREEN}Nothing to clean — every original path has at most one backup.${NC}\n"
   exit 0
 fi
 
+# shellcheck disable=SC2059  # ANSI colour escape mixed with format specifiers
 printf "${YELLOW}The following backup files will be deleted (oldest copies only):${NC}\n\n"
 for f in "${to_delete[@]}"; do
   printf "  %s\n" "$f"

@@ -57,7 +57,8 @@ fi
 # even with set -euo pipefail, because command substitution failures inside
 # local/export/simple assignments do NOT trigger set -e exit; the explicit if!
 # boundary is what makes the failure abort the script.
-if ! TOKEN="$(python3 - <<'PY'
+if ! TOKEN="$(
+  python3 - <<'PY'
 import json, os, sys
 try:
     with open(os.path.expanduser("~/.config/tpk/github-pats.json")) as f:

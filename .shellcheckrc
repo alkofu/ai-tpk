@@ -1,0 +1,8 @@
+# Project-wide ShellCheck configuration.
+# external-sources=true: resolves SC1091 for scripts that source external files
+# (e.g. tab-rename-stop.sh sources lib-tab-rename.sh).
+external-sources=true
+# source-path=SCRIPTDIR: tells ShellCheck to look for sourced files relative to
+# the directory of the script being analysed, so `source ./lib-tab-rename.sh`
+# resolves correctly when shellcheck is invoked from the repo root.
+source-path=SCRIPTDIR

@@ -6,7 +6,10 @@
 
 set -euo pipefail
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { printf 'Error: not inside a git repository\n' >&2; exit 1; }
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  printf 'Error: not inside a git repository\n' >&2
+  exit 1
+}
 
 # Arg validation: require a positive integer PR number.
 pr_number="${1:-}"

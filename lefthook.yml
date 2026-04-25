@@ -1,3 +1,13 @@
+# Note: lint-sh and lint-md run over the full file set (pnpm script scope), not just staged files.
+pre-commit:
+  commands:
+    lint-sh:
+      glob: "**/*.sh"
+      run: pnpm run lint:sh
+    lint-md:
+      glob: "**/*.md"
+      run: pnpm run lint:md
+
 pre-push:
   commands:
     lint:

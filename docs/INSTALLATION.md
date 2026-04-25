@@ -48,7 +48,7 @@ pnpm run setup
 
 **Note:** The `pnpm run build` command bundles the installer via esbuild into `dist/installer.js`. The `pnpm run setup` command executes the pre-built bundle, ensuring your development environment uses the same code path as end-users. This keeps installer behavior consistent during development.
 
-After setup, you can test changes locally. The pre-push hook (Lefthook) will automatically run linting and format checks before you push commits.
+After setup, you can test changes locally. Lefthook runs shellcheck + markdownlint at pre-commit and the full lint/format suite at pre-push.
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp before overwriting them.
 
@@ -81,9 +81,13 @@ The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) t
 
 Before committing code, run `pnpm run format` to auto-format your changes. This keeps the codebase consistent and prevents formatting failures in CI.
 
+**Pre-Commit Hook:**
+
+Lefthook runs shellcheck (`pnpm run lint:sh`) on staged `.sh` files and markdownlint (`pnpm run lint:md`) on staged `.md` files at commit time. If either check fails, the commit is blocked. These are the same pnpm scripts used at pre-push, reused here for consistency. Hook configuration lives in `lefthook.yml`.
+
 **Pre-Push Hook:**
 
-Lefthook runs lint, format, and Markdown lint checks on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
+Lefthook runs lint, format, and Markdown lint checks on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md` (which also runs at pre-commit); shell file changes trigger `pnpm run lint:sh` (which also runs at pre-commit) and `pnpm run format:check:sh`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Shell and Markdown violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
 
 ### Code Quality: Shell Linting and Formatting
 
@@ -103,7 +107,7 @@ brew install shellcheck shfmt
 
 **CI version pin:** CI pins `shfmt` to `v3.8.0`. Minor version drift between local and CI is generally acceptable, but if `pnpm run format:check:sh` produces different output locally vs CI, install the pinned version via `mise use shfmt@3.8.0` or download the v3.8.0 binary from `https://github.com/mvdan/sh/releases/tag/v3.8.0`. `shellcheck` is not pinned; the latest Homebrew or apt version is fine.
 
-**Pre-Push Hook:** The same Lefthook hook that runs the JS lint/format checks also runs `pnpm run lint:sh` and `pnpm run format:check:sh`. Hook configuration lives in `lefthook.yml`.
+**Pre-Commit and Pre-Push Hook:** `pnpm run lint:sh` runs at both pre-commit (on staged `.sh` files) and pre-push. `pnpm run format:check:sh` runs at pre-push only — shfmt format checking is intentionally deferred to push. Hook configuration lives in `lefthook.yml`.
 
 ### Development Workflow
 
@@ -114,7 +118,7 @@ When making changes to this repository:
 3. **Build and reinstall** — Run `pnpm run build` to rebuild the installer bundle, then `./install.sh` to deploy to `~/.claude/`, then `./clean-backups.sh` to remove stale backups. The `/build-and-install` repo-scope slash command automates all three steps in sequence.
 4. **Test** — Run `pnpm test` to execute the test suite
 5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, and `pnpm run lint:md` to verify Markdown style
-6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing
+6. **Commit and push** — The pre-commit hook (Lefthook) runs shellcheck and markdownlint first; the pre-push hook runs the full lint and format suite. Both must pass before the respective git operation succeeds
 
 ## Updating
 

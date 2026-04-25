@@ -24,6 +24,15 @@ Currently configured servers:
   The wrapper invokes **`pnpx`** (pnpm's equivalent of the npm runner) because this repository uses pnpm. Users without pnpm installed must install it (<https://pnpm.io/installation>) before GitHub MCP servers can spawn. The wrapper pins `@modelcontextprotocol/server-github@2025.4.8` to protect against any future "latest" publish on the abandoned package name (archived 2025-05-29; the Docker-based successor `ghcr.io/github/github-mcp-server` is not used here to avoid a Docker dependency).
 
   If `~/.config/github-pats.json` is missing or empty (`{}`) at install time, GitHub MCP setup is skipped with a yellow warning and installation continues. On each run, the installer also removes the legacy `github` (no suffix) registration, removes stale `github-<key>` registrations, and removes stale `mcp__github-<key>__*` allow-list entries for keys no longer present in the PATs file.
+- **ArgoCD MCP Server** (`argocd-mcp@0.5.0`) — Multi-cluster ArgoCD access via `~/.config/argocd-accounts.json`. Define your clusters as a JSON object mapping cluster names to `{ url, token }` pairs:
+  ```json
+  { "prod": { "url": "https://argocd.prod.example.com", "token": "..." }, "staging": { "url": "https://argocd.staging.example.com", "token": "..." } }
+  ```
+  **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/argocd-accounts.json`.** ArgoCD tokens are equivalent in sensitivity to GitHub PATs; the wrapper refuses to read the file if the mode is broader than `0600`.
+
+  Cluster names (keys) must match `^[a-zA-Z0-9_.-]+$`. The selected cluster is written to `~/.claude/.current-argocd-cluster` by the launcher and read at wrapper boot time. Rotating a token in `~/.config/argocd-accounts.json` takes effect on the next MCP server boot without re-running `install.sh`.
+
+  The wrapper requires **`python3`** (available by default on macOS and Linux) to parse the accounts file.
 - **GCP Observability MCP Server** (`@google-cloud/observability-mcp@0.2.3`) — Read-only access to GCP Cloud Logging, Monitoring, Trace, and Error Reporting. Requires Node.js 20+ and the gcloud CLI. Authenticate before running `install.sh`: `gcloud auth application-default login` then `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`.
 
 MCP servers are available in all repositories once configured.

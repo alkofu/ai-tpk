@@ -35,10 +35,12 @@ const dotfileDir = path.join(os.homedir(), ".claude");
 const dotfilePath = path.join(dotfileDir, ".current-aws-profile");
 const gcpDotfilePath = path.join(dotfileDir, ".current-gcp-project");
 const kubeDotfilePath = path.join(dotfileDir, ".current-kube-context");
+const argocdDotfilePath = path.join(dotfileDir, ".current-argocd-cluster");
 
 let priorDotfileContent: string | null = null;
 let priorGcpDotfileContent: string | null = null;
 let priorKubeDotfileContent: string | null = null;
+let priorArgoCdDotfileContent: string | null = null;
 
 before(() => {
   if (fs.existsSync(dotfilePath)) {
@@ -49,6 +51,9 @@ before(() => {
   }
   if (fs.existsSync(kubeDotfilePath)) {
     priorKubeDotfileContent = fs.readFileSync(kubeDotfilePath, "utf8");
+  }
+  if (fs.existsSync(argocdDotfilePath)) {
+    priorArgoCdDotfileContent = fs.readFileSync(argocdDotfilePath, "utf8");
   }
 });
 
@@ -82,6 +87,16 @@ after(() => {
   } else if (fs.existsSync(kubeDotfilePath)) {
     fs.rmSync(kubeDotfilePath);
   }
+
+  if (priorArgoCdDotfileContent !== null) {
+    fs.mkdirSync(dotfileDir, { recursive: true });
+    fs.writeFileSync(argocdDotfilePath, priorArgoCdDotfileContent, {
+      mode: 0o600,
+      encoding: "utf8",
+    });
+  } else if (fs.existsSync(argocdDotfilePath)) {
+    fs.rmSync(argocdDotfilePath);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -101,6 +116,13 @@ const allMcpsResolved: ResolvedConfig = {
   cloudwatch: { profile: "my-dev-profile" },
   gcpObservability: { project: "my-gcp-project" },
   kubernetes: { context: "my-cluster" },
+  argocd: {
+    cluster: {
+      id: "argo-prod",
+      url: "https://argocd.example.com",
+      token: "fake-token",
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -160,11 +182,11 @@ function formatSummaryLinesViaRegistry(config: LauncherConfig): string[] {
 // ---------------------------------------------------------------------------
 
 describe("registry", () => {
-  it("contains exactly four entries in canonical order", () => {
-    assert.strictEqual(registry.length, 4);
+  it("contains exactly five entries in canonical order", () => {
+    assert.strictEqual(registry.length, 5);
     assert.deepStrictEqual(
       registry.map((c) => c.id),
-      ["grafana", "cloudwatch", "gcp-observability", "kubernetes"],
+      ["grafana", "cloudwatch", "gcp-observability", "kubernetes", "argocd"],
     );
   });
 });
@@ -212,6 +234,11 @@ describe("registry emitEnvVars: behavioural equivalence with buildEnvVars", () =
     const oracle = buildEnvVars(resolved);
     const actual = buildEnvVarsViaRegistry(resolved);
     assert.deepStrictEqual(actual, oracle);
+  });
+
+  it("all five MCPs resolved: env map includes ARGOCD_BASE_URL from ArgoCD fixture", () => {
+    const env = buildEnvVarsViaRegistry(allMcpsResolved);
+    assert.strictEqual(env["ARGOCD_BASE_URL"], "https://argocd.example.com");
   });
 });
 
@@ -287,6 +314,15 @@ describe("registry buildOutroLines: behavioural equivalence with buildOutroLines
     assert.deepStrictEqual(actual, oracle);
   });
 
+  it("(f) all five MCPs resolved: outro includes 'ArgoCD: argo-prod' line", () => {
+    const effectiveSkipped: SkippedMap = {};
+    const lines = buildOutroLinesViaRegistry(allMcpsResolved, effectiveSkipped);
+    assert.ok(
+      lines.includes("ArgoCD: argo-prod"),
+      `Expected outro to include "ArgoCD: argo-prod" but got: ${JSON.stringify(lines)}`,
+    );
+  });
+
   it("(g) effectiveSkipped=false does not suppress success line: same as buildOutroLines", () => {
     const resolved: ResolvedConfig = {
       grafana: {
@@ -319,18 +355,20 @@ describe("registry buildSummaryLine: behavioural equivalence with formatSummaryL
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it("all four MCPs configured: same lines as formatSummaryLines", () => {
+  it("all five MCPs configured: same lines as formatSummaryLines", () => {
     const config: LauncherConfig = {
       selectedMcps: [
         "grafana",
         "cloudwatch",
         "gcp-observability",
         "kubernetes",
+        "argocd",
       ],
       grafana: { clusterId: "prod-us", role: "editor" },
       cloudwatch: { profile: "prod" },
       gcpObservability: { project: "gcp-prod" },
       kubernetes: { context: "prod-cluster" },
+      argocd: { clusterId: "argo-prod" },
     };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);

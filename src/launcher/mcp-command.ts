@@ -48,10 +48,12 @@ import { grafanaCommand } from "./mcp/grafana.js";
 import { cloudwatchCommand } from "./mcp/cloudwatch.js";
 import { gcpObservabilityCommand } from "./mcp/gcp-observability.js";
 import { kubernetesCommand } from "./mcp/kubernetes.js";
+import { argoCdCommand } from "./mcp/argocd.js";
 
 export const registry: McpCommand[] = [
   grafanaCommand,
   cloudwatchCommand,
   gcpObservabilityCommand,
   kubernetesCommand,
+  argoCdCommand,
 ];

@@ -25,11 +25,22 @@ export interface KubernetesConfig {
   context: string;
 }
 
+export interface ArgoCdCluster {
+  id: string;
+  url: string;
+  token: string;
+}
+
+export interface ArgoCdConfig {
+  cluster: ArgoCdCluster;
+}
+
 export interface ResolvedConfig {
   grafana?: GrafanaConfig;
   cloudwatch?: CloudWatchConfig;
   gcpObservability?: GcpObservabilityConfig;
   kubernetes?: KubernetesConfig;
+  argocd?: ArgoCdConfig;
 }
 
 export type SkippedMap = {
@@ -37,6 +48,7 @@ export type SkippedMap = {
   cloudwatch?: false | "loader-failed";
   gcp?: false | "loader-failed";
   kubernetes?: false | "loader-failed" | "switch-failed";
+  argocd?: false | "loader-failed";
 };
 
 export interface LauncherConfig {
@@ -54,4 +66,5 @@ export interface LauncherConfig {
   kubernetes?: {
     context: string;
   };
+  argocd?: { clusterId: string };
 }

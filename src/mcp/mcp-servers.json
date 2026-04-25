@@ -28,6 +28,13 @@
       "transport": "stdio",
       "prereq": "$HOME/.config/gcloud/application_default_credentials.json",
       "wrapper": "wrappers/mcp-gcp-observability.sh"
+    },
+    {
+      "name": "argocd",
+      "scope": "user",
+      "transport": "stdio",
+      "prereq": "$HOME/.config/argocd-accounts.json",
+      "wrapper": "wrappers/mcp-argocd.sh"
     }
   ]
 }

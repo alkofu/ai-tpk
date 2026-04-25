@@ -74,6 +74,7 @@ The project uses **oxlint** (TypeScript linter) and **oxfmt** (code formatter) t
 
 - `pnpm run lint` — Run oxlint to check for TypeScript errors and code quality issues
 - `pnpm run lint:md` — Run markdownlint across all Markdown files (ignores `node_modules`, `plans`, `lessons`, `docs/superpowers`, `claude/cache`)
+- `pnpm run spellcheck` — Run cspell across `*.{md,ts,sh}` files (excludes `node_modules`, `dist`, `pnpm-lock.yaml`, `plans`, `lessons`, `docs/superpowers`, `claude/cache`, `.git`, `.worktrees`)
 - `pnpm run format` — Apply oxfmt formatting to all TypeScript files in `src/`
 - `pnpm run format:check` — Check formatting without modifying files (used in CI)
 
@@ -87,7 +88,9 @@ Lefthook runs shellcheck (`pnpm run lint:sh`) on staged `.sh` files and markdown
 
 **Pre-Push Hook:**
 
-Lefthook runs lint, format, and Markdown lint checks on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md` (which also runs at pre-commit); shell file changes trigger `pnpm run lint:sh` (which also runs at pre-commit) and `pnpm run format:check:sh`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Shell and Markdown violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
+Lefthook runs lint, format, Markdown lint, shell lint/format, and spell-check on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; Markdown file changes trigger `pnpm run lint:md`; shell file changes trigger `pnpm run lint:sh` and `pnpm run format:check:sh`; Markdown, TypeScript, or shell file changes trigger `pnpm run spellcheck`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown and spelling violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
+
+**Note for sibling-worktree onboarding:** After pulling this change into existing worktrees, run `pnpm install` to pick up the new `cspell` dependency. Without this, the pre-push hook will fail with `cspell: command not found`.
 
 ### Code Quality: Shell Linting and Formatting
 
@@ -117,8 +120,8 @@ When making changes to this repository:
 2. **Make changes** — Edit TypeScript files in `src/installer/` or `src/launcher/`, or configuration files in `claude/`
 3. **Build and reinstall** — Run `pnpm run build` to rebuild the installer bundle, then `./install.sh` to deploy to `~/.claude/`, then `./clean-backups.sh` to remove stale backups. The `/build-and-install` repo-scope slash command automates all three steps in sequence.
 4. **Test** — Run `pnpm test` to execute the test suite
-5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, and `pnpm run lint:md` to verify Markdown style
-6. **Commit and push** — The pre-commit hook (Lefthook) runs shellcheck and markdownlint first; the pre-push hook runs the full lint and format suite. Both must pass before the respective git operation succeeds
+5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, `pnpm run lint:md` to verify Markdown style, and `pnpm run spellcheck` to verify spelling
+6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing
 
 ## Updating
 

@@ -35,6 +35,9 @@ jobs:
       - name: Lint markdown
         run: pnpm run lint:md
 
+      - name: Spell check
+        run: pnpm run spellcheck
+
       - name: Format check
         run: pnpm run format:check
 

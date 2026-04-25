@@ -50,7 +50,7 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 - [docs/HOOKS.md](/docs/HOOKS.md) — Settings, marketplaces, and the four Claude Code hooks (PermissionRequest, SessionStart, SubagentStop, Stop).
 - [docs/INSTRUCTIONS.md](/docs/INSTRUCTIONS.md) — How user-global (`claude/CLAUDE.md`) and project-level (`.claude/CLAUDE.md`) instructions interact.
 - [docs/MCP.md](/docs/MCP.md) — MCP server roster, configuration format, wrapper scripts, and stamp-based skipping.
-- [docs/MYCLAUDE.md](/docs/MYCLAUDE.md) — The `myclaude` session launcher: per-MCP wizards, env vars, and persistence.
+- [docs/TPK.md](/docs/TPK.md) — The `tpk` session launcher: per-MCP wizards, env vars, and persistence.
 - [docs/SKILLS.md](/docs/SKILLS.md) — Agents (brief), shared references catalog, and the skills catalog (mandatory + additional).
 - [docs/SLASH_COMMANDS.md](/docs/SLASH_COMMANDS.md) — Full table of installed slash commands and what each does.
 - [docs/CONTRIBUTING.md](/docs/CONTRIBUTING.md) — Continuous Integration and the configuration update workflow.

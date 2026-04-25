@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide covers the installation lifecycle for ai-tpk: cloning, running install.sh, setting up a development environment, updating, recovering or cleaning backups, and cleaning up agent-produced artifacts. For configuration details, see [docs/HOOKS.md](/docs/HOOKS.md), [docs/MCP.md](/docs/MCP.md), [docs/MYCLAUDE.md](/docs/MYCLAUDE.md), [docs/SKILLS.md](/docs/SKILLS.md), and [docs/SLASH_COMMANDS.md](/docs/SLASH_COMMANDS.md).
+This guide covers the installation lifecycle for ai-tpk: cloning, running install.sh, setting up a development environment, updating, recovering or cleaning backups, and cleaning up agent-produced artifacts. For configuration details, see [docs/HOOKS.md](/docs/HOOKS.md), [docs/MCP.md](/docs/MCP.md), [docs/TPK.md](/docs/TPK.md), [docs/SKILLS.md](/docs/SKILLS.md), and [docs/SLASH_COMMANDS.md](/docs/SLASH_COMMANDS.md).
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ The installer copies the whitelisted paths (`CLAUDE.md`, `settings.json`, `skill
 
 The `.claude/` directory is never synced by the installer — it remains project-local.
 
-**GitHub MCP setup:** To enable multi-account GitHub MCP servers, create `~/.config/github-pats.json` before (or after) running `install.sh` and set its mode to `0600`. See [docs/MCP.md § Server Roster](/docs/MCP.md#server-roster) for the file format, key naming rules, and operational details.
+**GitHub MCP setup:** To enable multi-account GitHub MCP servers, create `~/.config/tpk/github-pats.json` before (or after) running `install.sh` and set its mode to `0600`. See [docs/MCP.md § Server Roster](/docs/MCP.md#server-roster) for the file format, key naming rules, and operational details.
 
 ## Development Setup
 

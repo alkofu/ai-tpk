@@ -1,17 +1,30 @@
-# myclaude — Session Launcher
+# tpk — Session Launcher
 
-This document covers the `myclaude` interactive wizard: per-MCP configuration wizards, environment variables it sets, and persistence behavior.
+This document covers the `tpk` interactive wizard: per-MCP configuration wizards, environment variables it sets, and persistence behavior.
+
+## Migration Notes
+
+If you have used a previous version of this tool (before the rename to `tpk`), the following changes apply after running `./install.sh`:
+
+- The new launcher binary is installed as `~/bin/tpk`. The legacy binary at `~/bin/` under the old name is **not** removed by `install.sh` — you may delete it manually when you are ready.
+- Your saved launcher config is **copied** (not moved) from the old config directory to `~/.config/tpk/config.json` on install. The legacy file is preserved — you may delete it manually.
+- The three previously root-level config files are **copied** (not moved) into `~/.config/tpk/` on install. Each file is copied from `~/.config/<filename>` to `~/.config/tpk/<filename>`:
+  - `~/.config/tpk/argocd-accounts.json`
+  - `~/.config/tpk/github-pats.json`
+  - `~/.config/tpk/grafana-clusters.yaml`
+  - Legacy files at the old root-level `~/.config/` paths are preserved — you may delete them manually.
+- All three of `argocd-accounts.json`, `github-pats.json`, and `grafana-clusters.yaml` must henceforth live under `~/.config/tpk/` to be read by the launcher, installer, and MCP wrappers. The runtime code no longer reads from the old root-level paths.
 
 ## Overview
 
-The `myclaude` command is an interactive wizard that configures MCP environment variables and launches Claude with the Dungeon Master agent. Instead of manually exporting environment variables before each session, you run `myclaude` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
+The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with the Dungeon Master agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
 
-**Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/myclaude`.
+**Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/tpk`.
 
 **Usage:** From any directory, run:
 
 ```bash
-myclaude
+tpk
 ```
 
 The wizard will present a multi-step flow:
@@ -20,36 +33,36 @@ The wizard will present a multi-step flow:
 2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
 3. **Launch** — Claude opens with `--agent dungeonmaster` and the correct environment variables set
 
-**Persistence:** Your last-used selections are saved to `~/.config/myclaude/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
+**Persistence:** Your last-used selections are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
 
 ### `--skip`: launch immediately with saved config
 
-Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/myclaude/config.json`:
+Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`:
 
 ```bash
-myclaude --skip
+tpk --skip
 ```
 
 This is useful for scripts, hot-key launches, and users who never want to see the summary screen.
 
 **Strict failure behaviour** — `--skip` never falls back to the interactive flow. Instead it exits non-zero with a clear error message in two cases:
 
-- **No saved config:** If `~/.config/myclaude/config.json` contains no MCP selections, the launcher prints to stderr and exits with code 1:
+- **No saved config:** If `~/.config/tpk/config.json` contains no MCP selections, the launcher prints to stderr and exits with code 1:
   ```
-  No saved config found — run myclaude without --skip first to configure.
+  No saved config found — run tpk without --skip first to configure.
   ```
-- **Stale saved config:** If the saved config cannot be resolved (e.g. the saved Grafana cluster ID no longer exists in `~/.config/grafana-clusters.yaml`), the launcher prints to stderr and exits with code 1:
+- **Stale saved config:** If the saved config cannot be resolved (e.g. the saved Grafana cluster ID no longer exists in `~/.config/tpk/grafana-clusters.yaml`), the launcher prints to stderr and exits with code 1:
   ```
-  Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run myclaude without --skip to reconfigure.
+  Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run tpk without --skip to reconfigure.
   ```
 
-In both cases, run `myclaude` without `--skip` to (re)configure.
+In both cases, run `tpk` without `--skip` to (re)configure.
 
-**Unknown flags** are rejected with exit code 2. Any token other than `--skip` prints `Unknown flag: <flag>. Usage: myclaude [--skip]` to stderr and exits immediately.
+**Unknown flags** are rejected with exit code 2. Any token other than `--skip` prints `Unknown flag: <flag>. Usage: tpk [--skip]` to stderr and exits immediately.
 
 ### `batch-open-issues.sh`: open one tab per issue
 
-`batch-open-issues.sh` is a helper script installed to `~/.claude/scripts/` that accepts one or more GitHub issue numbers (or full issue URLs) and opens one new terminal tab or window per issue, each running `myclaude --skip '/feature-issue <n>'`.
+`batch-open-issues.sh` is a helper script installed to `~/.claude/scripts/` that accepts one or more GitHub issue numbers (or full issue URLs) and opens one new terminal tab or window per issue, each running `tpk --skip '/feature-issue <n>'`.
 
 **Usage:**
 
@@ -70,15 +83,15 @@ Each argument can be a bare integer (`42`) or a GitHub issue URL in the form `ht
 | 3 | Unsupported terminal (standalone Ghostty) or undetected terminal |
 | 4 | One or more tab spawns failed (partial success) |
 
-**Prerequisite:** Requires the `feat/forward-initial-command-to-claude-from-myclaude-cli` PR to be merged before use. That PR extends `myclaude` to accept an initial-message positional argument alongside `--skip`. If your installed `myclaude` predates that merge, the tabs will open but each session will fail silently — re-run `install.sh` against an updated checkout to fix.
+**Prerequisite:** Requires the initial-message forwarding PR to be merged before use. That PR extended the launcher to accept an initial-message positional argument alongside `--skip`. If your installed `tpk` predates that merge, the tabs will open but each session will fail silently — re-run `install.sh` against an updated checkout to fix.
 
-**Spawn success is not session success.** The script reports whether the tab was opened, not whether `myclaude` started correctly inside it. Verify each tab visually after launch.
+**Spawn success is not session success.** The script reports whether the tab was opened, not whether `tpk` started correctly inside it. Verify each tab visually after launch.
 
 The script header comment is the authoritative reference for usage, exit codes, and dependencies.
 
 ## Grafana Configuration
 
-Create `~/.config/grafana-clusters.yaml` with your cluster definitions. The file must use this YAML schema:
+Create `~/.config/tpk/grafana-clusters.yaml` with your cluster definitions. The file must use this YAML schema:
 
 ```yaml
 clusters:
@@ -133,7 +146,7 @@ When "Kubernetes" is selected, the launcher runs `kubectx` to list available con
 
 ## ArgoCD Configuration
 
-Create `~/.config/argocd-accounts.json` with your cluster definitions. The file must use this JSON schema:
+Create `~/.config/tpk/argocd-accounts.json` with your cluster definitions. The file must use this JSON schema:
 
 ```json
 {
@@ -142,11 +155,11 @@ Create `~/.config/argocd-accounts.json` with your cluster definitions. The file 
 }
 ```
 
-Each key is a cluster name and must match `^[a-zA-Z0-9_.-]+$`. **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/argocd-accounts.json`.** The wrapper refuses to read the file if the mode is broader than `0600`.
+Each key is a cluster name and must match `^[a-zA-Z0-9_.-]+$`. **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/tpk/argocd-accounts.json`.** The wrapper refuses to read the file if the mode is broader than `0600`.
 
 When "ArgoCD" is selected, the launcher reads this file and prompts you to select a cluster. The selected cluster name is stored in `~/.claude/.current-argocd-cluster` for the MCP wrapper and persisted for the next run. If the file is missing, empty, or unreadable, the launcher logs a warning, skips the ArgoCD MCP, and continues launching Claude with the remaining selections.
 
-## Environment Variables Set by myclaude
+## Environment Variables Set by tpk
 
 When you select Grafana with Viewer role, the launcher sets:
 ```

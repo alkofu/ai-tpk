@@ -15,4 +15,4 @@ When updating Claude configurations (agents, skills, commands, hooks, references
 3. Commit and push changes
 4. Pull on other machines to sync
 
-When adding new hooks, agents, or skills, update the relevant documentation file under `docs/` — `HOOKS.md` for hooks, `MCP.md` for MCP servers, `SKILLS.md` for agents, references, and skills, `SLASH_COMMANDS.md` for slash commands, `MYCLAUDE.md` for the session launcher, and `INSTRUCTIONS.md` for instruction-level changes.
+When adding new hooks, agents, or skills, update the relevant documentation file under `docs/` — `HOOKS.md` for hooks, `MCP.md` for MCP servers, `SKILLS.md` for agents, references, and skills, `SLASH_COMMANDS.md` for slash commands, `TPK.md` for the session launcher, and `INSTRUCTIONS.md` for instruction-level changes.

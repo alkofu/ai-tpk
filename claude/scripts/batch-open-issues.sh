@@ -18,7 +18,7 @@ set -euo pipefail
 #
 # Supported terminals:
 #   tmux   — new window via `tmux new-window -c "$PWD"`
-#   iTerm2 — new tab via AppleScript (inherits current session CWD)
+#   iTerm2 — new tab via AppleScript (CWD set explicitly via prepended cd; see workaround note below)
 #   cmux   — new workspace via `cmux new-workspace --cwd "$PWD" --name "issue-<n>" --command "<cmd>"`
 #            cmux binary is located via $PATH first, falling back to
 #            /Applications/cmux.app/Contents/Resources/bin/cmux
@@ -46,9 +46,11 @@ set -euo pipefail
 #   Successful tab spawn does NOT guarantee myclaude started successfully inside
 #   the tab — verify tabs visually.
 #
-# iTerm2 assumption:
-#   iTerm2 new tabs inherit $PWD via 'create tab with default profile' — no
-#   explicit cd needed.
+# iTerm2 workaround:
+#   iTerm2 new tabs created with 'create tab with default profile' inherit the
+#   working directory from the Default profile's setting, not from $PWD of the
+#   calling shell. This script works around that limitation by explicitly
+#   prepending `cd '$PWD' &&` to the command passed to write text.
 
 if [[ $# -eq 0 ]]; then
   printf 'Usage: batch-open-issues.sh <issue> [<issue> ...]\n' >&2
@@ -105,9 +107,10 @@ open_tab_for_issue() {
       return $?
       ;;
     iterm2)
-      osascript \
-        -e 'tell application "iTerm" to tell current window to create tab with default profile' \
-        -e "tell current session of current tab of current window to write text \"myclaude --skip '/feature-issue ${n}'\""
+      osascript -e "tell application \"iTerm\"
+  tell current window to create tab with default profile
+  tell current session of current tab of current window to write text \"cd '$PWD' && myclaude --skip '/feature-issue ${n}'\"
+end tell"
       return $?
       ;;
     cmux)

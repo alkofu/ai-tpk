@@ -79,7 +79,7 @@ myclaude --skip <initial-message>
 
 ## Testing
 
-Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`, `argocd.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -122,7 +122,7 @@ The launcher uses the GoF Command pattern to eliminate per-MCP branching. Each M
 
 ### McpCommand pattern
 
-`mcp-command-types.ts` defines the `McpCommand` interface and the `StaleResourceError` class. Each MCP module under `mcp/` exports a command instance implementing that interface. `mcp-command.ts` imports those four instances and exports the `registry: McpCommand[]` array in canonical order (Grafana → CloudWatch → GCP Observability → Kubernetes). It re-exports `McpCommand` and `StaleResourceError` as the public entry point for consumers; command implementations import from `mcp-command-types.ts` directly to avoid a circular dependency.
+`mcp-command-types.ts` defines the `McpCommand` interface and the `StaleResourceError` class. Each MCP module under `mcp/` exports a command instance implementing that interface. `mcp-command.ts` imports those five instances and exports the `registry: McpCommand[]` array in canonical order (Grafana → CloudWatch → GCP Observability → Kubernetes → ArgoCD). It re-exports `McpCommand` and `StaleResourceError` as the public entry point for consumers; command implementations import from `mcp-command-types.ts` directly to avoid a circular dependency.
 
 The `McpCommand` interface captures every per-MCP responsibility:
 
@@ -263,4 +263,6 @@ The selected context is saved under `kubernetes.context` in `~/.config/myclaude/
 - **`src/launcher/mcp-command-types.ts`** — `McpCommand` interface and `StaleResourceError` class
 - **`src/launcher/mcp-command.ts`** — Registry, re-exports of core types, and the "how to add a new MCP" comment block
 - **`src/launcher/mcp/kubernetes.ts`** — `kubectx` context listing, selection prompt, context switching, and `applyKubernetesContextSwitch`
+- **`src/launcher/mcp/argocd.ts`** — ArgoCD cluster listing from `~/.config/argocd-accounts.json`, cluster selection prompt, and dotfile write to `~/.claude/.current-argocd-cluster`
+- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper that reads `~/.claude/.current-argocd-cluster`, extracts the matching `url` and `token` from `~/.config/argocd-accounts.json` via `python3`, and launches `argocd-mcp@0.5.0`
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

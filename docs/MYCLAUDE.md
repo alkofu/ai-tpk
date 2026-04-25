@@ -16,7 +16,7 @@ myclaude
 
 The wizard will present a multi-step flow:
 
-1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, GCP Observability, and/or Kubernetes)
+1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, GCP Observability, Kubernetes, and/or ArgoCD)
 2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
 3. **Launch** — Claude opens with `--agent dungeonmaster` and the correct environment variables set
 
@@ -131,6 +131,21 @@ When "GCP Observability" is selected, the launcher runs `gcloud projects list` t
 
 When "Kubernetes" is selected, the launcher runs `kubectx` to list available contexts and prompts you to select one. The selected context name is stored in `~/.claude/.current-kube-context` and exported as `K8S_CONTEXT` for the Kubernetes MCP server. If the chosen context differs from the previously saved one, the launcher invokes `kubectx <context>` to switch the active context. If the switch fails, the launcher logs a warning, skips the Kubernetes MCP for this session, and neither `K8S_CONTEXT` nor `~/.claude/.current-kube-context` are written — your previously active context in `~/.kube/config` is used instead.
 
+## ArgoCD Configuration
+
+Create `~/.config/argocd-accounts.json` with your cluster definitions. The file must use this JSON schema:
+
+```json
+{
+  "prod": { "url": "https://argocd.prod.example.com", "token": "..." },
+  "staging": { "url": "https://argocd.staging.example.com", "token": "..." }
+}
+```
+
+Each key is a cluster name and must match `^[a-zA-Z0-9_.-]+$`. **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/argocd-accounts.json`.** The wrapper refuses to read the file if the mode is broader than `0600`.
+
+When "ArgoCD" is selected, the launcher reads this file and prompts you to select a cluster. The selected cluster name is stored in `~/.claude/.current-argocd-cluster` for the MCP wrapper and persisted for the next run. If the file is missing, empty, or unreadable, the launcher logs a warning, skips the ArgoCD MCP, and continues launching Claude with the remaining selections.
+
 ## Environment Variables Set by myclaude
 
 When you select Grafana with Viewer role, the launcher sets:
@@ -161,4 +176,6 @@ When you select Kubernetes:
 K8S_CONTEXT={context_name}
 ```
 
-These variables are passed to `claude --agent dungeonmaster`, and they flow through to all MCP server subprocesses.
+ArgoCD does not set environment variables. The selected cluster name is written to `~/.claude/.current-argocd-cluster` and read by the wrapper at MCP server boot time.
+
+These variables (and the dotfiles written by ArgoCD and Kubernetes) are passed to `claude --agent dungeonmaster`, and they flow through to all MCP server subprocesses.

@@ -38,6 +38,18 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Install shfmt
+        run: curl -sSfL https://raw.githubusercontent.com/mvdan/sh/master/install.sh | sh -s -- -b /usr/local/bin v3.8.0
+
+      - name: Lint shell
+        run: pnpm run lint:sh
+
+      - name: Format check shell
+        run: pnpm run format:check:sh
+
       - name: Build
         run: pnpm run build
 

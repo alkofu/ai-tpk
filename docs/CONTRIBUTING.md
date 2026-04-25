@@ -6,6 +6,10 @@ This document covers the Continuous Integration setup and the configuration upda
 
 Pull requests targeting `main` are validated by a GitHub Actions workflow at `.github/workflows/ci.yml`. See the workflow file for the specific checks that run. For formatting failures, run `pnpm run format` and commit the result.
 
+## Dependency Updates
+
+Dependency updates are automated via Dependabot (`.github/dependabot.yml`). On a weekly Monday schedule, Dependabot opens PRs for both the npm (pnpm-managed) and GitHub Actions ecosystems. Minor and patch updates are grouped into a single PR per ecosystem; major updates arrive as individual PRs so breaking changes can be reviewed in isolation. For the npm ecosystem, Dependabot uses `versioning-strategy: lockfile-only`, so its PRs update only `pnpm-lock.yaml` and leave `package.json` version ranges unchanged. No manual action is required — review and merge the Dependabot PRs as they appear.
+
 ## Configuration Updates
 
 When updating Claude configurations (agents, skills, commands, hooks, references, or settings):

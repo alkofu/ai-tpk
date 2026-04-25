@@ -10,6 +10,9 @@ import { loadConfig, saveConfig } from './config.js';
 // loadConfig / saveConfig (which call os.homedir() internally) never touch
 // the real user home. Getter functions re-derive paths at call time, after
 // the HOME swap has occurred.
+// These getters are deliberately re-defined locally rather than imported from
+// `./config.js` so the test computes paths independently and a bug in
+// `config.ts`'s path derivation cannot escape detection.
 // ---------------------------------------------------------------------------
 
 let originalHome: string | undefined;

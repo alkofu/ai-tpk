@@ -87,23 +87,35 @@ node -e "process.exit(require('./package.json').scripts?.['format:check:sh'] ? 0
 ```
 
 - If the `node -e` probe exits non-zero (script not declared in package.json) or if `package.json` does not exist: skip with note "No `format:check:sh` script declared in package.json — skipping shell format check." This is not a failure.
-- If the probe passes and `npm run format:check:sh` **passes** (exit code 0): proceed to Step 3.
+- If the probe passes and `npm run format:check:sh` **passes** (exit code 0): proceed to Step 2c.
 - If the probe passes and `npm run format:check:sh` **fails** (non-zero exit): stop immediately. Do not open the PR. Report the full output to the user and request that the formatting issues be fixed before retrying.
+
+### Step 2c — Run spellcheck
+
+Run the following probe as a standalone Bash call:
+
+```
+node -e "process.exit(require('./package.json').scripts?.['spellcheck'] ? 0 : 1)" 2>/dev/null && npm run spellcheck
+```
+
+- If the `node -e` probe exits non-zero (script not declared in package.json) or if `package.json` does not exist: skip with note "No `spellcheck` script declared in package.json — skipping spell check." This is not a failure.
+- If the probe passes and `npm run spellcheck` **passes** (exit code 0): proceed to Step 3.
+- If the probe passes and `npm run spellcheck` **fails** (non-zero exit): stop immediately. Do not open the PR. Report the full output to the user and request that the spelling issues be fixed before retrying.
 
 ### Step 3 — Proceed to open-pull-request
 
-Only after all of Steps 1, 1b, 2, and 2b pass (or are legitimately skipped) may you proceed to the `open-pull-request` skill to create the pull request.
+Only after all of Steps 1, 1b, 2, 2b, and 2c pass (or are legitimately skipped) may you proceed to the `open-pull-request` skill to create the pull request.
 
 ## Fail-Fast Behavior
 
 - Stop on the first failure. Do not run Step 2 if Step 1 failed; do not run Step 2b if Step 2 failed.
 - Report which check failed and include its full output so the user can act on it.
 - Do not attempt to open the PR until all checks pass.
-- The presence-check skip in Steps 1b and 2b (when `lint:sh` or `format:check:sh` is absent from `package.json`) is NOT a failure — it is a graceful no-op.
+- The presence-check skip in Steps 1b, 2b, and 2c (when `lint:sh`, `format:check:sh`, or `spellcheck` is absent from `package.json`) is NOT a failure — it is a graceful no-op.
 
-## Note on Shell Tooling Sub-Steps
+## Note on Optional Sub-Steps
 
-Optional shell-tooling sub-steps (Steps 1b and 2b) use a `node -e` probe against `package.json.scripts` to detect whether the relevant script is declared. This skill installs to `~/.claude/skills/` and runs in any repository; the probe ensures the gate degrades cleanly in repos without these scripts. `npm run` is used (not `pnpm run`) for package-manager-agnostic compatibility.
+Optional sub-steps (Steps 1b, 2b, and 2c) use a `node -e` probe against `package.json.scripts` to detect whether the relevant script is declared. This covers shell lint (`lint:sh`), shell format check (`format:check:sh`), and spell check (`spellcheck`). This skill installs to `~/.claude/skills/` and runs in any repository; the probe ensures the gate degrades cleanly in repos without these scripts. `npm run` is used (not `pnpm run`) for package-manager-agnostic compatibility.
 
 ## Relationship to Other Skills
 

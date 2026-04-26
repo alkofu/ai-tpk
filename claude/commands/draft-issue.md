@@ -107,18 +107,16 @@ file write plus a single script invocation. No code changes, no tests, no review
 {full Phase C rendered body, verbatim}
 ---end issue body---
 
-2. Sanitize the issue title for safe shell command construction: escape `\` → `\\` first, then
-   `"` → `\"`, `` ` `` → `` \` ``, `$` → `\$`. This produces `<sanitized-title>`.
+2. Run the creation script via the Bash tool, including each `--label review:*` only when the
+   corresponding label was selected in Phase C. Pass the derived title directly — the script
+   handles all quoting internally; no pre-escaping is needed:
 
-3. Run the creation script via the Bash tool, including each `--label review:*` only when the
-   corresponding label was selected in Phase C:
-
-   `~/.claude/scripts/draft-issue-create.sh --title "<sanitized-title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
+   `~/.claude/scripts/draft-issue-create.sh --title "<derived title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
 
    The script handles label creation (for any missing review:* labels), `gh issue create`,
    and the enhancement-missing retry internally.
 
-4. On success (script exits 0): stdout is the issue URL; any label warnings appear on stderr.
+3. On success (script exits 0): stdout is the issue URL; any label warnings appear on stderr.
    Relay the URL and any warnings to DM.
 
    On failure (non-zero exit): the body file has NOT been deleted (user may inspect it).

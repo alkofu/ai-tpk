@@ -7,19 +7,20 @@
 # draft-issue-create.sh — Create a GitHub issue via gh CLI, ensuring review:* labels exist.
 #
 # Usage:
-#   draft-issue-create.sh --title TITLE --body-file PATH [--label LABEL]...
+#   draft-issue-create.sh --title-file PATH --body-file PATH [--label LABEL]...
 #
-# TITLE        Issue title. Pass via --title "$variable" — bash quoting handles special
-#              characters; no pre-escaping needed inside the script.
-# PATH         Path to a file containing the issue body (markdown).
-# --label      Label to apply. May be repeated. Pass 'enhancement' and any selected
-#              'review:*' labels. Missing review:* labels are created automatically;
-#              non-review:* labels (e.g., 'enhancement') are included as-is.
+# --title-file PATH   Path to a file containing the issue title (single line, no trailing newline
+#                     required). Using a file bypasses shell parsing of special characters —
+#                     do NOT interpolate the title into the shell command line directly.
+# --body-file PATH    Path to a file containing the issue body (markdown).
+# --label LABEL       Label to apply. May be repeated. Pass 'enhancement' and any selected
+#                     'review:*' labels. Missing review:* labels are created automatically;
+#                     non-review:* labels (e.g., 'enhancement') are included as-is.
 #
-# On success:  prints the created issue URL to stdout; deletes the body file.
+# On success:  prints the created issue URL to stdout; deletes both the title and body files.
 #              Non-fatal warnings (e.g., label-creation failures, missing 'enhancement'
 #              label) may be written to stderr while still exiting 0.
-# On failure:  exits non-zero with diagnostics on stderr; leaves body file for inspection.
+# On failure:  exits non-zero with diagnostics on stderr; leaves both files for inspection.
 #
 # Requires bash >= 3.2 (ships with macOS). No bash 4+ idioms are used.
 
@@ -45,22 +46,26 @@ _review_label_description() {
 
 # ---------- argument parsing ----------
 
-title=""
+title_file=""
 body_file=""
 requested_labels=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --title)     title="$2";                   shift 2 ;;
-    --body-file) body_file="$2";               shift 2 ;;
-    --label)     requested_labels+=("$2");     shift 2 ;;
+    --title-file) title_file="$2";             shift 2 ;;
+    --body-file)  body_file="$2";              shift 2 ;;
+    --label)      requested_labels+=("$2");    shift 2 ;;
     *) printf 'draft-issue-create.sh: unknown argument: %s\n' "$1" >&2; exit 2 ;;
   esac
 done
 
-[[ -n "$title" ]]     || { printf 'draft-issue-create.sh: --title is required\n' >&2;                   exit 2; }
-[[ -n "$body_file" ]] || { printf 'draft-issue-create.sh: --body-file is required\n' >&2;               exit 2; }
-[[ -f "$body_file" ]] || { printf 'draft-issue-create.sh: body file not found: %s\n' "$body_file" >&2;  exit 2; }
+[[ -n "$title_file" ]]  || { printf 'draft-issue-create.sh: --title-file is required\n' >&2;                   exit 2; }
+[[ -f "$title_file" ]]  || { printf 'draft-issue-create.sh: title file not found: %s\n' "$title_file" >&2;     exit 2; }
+[[ -n "$body_file" ]]   || { printf 'draft-issue-create.sh: --body-file is required\n' >&2;                    exit 2; }
+[[ -f "$body_file" ]]   || { printf 'draft-issue-create.sh: body file not found: %s\n' "$body_file" >&2;       exit 2; }
+
+title="$(cat "$title_file")"
+[[ -n "$title" ]] || { printf 'draft-issue-create.sh: title file is empty: %s\n' "$title_file" >&2; exit 2; }
 
 # ---------- fetch existing labels — single call (avoids repeated gh label list per label) ----------
 
@@ -122,7 +127,7 @@ issue_url="$(gh issue create \
 
 if [[ $create_rc -eq 0 ]]; then
   printf '%s\n' "$issue_url"
-  rm -f "$body_file"
+  rm -f "$body_file" "$title_file"
   exit 0
 fi
 
@@ -148,7 +153,7 @@ if printf '%s' "$create_err" | grep -qi "enhancement"; then
   if [[ $retry_rc -eq 0 ]]; then
     printf 'Warning: enhancement label not found; issue filed without it.\n' >&2
     printf '%s\n' "$issue_url"
-    rm -f "$body_file"
+    rm -f "$body_file" "$title_file"
     exit 0
   fi
 

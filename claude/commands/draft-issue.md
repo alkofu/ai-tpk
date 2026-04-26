@@ -79,7 +79,7 @@ The issue body must reference these section names: Summary, Advisory context, Di
 
 **User confirmation before delegation:** After Phase C produces the rendered title, body, and label list, DM presents the proposed action to the user inline — without invoking Bitsmith yet. The presentation shows: (1) the derived title (≤ 80 characters), (2) the full rendered issue body, (3) the list of labels that will be applied. DM then asks the user a one-line confirmation: *"Ready to file this issue? Reply to proceed, adjust, or cancel."* On affirmative reply, DM proceeds to the Bitsmith delegation below. On rejection, the session ends — no Bitsmith delegation, no `gh` invocation. On adjustment, DM applies the requested changes and re-presents. Allow up to three adjustment rounds. If the user requests further adjustments beyond three rounds, suggest they accept the current draft and refine the issue after it is created.
 
-**Post-Phase-C Bitsmith delegation: "Create GitHub Issue Task":** After the user confirms, DM delegates to Bitsmith using the Agent tool. This delegation is modelled on the `--save-report` post-synthesis step at `dungeonmaster.md` lines 632–664. DM populates `{literal session timestamp string}`, `{derived title}`, the labels list, and `{full Phase C rendered body, verbatim}` from the values produced in earlier steps. `SESSION_TS` is passed as a literal string (the value DM captured in Phase 0), not as a shell variable — Bitsmith expands `$TMPDIR` and substitutes the literal `SESSION_TS` value when constructing the path it passes to the Write tool. Bitsmith's normal Bash and Write tools handle this; the execute allowlist does not apply because this is an ordinary Bitsmith delegation, not an execute dispatch.
+**Post-Phase-C Bitsmith delegation: "Create GitHub Issue Task":** After the user confirms, DM delegates to Bitsmith using the Agent tool. This delegation is modelled on the `--save-report` post-synthesis step at `dungeonmaster.md` lines 632–664. DM populates `{literal session timestamp string}`, `{derived title}`, the labels list, and `{full Phase C rendered body, verbatim}` from the values produced in earlier steps. `SESSION_TS` is passed as a literal string (the value DM captured in Phase 0), not as a shell variable — Bitsmith substitutes the literal `SESSION_TS` value when constructing the paths it passes to the Write tool. The title is passed via a temp file (not inline in the Bash command) to prevent shell interpretation of special characters. Bitsmith's normal Bash and Write tools handle this; the execute allowlist does not apply because this is an ordinary Bitsmith delegation, not an execute dispatch.
 
 The delegation prompt template DM sends to Bitsmith is:
 
@@ -93,25 +93,30 @@ file write plus a single script invocation. No code changes, no tests, no review
 - SESSION_TS: {literal session timestamp string, e.g., 20260425-150000}
 - Issue title: {derived title}
 - Labels: enhancement[, review:security][, review:performance][, review:complexity][, review:facts]
+- Title file path: ${TMPDIR:-/tmp}/draft-issue-title-${SESSION_TS}.txt
 - Body file path: ${TMPDIR:-/tmp}/draft-issue-body-${SESSION_TS}.md
-  (substitute the literal SESSION_TS value above when expanding this path; do NOT rely on shell
-  variable persistence across tool calls — pass the fully-expanded path to the Write tool.)
+  (substitute the literal SESSION_TS value above when expanding both paths; do NOT rely on shell
+  variable persistence across tool calls — pass the fully-expanded paths to the Write tool.)
 
 **Steps:**
 
-1. Write the issue body to the body file path. The body content is provided below between the
-   markers. Use the Write tool with the fully-expanded path (substitute the SESSION_TS value
-   provided above, and resolve $TMPDIR to /tmp if it is not set in your shell environment).
+1. Write two files using the Write tool (two separate Write tool calls):
+
+   a. Title file: write the derived issue title (single line, no trailing newline needed) to
+      the fully-expanded title file path. The title is: {derived title}
+
+   b. Body file: write the issue body content (between the markers below) to the fully-expanded
+      body file path. Resolve $TMPDIR to /tmp if it is not set in your shell environment.
 
 ---begin issue body---
 {full Phase C rendered body, verbatim}
 ---end issue body---
 
 2. Run the creation script via the Bash tool, including each `--label review:*` only when the
-   corresponding label was selected in Phase C. Pass the derived title directly — the script
-   handles all quoting internally; no pre-escaping is needed:
+   corresponding label was selected in Phase C. The title is read from the title file — no shell
+   escaping of the title is needed:
 
-   `~/.claude/scripts/draft-issue-create.sh --title "<derived title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
+   `~/.claude/scripts/draft-issue-create.sh --title-file "<expanded title file path>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
 
    The script handles label creation (for any missing review:* labels), `gh issue create`,
    and the enhancement-missing retry internally.
@@ -119,7 +124,7 @@ file write plus a single script invocation. No code changes, no tests, no review
 3. On success (script exits 0): stdout is the issue URL; any label warnings appear on stderr.
    Relay the URL and any warnings to DM.
 
-   On failure (non-zero exit): the body file has NOT been deleted (user may inspect it).
+   On failure (non-zero exit): the title and body files have NOT been deleted (user may inspect them).
    Relay the exact stderr, the exit code, and the body file path to DM.
 
 This is a one-shot delegation: no escalation loop, no retry. Return the result to DM as a

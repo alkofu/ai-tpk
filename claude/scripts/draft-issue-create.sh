@@ -30,17 +30,17 @@ set -euo pipefail
 
 _is_review_label() {
   case "$1" in
-    review:security|review:performance|review:complexity|review:facts) return 0 ;;
+    review:security | review:performance | review:complexity | review:facts) return 0 ;;
     *) return 1 ;;
   esac
 }
 
 _review_label_description() {
   case "$1" in
-    review:security)    printf '%s' "Routes implementation review through the security specialist (Riskmancer)" ;;
+    review:security) printf '%s' "Routes implementation review through the security specialist (Riskmancer)" ;;
     review:performance) printf '%s' "Routes implementation review through the performance specialist (Windwarden)" ;;
-    review:complexity)  printf '%s' "Routes implementation review through the complexity/design specialist (Knotcutter)" ;;
-    review:facts)       printf '%s' "Routes implementation review through the factual-validation specialist (Truthhammer)" ;;
+    review:complexity) printf '%s' "Routes implementation review through the complexity/design specialist (Knotcutter)" ;;
+    review:facts) printf '%s' "Routes implementation review through the factual-validation specialist (Truthhammer)" ;;
   esac
 }
 
@@ -52,20 +52,47 @@ requested_labels=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --title-file) title_file="$2";             shift 2 ;;
-    --body-file)  body_file="$2";              shift 2 ;;
-    --label)      requested_labels+=("$2");    shift 2 ;;
-    *) printf 'draft-issue-create.sh: unknown argument: %s\n' "$1" >&2; exit 2 ;;
+    --title-file)
+      title_file="$2"
+      shift 2
+      ;;
+    --body-file)
+      body_file="$2"
+      shift 2
+      ;;
+    --label)
+      requested_labels+=("$2")
+      shift 2
+      ;;
+    *)
+      printf 'draft-issue-create.sh: unknown argument: %s\n' "$1" >&2
+      exit 2
+      ;;
   esac
 done
 
-[[ -n "$title_file" ]]  || { printf 'draft-issue-create.sh: --title-file is required\n' >&2;                   exit 2; }
-[[ -f "$title_file" ]]  || { printf 'draft-issue-create.sh: title file not found: %s\n' "$title_file" >&2;     exit 2; }
-[[ -n "$body_file" ]]   || { printf 'draft-issue-create.sh: --body-file is required\n' >&2;                    exit 2; }
-[[ -f "$body_file" ]]   || { printf 'draft-issue-create.sh: body file not found: %s\n' "$body_file" >&2;       exit 2; }
+[[ -n "$title_file" ]] || {
+  printf 'draft-issue-create.sh: --title-file is required\n' >&2
+  exit 2
+}
+[[ -f "$title_file" ]] || {
+  printf 'draft-issue-create.sh: title file not found: %s\n' "$title_file" >&2
+  exit 2
+}
+[[ -n "$body_file" ]] || {
+  printf 'draft-issue-create.sh: --body-file is required\n' >&2
+  exit 2
+}
+[[ -f "$body_file" ]] || {
+  printf 'draft-issue-create.sh: body file not found: %s\n' "$body_file" >&2
+  exit 2
+}
 
 title="$(cat "$title_file")"
-[[ -n "$title" ]] || { printf 'draft-issue-create.sh: title file is empty: %s\n' "$title_file" >&2; exit 2; }
+[[ -n "$title" ]] || {
+  printf 'draft-issue-create.sh: title file is empty: %s\n' "$title_file" >&2
+  exit 2
+}
 
 # ---------- fetch existing labels — single call (avoids repeated gh label list per label) ----------
 
@@ -88,8 +115,8 @@ if [[ ${#requested_labels[@]} -gt 0 ]]; then
       else
         create_err=""
         if create_err="$(gh label create "$label" \
-            --description "$(_review_label_description "$label")" \
-            --color ededed 2>&1)"; then
+          --description "$(_review_label_description "$label")" \
+          --color ededed 2>&1)"; then
           final_labels+=("$label")
         else
           first_err="$(printf '%s' "$create_err" | head -1)"

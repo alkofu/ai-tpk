@@ -69,7 +69,7 @@ The issue body must reference these section names: Summary, Advisory context, Di
 
 **Label selection:** Select labels to apply to the issue as follows:
 
-- The `enhancement` label is always applied (it is a GitHub default that exists in every repo).
+- The `enhancement` label is always applied (it exists in most repos as a GitHub default).
 - Conditionally apply each `review:*` label by inspecting the user's `$ARGUMENTS` AND the Phase B clarification answers for signal keywords:
   - `review:security` — apply when the description or clarification mentions: auth, authentication, authorization, password, token, credential, secret, encryption, CSRF, XSS, SQL injection, sandbox escape, privilege, permission boundary.
   - `review:performance` — apply when the description or clarification mentions: latency, throughput, hot path, N+1, query optimisation, memory pressure, caching, indexing, batch, bulk, concurrency.
@@ -77,7 +77,7 @@ The issue body must reference these section names: Summary, Advisory context, Di
   - `review:facts` — apply when the description or clarification makes load-bearing claims about external systems, third-party APIs, library behaviour, version-specific features, or anything where citation accuracy matters.
 - If unsure, omit the label. Reviewers can be added later by editing the issue. Over-labelling routes work to specialists unnecessarily; under-labelling is recoverable.
 
-**User confirmation before delegation:** After Phase C produces the rendered title, body, and label list, DM presents the proposed action to the user inline — without invoking Bitsmith yet. The presentation shows: (1) the derived title (≤ 80 characters), (2) the full rendered issue body, (3) the list of labels that will be applied. DM then asks the user a one-line confirmation: *"Ready to file this issue? Reply to proceed, adjust, or cancel."* On affirmative reply, DM proceeds to the Bitsmith delegation below. On rejection, the session ends — no Bitsmith delegation, no `gh` invocation. On adjustment, DM applies the requested changes and re-presents.
+**User confirmation before delegation:** After Phase C produces the rendered title, body, and label list, DM presents the proposed action to the user inline — without invoking Bitsmith yet. The presentation shows: (1) the derived title (≤ 80 characters), (2) the full rendered issue body, (3) the list of labels that will be applied. DM then asks the user a one-line confirmation: *"Ready to file this issue? Reply to proceed, adjust, or cancel."* On affirmative reply, DM proceeds to the Bitsmith delegation below. On rejection, the session ends — no Bitsmith delegation, no `gh` invocation. On adjustment, DM applies the requested changes and re-presents. Allow up to three adjustment rounds. If the user requests further adjustments beyond three rounds, suggest they accept the current draft and refine the issue after it is created.
 
 **Post-Phase-C Bitsmith delegation: "Create GitHub Issue Task":** After the user confirms, DM delegates to Bitsmith using the Agent tool. This delegation is modelled on the `--save-report` post-synthesis step at `dungeonmaster.md` lines 632–664. DM populates `{literal session timestamp string}`, `{derived title}`, the labels list, and `{full Phase C rendered body, verbatim}` from the values produced in earlier steps. `SESSION_TS` is passed as a literal string (the value DM captured in Phase 0), not as a shell variable — Bitsmith expands `$TMPDIR` and substitutes the literal `SESSION_TS` value when constructing the path it passes to the Write tool. Bitsmith's normal Bash and Write tools handle this; the execute allowlist does not apply because this is an ordinary Bitsmith delegation, not an execute dispatch.
 
@@ -103,7 +103,7 @@ Create a GitHub issue using the gh CLI. This is a small file write plus a single
 {full Phase C rendered body, verbatim}
 ---end issue body---
 
-2. Check existing repo labels: run `gh label list --json name -q '.[].name'` via the Bash tool. For each `review:*` label in the Labels list above that is missing from the repo, attempt to create it via:
+2. Check existing repo labels: run `gh label list --json name -q '.[].name'` via the Bash tool. If `gh label list` fails for any reason, treat the existing-label set as empty (proceed to attempt creation of every selected `review:*` label — the per-label fallback below handles any resulting create failures). For each `review:*` label in the Labels list above that is missing from the repo, attempt to create it via:
    `gh label create <name> --description '<description>' --color ededed`
    using these exact descriptions (one per label):
      - review:security → `Routes implementation review through the security specialist (Riskmancer)`
@@ -112,11 +112,15 @@ Create a GitHub issue using the gh CLI. This is a small file write plus a single
      - review:facts → `Routes implementation review through the factual-validation specialist (Truthhammer)`
    The `enhancement` label is a GitHub default and does not need creation.
 
-   **Permission-denied fallback:** if any `gh label create` invocation fails because the gh token lacks `repo:write` or admin access, do NOT abort. Drop that specific label from the labels list, log a one-line warning to the eventual user-facing summary (e.g., `Warning: could not create label review:security (permission denied). Issue will be filed without this label. Add it manually via the GitHub UI if you have repo admin access.`), and continue.
+   **Label-create fallback:** if any `gh label create` invocation fails for **any reason** (permission denied, label already exists due to a concurrent session, network error, etc.), do NOT abort. Drop that specific label from the labels list, log a one-line warning to the eventual user-facing summary naming the label and the stderr (e.g., `Warning: could not create label review:security (<stderr first line>). Issue will be filed without this label.`), and continue.
 
-3. Run the issue-creation command via the Bash tool:
-   `gh issue create --title "<title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
+3. Before constructing the `gh issue create` Bash command, sanitize the issue title by escaping any double-quote characters (`"`) as `\"`, and any backtick (`` ` ``), `$`, and backslash (`\`) characters as their backslash-escaped equivalents (`` \` ``, `\$`, `\\`). Wrap the sanitized title in double quotes in the Bash command: `--title "<sanitized-title>"`.
+
+   Run the issue-creation command via the Bash tool:
+   `gh issue create --title "<sanitized-title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
    Each `--label review:*` flag is included only when the corresponding label was selected AND was either pre-existing or successfully created in step 2.
+
+   If `gh issue create` fails with an error indicating that the `enhancement` label does not exist, retry the command without `--label enhancement` and note the degradation in the return summary (e.g., `Warning: enhancement label not found; issue filed without it.`).
 
 4. Capture stdout (the issue URL printed by gh on success).
 

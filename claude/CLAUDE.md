@@ -28,3 +28,11 @@ All Bash tool usage is governed by `claude/references/bash-style.md`. The rules 
 - Before starting work, surface any non-obvious assumptions you are making so the user can correct them.
 - If a simpler approach exists than what was requested, say so before proceeding.
 - When you are confused or lack sufficient context, stop and ask. Do not guess.
+
+## Drafting GitHub Issues
+
+The `/draft-issue` command runs an advisory-pipeline workflow that turns a short feature description into a filed GitHub issue, optionally clarifying scope through DM-direct Q&A and using `gh issue create` (delegated to Bitsmith) to file the issue.
+
+Use `/draft-issue` to capture an idea for later implementation. Use `/feature-issue <issue-number-or-url>` to pick up a filed issue and start the constructive planning pipeline. Use `/feature` to start a fresh planning session without filing an issue first.
+
+`/draft-issue` does not create a worktree, a plan file, or a branch. The only side effect is the GitHub issue creation, which is preceded by an inline confirmation prompt.

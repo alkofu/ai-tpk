@@ -86,49 +86,46 @@ The delegation prompt template DM sends to Bitsmith is:
 ```
 ## Create GitHub Issue Task
 
-Create a GitHub issue using the gh CLI. This is a small file write plus a single gh invocation (and optionally one or more `gh label create` calls). No code changes, no tests, no review needed.
+Create a GitHub issue using the gh CLI via the draft-issue-create.sh script. This is a small
+file write plus a single script invocation. No code changes, no tests, no review needed.
 
 **Inputs:**
 - SESSION_TS: {literal session timestamp string, e.g., 20260425-150000}
 - Issue title: {derived title}
 - Labels: enhancement[, review:security][, review:performance][, review:complexity][, review:facts]
 - Body file path: ${TMPDIR:-/tmp}/draft-issue-body-${SESSION_TS}.md
-  (substitute the literal SESSION_TS value above when expanding this path; do NOT rely on shell variable persistence across tool calls — pass the fully-expanded path to the Write tool.)
+  (substitute the literal SESSION_TS value above when expanding this path; do NOT rely on shell
+  variable persistence across tool calls — pass the fully-expanded path to the Write tool.)
 
 **Steps:**
 
-1. Write the issue body to the body file path. The body content is provided below between the markers. Use the Write tool with the fully-expanded path (substitute the SESSION_TS value provided above, and resolve $TMPDIR to /tmp if it is not set in your shell environment).
+1. Write the issue body to the body file path. The body content is provided below between the
+   markers. Use the Write tool with the fully-expanded path (substitute the SESSION_TS value
+   provided above, and resolve $TMPDIR to /tmp if it is not set in your shell environment).
 
 ---begin issue body---
 {full Phase C rendered body, verbatim}
 ---end issue body---
 
-2. Check existing repo labels: run `gh label list --json name -q '.[].name'` via the Bash tool. If `gh label list` fails for any reason, treat the existing-label set as empty (proceed to attempt creation of every selected `review:*` label — the per-label fallback below handles any resulting create failures). For each `review:*` label in the Labels list above that is missing from the repo, attempt to create it via:
-   `gh label create <name> --description '<description>' --color ededed`
-   using these exact descriptions (one per label):
-     - review:security → `Routes implementation review through the security specialist (Riskmancer)`
-     - review:performance → `Routes implementation review through the performance specialist (Windwarden)`
-     - review:complexity → `Routes implementation review through the complexity/design specialist (Knotcutter)`
-     - review:facts → `Routes implementation review through the factual-validation specialist (Truthhammer)`
-   The `enhancement` label is a GitHub default and does not need creation.
+2. Sanitize the issue title for safe shell command construction: escape `\` → `\\` first, then
+   `"` → `\"`, `` ` `` → `` \` ``, `$` → `\$`. This produces `<sanitized-title>`.
 
-   **Label-create fallback:** if any `gh label create` invocation fails for **any reason** (permission denied, label already exists due to a concurrent session, network error, etc.), do NOT abort. Drop that specific label from the labels list, log a one-line warning to the eventual user-facing summary naming the label and the stderr (e.g., `Warning: could not create label review:security (<stderr first line>). Issue will be filed without this label.`), and continue.
+3. Run the creation script via the Bash tool, including each `--label review:*` only when the
+   corresponding label was selected in Phase C:
 
-3. Before constructing the `gh issue create` Bash command, sanitize the issue title by escaping any double-quote characters (`"`) as `\"`, and any backtick (`` ` ``), `$`, and backslash (`\`) characters as their backslash-escaped equivalents (`` \` ``, `\$`, `\\`). Wrap the sanitized title in double quotes in the Bash command: `--title "<sanitized-title>"`.
+   `~/.claude/scripts/draft-issue-create.sh --title "<sanitized-title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
 
-   Run the issue-creation command via the Bash tool:
-   `gh issue create --title "<sanitized-title>" --body-file "<expanded body file path>" --label enhancement [--label review:security] [--label review:performance] [--label review:complexity] [--label review:facts]`
-   Each `--label review:*` flag is included only when the corresponding label was selected AND was either pre-existing or successfully created in step 2.
+   The script handles label creation (for any missing review:* labels), `gh issue create`,
+   and the enhancement-missing retry internally.
 
-   If `gh issue create` fails with an error indicating that the `enhancement` label does not exist, retry the command without `--label enhancement` and note the degradation in the return summary (e.g., `Warning: enhancement label not found; issue filed without it.`).
+4. On success (script exits 0): stdout is the issue URL; any label warnings appear on stderr.
+   Relay the URL and any warnings to DM.
 
-4. Capture stdout (the issue URL printed by gh on success).
+   On failure (non-zero exit): the body file has NOT been deleted (user may inspect it).
+   Relay the exact stderr, the exit code, and the body file path to DM.
 
-5. On success: delete the body file. Return to DM the issue URL plus any permission-denied warnings from step 2.
-
-6. On gh failure (non-zero exit from `gh issue create`): do NOT delete the body file (the user may want to inspect it). Return to DM the exact stderr, the non-zero exit code, and the body file path.
-
-This is a one-shot delegation: no escalation loop, no retry. Return the result to DM as a structured response.
+This is a one-shot delegation: no escalation loop, no retry. Return the result to DM as a
+structured response.
 ```
 
 **Closes-keyword note:** `/draft-issue` does NOT inject a `Closes #N` line into the issue body itself — the issue cannot reference its own number. The `Closes #N` keyword belongs in the PR that later implements the issue. `/feature-issue` already injects this line into its constructed task description (see `feature-issue.md` line 25). This is a deliberate non-action — the absence is not a bug.

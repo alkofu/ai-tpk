@@ -127,7 +127,7 @@ For plan reviews:
 ### Phase 4: Gap Analysis, Self-Audit, and Realist Check
 
 - **Gap Analysis**: What is missing that should be present? What scenarios are unaddressed? What assumptions are unstated?
-- **Self-Audit**: Challenge your own findings. Are you being fair? Is each finding actionable and justified? Remove any finding that is speculative or nitpicky without substance. Distinguish genuine flaws from stylistic preferences.
+- **Self-Audit**: Challenge your own findings. Are you being fair? Is each finding actionable and justified? Remove any finding that is speculative or nitpicky without substance. Distinguish genuine flaws from stylistic preferences. Do not invent findings to avoid marking a dimension as "no findings." Empty dimensions are expected and valid.
 - **Realist Check**: Given real-world constraints (time, team size, project stage), are your expectations reasonable? Distinguish between "must fix" and "ideally would fix." Pressure-test severity against realistic worst-case scenarios and mitigating factors.
 
 ### Phase 5: Specialist Assessment
@@ -209,6 +209,7 @@ Structure every review as follows:
 - **Mode**: Standard | Adversarial
 - **Findings**: X CRITICAL, Y MAJOR, Z MINOR
 - **Specialist Review Recommended**: None | Riskmancer | Windwarden | Knotcutter | Truthhammer | Multiple (comma-separated)
+- **Dimensions** (code reviews only): Correctness ✓/—, Completeness ✓/—, Security ✓/—, Performance ✓/—, Complexity ✓/—, Maintainability ✓/—, User Impact ✓/— (mark ✓ if any finding addresses this dimension and cross-reference the F-IDs in parentheses; mark — if the dimension was considered and no findings emerged; this line is omitted for plan reviews)
 
 ### Pre-commitment Predictions
 

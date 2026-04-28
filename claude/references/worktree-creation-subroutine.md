@@ -50,7 +50,48 @@ This subroutine is **invoked explicitly** by routing branches in `claude/agents/
 
 4. **Set session context:** The DM carries `WORKTREE_PATH`, `WORKTREE_BRANCH`, `SESSION_TS`, `SESSION_SLUG`, and `REPO_SLUG` in its conversation memory (the LLM's context window) and explicitly includes them in every delegation prompt to sub-agents for the remainder of the session. No external storage mechanism is needed or used. If a session is interrupted and context is lost, run `git worktree list` to recover `WORKTREE_PATH` and `WORKTREE_BRANCH`. Inspect `~/.ai-tpk/plans/{REPO_SLUG}/` to recover `SESSION_TS` and `SESSION_SLUG` from the plan filename. Recover `REPO_SLUG` via `basename $(git rev-parse --show-toplevel)`. If a prior worktree's variables are present in conversation memory (e.g., from a session that ended with `/open-pr` rather than `/merged`), overwrite them with the new values — the DM never tracks multiple active worktrees simultaneously.
 
-5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
+4a. **Write the session-context sidecar.** Delegate a single Bash invocation to Bitsmith with the following body (after DM applies the substitutions described below). This write is fire-and-forget — a failure does not abort the subroutine.
+
+   **DM substitution convention:** Before sending the bash block to Bitsmith, DM substitutes:
+- `{SESSION_TS}` → the literal session-timestamp string (e.g., `20260427-190621`)
+- `{SESSION_SLUG}` → the literal session-slug string (e.g., `send-osc-session-metadata`)
+- `{WORKTREE_PATH}` → the literal absolute worktree path returned by step 2
+- `ISSUE_NUM_VALUE` → DM assigns `""` if no `/feature-issue` was used, or the literal integer string (e.g., `"42"`) if DM's session context contains `SESSION_ISSUE_NUM` from a prior `/feature-issue` invocation. This is a bash variable assigned in the script body — NOT a `{...}` placeholder and NOT a runtime env var.
+
+   **Authoritative sidecar-write block** (no `$ENV.*`, no dead `--argjson` flags, atomic `tmp-then-mv`):
+
+   ```bash
+   # Substitution: DM substitutes {WORKTREE_PATH}, {SESSION_TS}, {SESSION_SLUG}
+   # as literal strings at delegation time. ISSUE_NUM_VALUE is set by DM in the
+   # script body — "" if no /feature-issue was used, or the literal integer (e.g. "42").
+   # These are NOT runtime env vars.
+   ISSUE_NUM_VALUE=""   # DM sets to e.g. "42" if /feature-issue was used
+
+   WORKTREE_SLUG=$(basename "{WORKTREE_PATH}")
+   SIDECAR="$HOME/.ai-tpk/session-context/by-worktree/${WORKTREE_SLUG}.json"
+   TMP="${SIDECAR}.tmp.$$"
+   mkdir -p "$(dirname "$SIDECAR")"
+   [ -f "$SIDECAR" ] || echo '{}' > "$SIDECAR"
+
+   if [ -n "$ISSUE_NUM_VALUE" ]; then
+     jq --arg ts "{SESSION_TS}" --arg slug "{SESSION_SLUG}" --argjson issue "$ISSUE_NUM_VALUE" \
+        '. + {SESSION_TS: $ts, SESSION_SLUG: $slug, ISSUE_NUM: $issue}' \
+        "$SIDECAR" > "$TMP" && mv "$TMP" "$SIDECAR" || rm -f "$TMP"
+   else
+     jq --arg ts "{SESSION_TS}" --arg slug "{SESSION_SLUG}" \
+        '. + {SESSION_TS: $ts, SESSION_SLUG: $slug}' \
+        "$SIDECAR" > "$TMP" && mv "$TMP" "$SIDECAR" || rm -f "$TMP"
+   fi
+   ```
+
+   Properties:
+- `--arg` for string fields (`SESSION_TS`, `SESSION_SLUG`), `--argjson` for integer field (`ISSUE_NUM`) — satisfies the sidecar schema type contract.
+- Atomic `tmp-then-mv` write — hook always sees either old or new sidecar, never a partial write.
+- Idempotent merge via `jq '. + {…}'` — preserves pre-existing fields (e.g. `PR_NUM` if somehow written earlier).
+- Sidecar path `~/.ai-tpk/session-context/by-worktree/{worktree-slug}.json` is session-namespaced (per-worktree-slug, unique per session). This is the mirror of the canonical anti-pattern from PR #187 (`~/.ai-tpk/session-context/current.json` — singleton, invalid); this design is per-worktree-slug, not singleton.
+- Advisory sessions do NOT invoke this step — the hook handles advisory sessions locally without a sidecar.
+
+1. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
 **After the subroutine completes, control returns to the routing branch that invoked it.**
 

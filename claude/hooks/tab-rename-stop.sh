@@ -21,6 +21,20 @@ TRANSCRIPT_PATH=$(echo "$STDIN_DATA" | jq -r '.transcript_path // ""' 2>/dev/nul
 CWD=$(echo "$STDIN_DATA" | jq -r '.cwd // ""' 2>/dev/null)
 CWD="${CWD:-$PWD}"
 
+# OSC 6800 session-metadata emission (runs on every Stop, regardless of single-fire title guard)
+# Source both libraries early so we can call --name check + OSC 6800 emit before the TITLE_FILE guard.
+# shellcheck source=lib-tab-rename.sh
+source "$(dirname "$0")/lib-tab-rename.sh"
+# shellcheck source=lib-osc-session-metadata.sh
+source "$(dirname "$0")/lib-osc-session-metadata.sh"
+
+# Suppress OSC 6800 when --name is detected in process ancestry (mirrors tab-rename suppression).
+if ! _tab_rename_check_name_override; then
+  _osc_session_metadata_emit "$CWD"
+fi
+
+# --- existing single-fire TITLE_FILE guard, transcript validation, and tab-rename logic continues below ---
+
 # Single-fire guard: if a title file already exists for this session, exit immediately
 TITLE_DIR="$HOME/.claude/session-titles"
 TITLE_FILE="$TITLE_DIR/$SESSION_ID"
@@ -32,10 +46,6 @@ fi
 if [ -z "$TRANSCRIPT_PATH" ] || [ "$TRANSCRIPT_PATH" = "null" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
   exit 0
 fi
-
-# Source shared tab-rename library
-# shellcheck source=lib-tab-rename.sh
-source "$(dirname "$0")/lib-tab-rename.sh"
 
 # Check for --name override via process ancestry (walk up to 3 levels)
 if _tab_rename_check_name_override; then

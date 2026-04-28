@@ -100,13 +100,15 @@ Auto-approved entries include the `[auto-approved]` marker; calls falling throug
 - Logged + normal dialog: `Write to /tmp/output.txt` (path not in allowed set — falls through to normal dialog)
 - Allowed: `echo -n hello`, `git log -n 5` (context-aware: `-n` only blocked in `git commit` context)
 
-#### SessionStart Hook - Terminal Tab Title Restore
+#### SessionStart Hook - Terminal Tab Title Restore and OSC 6800 Emit
 
 Runs at the start of every Claude Code session. For resumed sessions, restores the previously stored tab title. For fresh sessions (e.g., after `/new`), resets the tab to the repo or directory name so the previous session's stale title does not persist until the Stop hook generates a new one. Title generation from conversation content is handled by the Stop hook (`tab-rename-stop.sh`).
 
+On every SessionStart (before the title restore logic), the hook emits an OSC 6800 escape sequence carrying structured session metadata. See "OSC 6800 Session Metadata" below for the payload schema and emission rules.
+
 **Purpose:** Ensures the tab title always reflects the current session on startup — either a stored title for resumed sessions or a neutral repo/directory default for fresh sessions. Script: `claude/hooks/session-start.sh`.
 
-**Non-obvious behaviors:** `--name` override is detected via process ancestry (walks up to 3 levels); `-n` is intentionally excluded to avoid false positives. Fresh-session neutral title is derived from the git repo basename when inside a repo, or the directory basename otherwise — matching the context used by the Stop hook. The neutral default is not persisted to `~/.claude/session-titles/`, so the Stop hook's single-fire guard is not tripped and the AI-generated title replaces it after the first exchange.
+**Non-obvious behaviors:** `--name` override is detected via process ancestry (walks up to 3 levels); `-n` is intentionally excluded to avoid false positives. When `--name` is detected the hook exits immediately — OSC 6800 is suppressed along with the title restore. Fresh-session neutral title is derived from the git repo basename when inside a repo, or the directory basename otherwise — matching the context used by the Stop hook. The neutral default is not persisted to `~/.claude/session-titles/`, so the Stop hook's single-fire guard is not tripped and the AI-generated title replaces it after the first exchange.
 
 **Supported terminals and detection:**
 
@@ -161,14 +163,16 @@ Each JSONL line in `~/.ai-tpk/logs/{REPO_SLUG}/talekeeper-{session_id}.jsonl` co
 
 The `agent_transcript_path` field enables downstream tools (like Everwise Scout) to discover and read raw subagent transcripts for deeper analysis. The token fields enable Everwise to identify agents or sessions with disproportionate token consumption without requiring direct transcript access.
 
-#### Stop Hook - Terminal Tab Title Generation
+#### Stop Hook - Terminal Tab Title Generation and OSC 6800 Emit
 
-Runs after every Claude turn (Stop hook) to generate and store an AI-derived terminal tab title. Title generation fires once per session — subsequent Stop hook invocations are no-ops once a title file exists for the session.
+Runs after every Claude turn (Stop hook) to generate and store an AI-derived terminal tab title. Title generation fires once per session — subsequent Stop hook invocations are no-ops once a title file exists for the session. On every Stop invocation (before the single-fire title guard), the hook also emits an OSC 6800 escape sequence carrying structured session metadata. See "OSC 6800 Session Metadata" below for the payload schema and emission rules.
 
 **Purpose:** Generates an AI-derived terminal tab title after the first exchange and stores it for future session resume. Script: `claude/hooks/tab-rename-stop.sh`.
 
 **Non-obvious behaviors:**
-- Single-fire guard: once `~/.claude/session-titles/{session_id}` exists, the hook exits immediately — subsequent Stop invocations are no-ops.
+- OSC 6800 emission runs before the single-fire title guard, so the sidecar is always read and metadata is always broadcast on every turn regardless of whether a title already exists.
+- `--name` suppression for OSC 6800: emission is skipped (via the same `_tab_rename_check_name_override` function) when `--name` is detected. The single-fire title guard still runs independently — `--name` does not suppress that path.
+- Single-fire guard: once `~/.claude/session-titles/{session_id}` exists, the hook exits immediately after OSC 6800 emission — subsequent Stop invocations do not re-generate the title.
 - `--name` sentinel: if launched with `--name`, the hook writes an *empty* sentinel file. This locks the title to whatever the terminal already shows and causes `session-start.sh` to exit silently on resume.
 - Minimum 1 user message required before title generation — sessions that end before the first exchange produce no title.
 - Uses `claude -p --bare --model haiku` in pipe mode to generate the title; pipe mode (`-p`) does not fire session hooks, preventing recursive invocation.
@@ -176,3 +180,61 @@ Runs after every Claude turn (Stop hook) to generate and store an AI-derived ter
 **Supported terminals and detection:** Same table as the SessionStart hook above.
 
 **Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title generation does not block the user between turns.
+
+---
+
+## OSC 6800 Session Metadata
+
+`lib-osc-session-metadata.sh` is a shared library sourced by both `session-start.sh` and `tab-rename-stop.sh`. It exports a single function, `_osc_session_metadata_emit`, which writes an OSC 6800 escape sequence to `/dev/tty` carrying a JSON payload of session context. The ai-dungeon terminal app listens for this sequence to receive structured session state without polling or IPC.
+
+**When it fires:**
+
+| Hook | Fires | Suppressed by |
+|------|-------|---------------|
+| SessionStart | Every SessionStart | `--name` flag detected in process ancestry |
+| Stop (`tab-rename-stop.sh`) | Every Stop turn | `--name` flag detected in process ancestry |
+
+The sequence is emitted before the tab-rename single-fire guard in the Stop hook, so it broadcasts on every turn, not just the first.
+
+**Modes:**
+
+The function operates in one of two modes based on whether the `cwd` is inside a `.worktrees/` path:
+
+- **Worktree mode:** Reads `SESSION_TS`, `SESSION_SLUG`, `PR_NUM`, and `ISSUE_NUM` from the session-context sidecar (`~/.ai-tpk/session-context/by-worktree/{worktree-slug}.json`). If the sidecar is missing or lacks the required fields, the function returns silently — no sequence is emitted.
+- **Advisory mode:** Computes `SESSION_TS` and `SESSION_SLUG` locally (current timestamp and directory basename). `PR_NUM` and `ISSUE_NUM` are omitted.
+
+**Escape sequence format:**
+
+```
+ESC ] 6800 ; {JSON} BEL
+```
+
+The JSON payload uses `with_entries(select(.value != null))` — fields that are null or empty are omitted entirely. Required fields (`SESSION_TS`, `SESSION_SLUG`, `WORKING_DIRECTORY`) are validated non-empty before emission.
+
+**Payload schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `SESSION_TS` | string | Session timestamp in `YYYYMMDD-HHmmss` format; from sidecar in worktree mode, computed locally in advisory mode |
+| `SESSION_SLUG` | string | Session slug (worktree slug in worktree mode, directory basename in advisory mode) |
+| `WORKING_DIRECTORY` | string | Absolute path of `cwd` passed to the hook |
+| `BRANCH` | string | Current git branch; omitted when HEAD is detached |
+| `WORKTREE` | string | Basename of the worktree directory; emitted only when HEAD is detached (replaces `BRANCH`) |
+| `REPO` | string | `owner/name` from `gh repo view`; falls back to remote URL parsing; omitted if neither resolves |
+| `PR_NUM` | integer | Pull request number; written by `/open-pr` on successful PR creation; omitted until then |
+| `ISSUE_NUM` | integer | GitHub issue number; written by the Worktree Creation Subroutine when `/feature-issue` was used; omitted otherwise |
+
+**Sidecar file (`~/.ai-tpk/session-context/by-worktree/{worktree-slug}.json`):**
+
+This file is the source of truth for fields that cannot be derived at hook-fire time. It is written atomically (`tmp-then-mv`) by two writers:
+
+- **Worktree Creation Subroutine (step 4a):** writes `SESSION_TS`, `SESSION_SLUG`, and optionally `ISSUE_NUM` when the worktree is created. The subroutine's bash block is authored by DM (using literal-string substitution for `{SESSION_TS}`, `{SESSION_SLUG}`, and `{WORKTREE_PATH}`) and delegated to Bitsmith for execution.
+- **`/open-pr` command:** writes `PR_NUM` after `gh pr create` returns successfully.
+
+Both writers use `jq '. + {…}'` to merge fields, preserving any pre-existing keys. Advisory sessions do not create a sidecar; the hook handles them locally.
+
+**`ISSUE_NUM` recording flow:** `/feature-issue` does not write the sidecar directly — the worktree does not yet exist when the command runs. Instead, DM stores the parsed issue number in its session context as `SESSION_ISSUE_NUM`. When DM later runs the Worktree Creation Subroutine, it substitutes `SESSION_ISSUE_NUM` into the sidecar-write bash block as the literal value of `ISSUE_NUM_VALUE`. See `claude/commands/feature-issue.md` and `claude/references/worktree-creation-subroutine.md` step 4a for the authoritative bash block.
+
+**Dependencies:** Requires `jq`. Both `session-start.sh` and `tab-rename-stop.sh` guard on `jq` availability before sourcing this library, so it is effectively jq-gated. The library also performs its own `command -v jq` guard for standalone use.
+
+**Script:** `claude/hooks/lib-osc-session-metadata.sh` (sourced, not executed directly).

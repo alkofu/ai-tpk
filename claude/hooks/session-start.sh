@@ -23,11 +23,16 @@ CWD="${CWD:-$PWD}"
 # Source shared tab-rename library
 # shellcheck source=lib-tab-rename.sh
 source "$(dirname "$0")/lib-tab-rename.sh"
+# shellcheck source=lib-osc-session-metadata.sh
+source "$(dirname "$0")/lib-osc-session-metadata.sh"
 
 # Check for --name override via process ancestry (walk up to 3 levels)
 if _tab_rename_check_name_override; then
   exit 0
 fi
+
+# Emit OSC 6800 session metadata (runs on every SessionStart, regardless of stored-title state)
+_osc_session_metadata_emit "$CWD"
 
 # Title restore: check if a stored title exists for this session
 TITLE_DIR="$HOME/.claude/session-titles"

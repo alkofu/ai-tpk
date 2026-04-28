@@ -16,6 +16,14 @@ Before invoking `gh`, perform the following checks:
 
 3. **Cross-repo URL guard:** If the argument is a full URL, compare the `<owner>/<repo>` segment against the worktree's `origin` remote. If they do not match, stop and ask the user to confirm intent before continuing.
 
+### Sidecar update (ISSUE_NUM): defer to the Worktree Creation Subroutine
+
+After validating that `<argument>` resolves to a positive integer issue number `N`, record `N` in DM's session context for later use by the Worktree Creation Subroutine. This command does NOT write the sidecar directly — at this point `/feature-issue` runs in the main checkout (the worktree does not yet exist; DM creates it later via the Worktree Creation Subroutine), and the worktree slug that keys the sidecar is therefore not yet knowable.
+
+**Implementation:** Have DM remember the parsed issue number in its session context under the name `SESSION_ISSUE_NUM`. When DM later runs the Worktree Creation Subroutine (step 4a of the worktree-creation-subroutine.md), it reads its remembered `SESSION_ISSUE_NUM` and substitutes it into the bash block as the literal value of `ISSUE_NUM_VALUE` (per the substitution-variable convention in that step). The Subroutine's bash block then writes the sidecar with the correct `ISSUE_NUM` integer field.
+
+This command performs NO direct sidecar write of its own. If DM does not run the Worktree Creation Subroutine after `/feature-issue` (an unsupported flow), `ISSUE_NUM` is simply lost — no sidecar is written. This is acceptable: the fallback is graceful (advisory-mode OSC 6800 still emits without `ISSUE_NUM`).
+
 Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url,comments` using the Bash tool. Use this exact flag set.
 
 **On gh failure:** If `gh` fails, surface the exact error message and ask the user to either fix the problem and retry, or provide the feature description manually.

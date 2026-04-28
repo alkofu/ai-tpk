@@ -7,6 +7,9 @@
 _osc_session_metadata_emit() {
   local CWD="${1:-$PWD}"
 
+  # Only emit when running inside the ai-dungeon terminal.
+  [ "${TERM_PROGRAM:-}" = "ai-dungeon" ] || return 0
+
   # Defensive: jq is re-checked here so lib-osc-session-metadata.sh is usable
   # standalone without session-start.sh / tab-rename-stop.sh as the caller.
   command -v jq >/dev/null 2>&1 || return 0

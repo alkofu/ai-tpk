@@ -53,10 +53,10 @@ This subroutine is **invoked explicitly** by routing branches in `claude/agents/
 4a. **Write the session-context sidecar.** Delegate a single Bash invocation to Bitsmith with the following body (after DM applies the substitutions described below). This write is fire-and-forget — a failure does not abort the subroutine.
 
    **DM substitution convention:** Before sending the bash block to Bitsmith, DM substitutes:
-   - `{SESSION_TS}` → the literal session-timestamp string (e.g., `20260427-190621`)
-   - `{SESSION_SLUG}` → the literal session-slug string (e.g., `send-osc-session-metadata`)
-   - `{WORKTREE_PATH}` → the literal absolute worktree path returned by step 2
-   - `ISSUE_NUM_VALUE` → DM assigns `""` if no `/feature-issue` was used, or the literal integer string (e.g., `"42"`) if DM's session context contains `SESSION_ISSUE_NUM` from a prior `/feature-issue` invocation. This is a bash variable assigned in the script body — NOT a `{...}` placeholder and NOT a runtime env var.
+- `{SESSION_TS}` → the literal session-timestamp string (e.g., `20260427-190621`)
+- `{SESSION_SLUG}` → the literal session-slug string (e.g., `send-osc-session-metadata`)
+- `{WORKTREE_PATH}` → the literal absolute worktree path returned by step 2
+- `ISSUE_NUM_VALUE` → DM assigns `""` if no `/feature-issue` was used, or the literal integer string (e.g., `"42"`) if DM's session context contains `SESSION_ISSUE_NUM` from a prior `/feature-issue` invocation. This is a bash variable assigned in the script body — NOT a `{...}` placeholder and NOT a runtime env var.
 
    **Authoritative sidecar-write block** (no `$ENV.*`, no dead `--argjson` flags, atomic `tmp-then-mv`):
 
@@ -85,13 +85,13 @@ This subroutine is **invoked explicitly** by routing branches in `claude/agents/
    ```
 
    Properties:
-   - `--arg` for string fields (`SESSION_TS`, `SESSION_SLUG`), `--argjson` for integer field (`ISSUE_NUM`) — satisfies the sidecar schema type contract.
-   - Atomic `tmp-then-mv` write — hook always sees either old or new sidecar, never a partial write.
-   - Idempotent merge via `jq '. + {…}'` — preserves pre-existing fields (e.g. `PR_NUM` if somehow written earlier).
-   - Sidecar path `~/.ai-tpk/session-context/by-worktree/{worktree-slug}.json` is session-namespaced (per-worktree-slug, unique per session). This is the mirror of the canonical anti-pattern from PR #187 (`~/.ai-tpk/session-context/current.json` — singleton, invalid); this design is per-worktree-slug, not singleton.
-   - Advisory sessions do NOT invoke this step — the hook handles advisory sessions locally without a sidecar.
+- `--arg` for string fields (`SESSION_TS`, `SESSION_SLUG`), `--argjson` for integer field (`ISSUE_NUM`) — satisfies the sidecar schema type contract.
+- Atomic `tmp-then-mv` write — hook always sees either old or new sidecar, never a partial write.
+- Idempotent merge via `jq '. + {…}'` — preserves pre-existing fields (e.g. `PR_NUM` if somehow written earlier).
+- Sidecar path `~/.ai-tpk/session-context/by-worktree/{worktree-slug}.json` is session-namespaced (per-worktree-slug, unique per session). This is the mirror of the canonical anti-pattern from PR #187 (`~/.ai-tpk/session-context/current.json` — singleton, invalid); this design is per-worktree-slug, not singleton.
+- Advisory sessions do NOT invoke this step — the hook handles advisory sessions locally without a sidecar.
 
-5. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
+1. **Log to user:** "Session worktree created: `{WORKTREE_PATH}` on branch `{branch-name}`"
 
 **After the subroutine completes, control returns to the routing branch that invoked it.**
 

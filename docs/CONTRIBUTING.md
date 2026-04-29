@@ -10,6 +10,12 @@ Pull requests targeting `main` are validated by a GitHub Actions workflow at `.g
 
 Dependency updates are automated via Dependabot (`.github/dependabot.yml`). On a weekly Monday schedule, Dependabot opens PRs for both the npm (pnpm-managed) and GitHub Actions ecosystems. Minor and patch updates are grouped into a single PR per ecosystem; major updates arrive as individual PRs so breaking changes can be reviewed in isolation. For the npm ecosystem, Dependabot uses `versioning-strategy: lockfile-only`, so its PRs update only `pnpm-lock.yaml` and leave `package.json` version ranges unchanged. No manual action is required — review and merge the Dependabot PRs as they appear.
 
+## Python Tooling (`dungeon/`)
+
+The `dungeon/` directory is a Python library subproject. Any commit that touches `dungeon/**/*.py` triggers `lefthook` hooks that run `ruff` (lint and format), `mypy` (type-check), and `pytest` (tests). These hooks require `uv` to be installed — see the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) if the hooks fail with a `uv: command not found` error.
+
+The same checks run in CI via the parallel `python` job in `.github/workflows/ci.yml`. For formatting failures, run `uv run ruff format dungeon/` and commit the result.
+
 ## Configuration Updates
 
 When updating Claude configurations (agents, skills, commands, hooks, references, or settings):

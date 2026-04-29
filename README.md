@@ -60,6 +60,18 @@ When modifying agents, skills, commands, hooks, references, CLAUDE.md, or settin
 - [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) — Mandatory-baseline + opt-in-specialist review workflow with diagrams and key principles.
 - Contributing — see [docs/CONTRIBUTING.md § Configuration Updates](/docs/CONTRIBUTING.md#configuration-updates) for the configuration update workflow and [docs/AGENTS.md § Shared Agent References](/docs/AGENTS.md#shared-agent-references) for shared reference file conventions. For repo-wide development workflow (build, test, lint, format, push), see [docs/INSTALLATION.md § Development Setup](/docs/INSTALLATION.md#development-setup).
 
+## Repository Structure
+
+The installer publishes everything under `claude/` to `~/.claude/`. Two additional subdirectories live in the repo but are not installed:
+
+| Directory | Purpose |
+|-----------|---------|
+| `claude/` | User-scope artifacts synced by `install.sh` to `~/.claude/` |
+| `.claude/` | Project-scope artifacts active only when the repo is checked out |
+| `dungeon/` | Python library subproject (scaffold, tests, tooling). Uses `uv` — not installed by `install.sh`. See `dungeon/README.md`. |
+| `docs/` | Project documentation |
+| `src/` | MCP wrapper scripts synced by `install.sh` to `~/.claude/wrappers/` |
+
 ## The Party Convenes
 
 *Should I order pizza with artichoke?*

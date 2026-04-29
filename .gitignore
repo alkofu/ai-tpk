@@ -38,3 +38,15 @@ lessons/
 
 # Lefthook local overrides (machine-specific, not for version control)
 lefthook-local.yml
+
+# Python (dungeon/)
+# `uv sync` creates `.venv/` directly under `dungeon/`, so an anchored pattern is used.
+# `dist/` is already covered by the global unanchored `dist/` rule above.
+# Cache directories (`__pycache__`, `.pytest_cache`, `.ruff_cache`, `.mypy_cache`,
+# `*.egg-info`) can appear at any depth under the package or test trees, so they are globbed.
+dungeon/.venv/
+dungeon/**/__pycache__/
+dungeon/**/.pytest_cache/
+dungeon/**/.ruff_cache/
+dungeon/**/.mypy_cache/
+dungeon/**/*.egg-info/

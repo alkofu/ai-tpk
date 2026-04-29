@@ -64,3 +64,34 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dungeon
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          version: "0.11.7"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync dependencies
+        run: uv sync --locked
+
+      - name: Lint (ruff check)
+        run: uv run ruff check .
+
+      - name: Format check (ruff format)
+        run: uv run ruff format --check .
+
+      - name: Type check (mypy)
+        run: uv run mypy src
+
+      - name: Test (pytest)
+        run: uv run pytest

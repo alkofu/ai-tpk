@@ -7,6 +7,14 @@ pre-commit:
     lint-md:
       glob: "**/*.md"
       run: pnpm run lint:md
+    ruff-check:
+      glob: "dungeon/**/*.py"
+      root: dungeon/
+      run: uv run ruff check .
+    ruff-format-check:
+      glob: "dungeon/**/*.py"
+      root: dungeon/
+      run: uv run ruff format --check .
 
 pre-push:
   commands:
@@ -31,3 +39,11 @@ pre-push:
     spellcheck:
       glob: "**/*.{md,ts,sh}"
       run: pnpm run spellcheck
+    mypy:
+      glob: "dungeon/**/*.py"
+      root: dungeon/
+      run: uv run mypy src
+    pytest:
+      glob: "dungeon/**/*.py"
+      root: dungeon/
+      run: uv run pytest

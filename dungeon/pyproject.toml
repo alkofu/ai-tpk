@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dungeon"
+version = "0.0.1"
+description = "Python library scaffold for ai-tpk."
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dungeon"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.7", "mypy>=1.11"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+# Defaults: quote-style = "double", indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]

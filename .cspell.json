@@ -162,7 +162,14 @@
     "unwritable",
     "undertrigger",
     "webbrowser",
-    "XVARX"
+    "XVARX",
+    "codenames",
+    "summarise",
+    "Syncthing",
+    "xoxb",
+    "xoxp",
+    "xoxo",
+    "xoxa"
   ],
   "ignoreWords": ["dontAsk"]
 }

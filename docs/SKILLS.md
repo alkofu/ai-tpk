@@ -61,3 +61,4 @@ Additional skills (non-mandatory):
 - **`file-organization`** — Guide for file and module organization decisions
 - **`bash-code-quality`** — Defensive coding standards for bash scripts authored as deliverables: strict mode, safe quoting, error trapping, recurring patterns, and anti-patterns; applied automatically when writing or editing `.sh` files or scripts with a bash shebang
 - **`skill-creator`** — Creates and improves skills in this repository
+- **`task-observer`** — Captures lightweight session observations (friction, repeated mistakes, workarounds) as individual timestamp-and-pid-namespaced files under `~/.ai-tpk/observations/`. Observations are reviewed and turned into skill improvements via `/review-observations`, with explicit user approval on a literal unified diff before any skill file is touched. Activates by description-match; does not modify skills autonomously.

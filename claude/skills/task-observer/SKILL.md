@@ -53,12 +53,12 @@ JWTs, and high-entropy blobs may pass through undetected. The audit log is not t
 Concurrent `/review-observations` sessions are not locked. Audit observation files before
 running `/review-observations` if this matters to you.
 
-**Sync/backup note.** `~/.claude/observations/` is commonly included in Time Machine, Dropbox,
+**Sync/backup note.** `~/.ai-tpk/observations/` is commonly included in Time Machine, Dropbox,
 iCloud Drive, or Syncthing backups. Add it to your backup-exclude list if you care about this.
 
 ## Where to write
 
-Write each observation to `~/.claude/observations/YYYY-MM-DD-HHMMSS-<pid>-<slug>.md`. The
+Write each observation to `~/.ai-tpk/observations/YYYY-MM-DD-HHMMSS-<pid>-<slug>.md`. The
 wall-clock timestamp orders observations; the `<pid>` (the writer's process id) satisfies the
 session-isolation invariant by ensuring two parallel sessions cannot collide even within the
 same second.
@@ -72,16 +72,16 @@ Shell derivation:
 and hyphens only. No slashes, no `..`, no spaces, no shell metacharacters. Sanitize before
 writing if needed.
 
-**Write protocol.** Write to `~/.claude/observations/.tmp-$$-<slug>` first, then `mv` to the
+**Write protocol.** Write to `~/.ai-tpk/observations/.tmp-$$-<slug>` first, then `mv` to the
 final filename. This guarantees readers never see a half-written file.
 
-**Directory bootstrap.** If `~/.claude/observations/` does not yet exist, run
-`mkdir -p ~/.claude/observations` before writing.
+**Directory bootstrap.** If `~/.ai-tpk/observations/` does not yet exist, run
+`mkdir -p ~/.ai-tpk/observations` before writing.
 
 **Size cap.** Keep the observation body under ~2 KB. If you have more to say, you are choosing
 the wrong granularity — split into multiple narrower observations or defer.
 
-**Count cap.** Before writing, check `ls ~/.claude/observations/*.md 2>/dev/null | wc -l`. If
+**Count cap.** Before writing, check `ls ~/.ai-tpk/observations/*.md 2>/dev/null | wc -l`. If
 the count exceeds 50, do not write — instead tell the user: "There are over 50 pending
 observations; run `/review-observations` to clear the backlog before logging more."
 

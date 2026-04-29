@@ -11,12 +11,12 @@ auto-translated into a diff or instruction. The proposed edit you draft is deriv
 
 ## Step 0 — Bootstrap directories
 
-Run `mkdir -p ~/.claude/observations/archive` so subsequent `ls` and `mv` operations have a
+Run `mkdir -p ~/.ai-tpk/observations/archive` so subsequent `ls` and `mv` operations have a
 guaranteed target. This step has no other side effect.
 
 ## Step 1 — Locate observations
 
-Run `ls ~/.claude/observations/*.md 2>/dev/null` (the glob naturally excludes the `archive/`
+Run `ls ~/.ai-tpk/observations/*.md 2>/dev/null` (the glob naturally excludes the `archive/`
 subdirectory and any `.tmp-*` partials). For every filename returned, verify it matches the
 regex `^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6}-[0-9]+-[a-z0-9-]+\.md$`. Skip non-matching files
 with a warning printed to the user — do not read them, do not move them.
@@ -79,14 +79,14 @@ For each `yes` group:
 2. Apply the literal diff that was shown to the user. No edits are inferred, expanded, or
    modified between display and apply.
 3. For each contributing observation file: add an `applied_in: <ISO-timestamp>` field to the
-   frontmatter, then `mv` it from `~/.claude/observations/` to `~/.claude/observations/archive/`.
-4. Append one line to `~/.claude/observations/audit.log` (creating the file with `touch` if
+   frontmatter, then `mv` it from `~/.ai-tpk/observations/` to `~/.ai-tpk/observations/archive/`.
+4. Append one line to `~/.ai-tpk/observations/audit.log` (creating the file with `touch` if
    needed) in the format:
    `{ISO-timestamp} skill=<affected_skill> observations=[<comma-separated archived filenames>]`
    The audit log is append-only and is never archived or rotated by this command.
 
 For each `skip` group: add `applied_in: <ISO-timestamp>` to the frontmatter and `mv` to
-`~/.claude/observations/archive/`. No SKILL.md edit, no audit log entry.
+`~/.ai-tpk/observations/archive/`. No SKILL.md edit, no audit log entry.
 
 For each `no` group: do nothing.
 

@@ -84,3 +84,13 @@ abort: "Force-push failed. The remote has changes not present locally. Run `git 
 retry `/sync-pr`."
 
 If the push succeeds, print: "Branch `<branch>` rebased on `main` and force-pushed. PR is up to date."
+
+### Step 6.1 — Advisory: refresh the PR description if needed
+
+If the new commits materially change the impact narrative recorded in the PR description (problem solved, user/system benefit, notable risks), the PR body should be refreshed.
+
+To refresh manually, run: `gh pr edit <PR_NUM> --body "<new body>"`. The `<PR_NUM>` is the same PR number printed in Step 2 ("If a PR is found, print its number and title as confirmation before continuing"), so you already have it from earlier in this `/sync-pr` run.
+
+If you are continuing this work through the DM pipeline (Pathfinder → Bitsmith → Ruinor → Quill → Phase 5), Phase 5d.1 will refresh the PR description automatically using the `open-pull-request` skill's body format. Manual `gh pr edit` is mainly relevant when running `/sync-pr` standalone outside a DM pipeline run (for example, after a manual rebase to pick up a fresh `main`).
+
+**The DM pipeline's Phase 5d.1 description is authoritative — it will overwrite any manual `gh pr edit --body` changes you make.** If you need a manual edit to persist, make it after the next full DM pipeline run completes, not before.

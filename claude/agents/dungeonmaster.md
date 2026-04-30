@@ -563,6 +563,23 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
 
     If notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
+    **5d.1 — PR description refresh (conditional):**
+    This step fires only after step 5d (Completion summary) has been emitted, and only when the current session has an active worktree. It is intentionally placed after 5d (outside the Resolution Gate's loop in 5c) so it does not re-fire during auto-fix cycles.
+
+    **Sidecar read.** Derive `WORKTREE_SLUG` from `basename "$WORKTREE_PATH"` and read the file at `$HOME/.ai-tpk/session-context/by-worktree/${WORKTREE_SLUG}.json`. DM may run this read directly via the Bash tool (the read is read-only and within DM's permitted scope per the delegation policy above). Use the following one-line `jq` invocation that returns the `PR_NUM` value or empty string if absent: `jq -r '.PR_NUM // empty' "$SIDECAR"`. If the file does not exist, treat as absent.
+
+    **Skip path.** If `PR_NUM` is absent (sidecar missing, key not set, or value empty/null), skip silently. PR not yet opened — `/open-pr` will handle the description at creation time.
+
+    **Update path.** If `PR_NUM` is present: delegate to Bitsmith to compose a fresh PR body and apply it via `gh pr edit {PR_NUM} --body-file -` with the composed body passed on stdin (heredoc) — do NOT use inline `--body "..."` to avoid shell-quoting failures when the body contains newlines, backticks, or embedded quotes. The body MUST follow the format defined in the `open-pull-request` skill's "PR description" section (`claude/skills/open-pull-request/SKILL.md` lines 173-176): impact-first, 2-5 sentences, problem solved → user/system benefit → notable risks or rollout notes; no file-list mirroring; closing-keyword propagation per the same section. Bitsmith composes the body from: (a) the plan summary (from the plan file at the path Pathfinder returned in Phase 1 step 4), (b) the list of changed files from `git diff --name-only` against the pre-execution commit, (c) the Phase 4 reviewer verdicts collected during the session, and (d) the commit messages on the branch (via `git log --format=%B` from the pre-execution commit to HEAD), so that closing-keyword propagation per the `open-pull-request` skill's rules has the same input set as the original PR creation. Pass all four context items in the delegation prompt.
+
+    **Note on merged-PR risk.** This step does not check PR state. If `PR_NUM` remains in the sidecar after a merge (e.g., the user has not yet run `/merged`), this step will mutate the merged PR's description. Run `/merged` after merge to clear sidecar state.
+
+    **Bitsmith delegation reminder.** Include the `WORKING_DIRECTORY` context block in the Bitsmith delegation prompt per the standard rules. The Project Constitution Injection block also applies (Bitsmith is one of the three injected agents). Apply the SKIP_TREE_AUDIT Choice Rule normally — if Bitsmith has written to this worktree earlier in the session (which it almost certainly has, since this step fires after Phase 5d), emit `SKIP_TREE_AUDIT: true`.
+
+    **Outcome logging.** Log the outcome inline as a single line: on success, `"PR #{PR_NUM} description updated."`; on failure (Bitsmith reports a non-zero exit from `gh pr edit`, or the delegation itself fails), `"PR description update failed: {reason}; PR body unchanged."` Do not retry. Do not abort the session. Proceed to step 5e regardless of outcome.
+
+    **Authority statement.** The Phase 5 description is authoritative after a full pipeline run — this step will overwrite any manual `gh pr edit --body` changes the user made between PR creation and the current pipeline completion. This is intentional: the DM-composed description reflects the most recent plan, changes, and reviewer verdicts.
+
     **5e — Worktree log:**
     Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Run `/open-pr` to create a pull request, or handle cleanup manually."
 

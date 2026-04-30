@@ -62,15 +62,39 @@ Run the type checker:
 uv run mypy src
 ```
 
+## LangGraph
+
+`dungeon` ships a small LangGraph pipeline that demonstrates the `START → greet → shout → END`
+pattern. Use `build_graph` to obtain a compiled graph and invoke it with a `name` key:
+
+```python
+from dungeon import build_graph
+
+g = build_graph()
+result = g.invoke({"name": "World"})
+# result == {"name": "World", "greeting": "Hello, World!", "shout": "HELLO, WORLD!"}
+print(result["shout"])  # HELLO, WORLD!
+```
+
+A module-level `graph` constant (pre-compiled at import time) is also available:
+
+```python
+from dungeon.graph import graph
+
+print(graph.invoke({"name": "Alice"})["shout"])  # HELLO, ALICE!
+```
+
 ## Project Layout
 
 ```text
 dungeon/
   src/
     dungeon/
-      __init__.py   # package entry point
+      __init__.py   # package entry point; re-exports greet and build_graph
+      graph.py      # LangGraph pipeline (greet -> shout)
   tests/
     test_smoke.py   # smoke test
+    test_graph.py   # LangGraph pipeline tests
   pyproject.toml    # all tool configuration
   uv.lock           # committed lockfile
   .python-version   # pins interpreter to 3.12

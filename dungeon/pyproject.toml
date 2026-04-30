@@ -8,7 +8,7 @@ version = "0.0.1"
 description = "Python library scaffold for ai-tpk."
 requires-python = ">=3.12"
 readme = "README.md"
-dependencies = []
+dependencies = ["langgraph>=1.0,<2"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dungeon"]

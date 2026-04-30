@@ -84,17 +84,45 @@ from dungeon.graph import graph
 print(graph.invoke({"name": "Alice"})["shout"])  # HELLO, ALICE!
 ```
 
+## Agents
+
+`dungeon` ships an `Agent` abstract base class and a `GreetAgent` concrete implementation. Import
+them directly:
+
+```python
+from dungeon import Agent, GreetAgent
+
+agent = GreetAgent()
+print(agent.respond("World"))  # HELLO, WORLD!
+```
+
+Or load them dynamically at runtime via `importlib`:
+
+```python
+import importlib
+
+module = importlib.import_module("dungeon.agent")
+cls = getattr(module, "GreetAgent")
+agent = cls()
+print(agent.respond("Alice"))  # HELLO, ALICE!
+```
+
+Subclass `Agent` to implement custom agents — just override the `respond(name: str) -> str`
+method.
+
 ## Project Layout
 
 ```text
 dungeon/
   src/
     dungeon/
-      __init__.py   # package entry point; re-exports greet and build_graph
+      __init__.py   # package entry point; re-exports greet, build_graph, Agent, GreetAgent
       graph.py      # LangGraph pipeline (greet -> shout)
+      agent.py      # Agent ABC and GreetAgent concrete implementation
   tests/
     test_smoke.py   # smoke test
     test_graph.py   # LangGraph pipeline tests
+    test_agent.py   # Agent / GreetAgent tests
   pyproject.toml    # all tool configuration
   uv.lock           # committed lockfile
   .python-version   # pins interpreter to 3.12

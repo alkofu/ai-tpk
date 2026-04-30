@@ -70,6 +70,7 @@
     "Eeuo",
     "esac",
     "evals",
+    "getattr",
     "exfiltration",
     "expanduser",
     "frontmatter",

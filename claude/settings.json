@@ -2,6 +2,7 @@
   "allowedTools": [
     "Write(~/.ai-tpk/**)",
     "Edit(~/.ai-tpk/**)",
+    "Read(~/.ai-tpk/**)",
     "Read(~/.claude/agents/**)",
     "Read(~/.claude/skills/**)",
     "Read(~/.claude/references/**)",

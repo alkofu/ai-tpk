@@ -7,6 +7,12 @@ set -euo pipefail
 #
 # Supported argument forms:
 #   - Bare integer:    42
+#   - Integer range:   1-4         (inclusive; expands to 1 2 3 4 in argument order;
+#                                   start must be <= end; both endpoints are non-negative
+#                                   integers; leading zeros are accepted and parsed as
+#                                   base-10; ranges apply only to bare integers, not URLs;
+#                                   no upper bound on range size — 1-10000 expands to
+#                                   10000 entries and spawns 10000 tabs)
 #   - Full GitHub URL: https://github.com/owner/repo/issues/42
 #                      (optional trailing /, #anchor, or ?query accepted)
 #
@@ -72,10 +78,35 @@ parse_issue_number() {
   return 2
 }
 
+# expand_arg <arg> — emits one or more issue numbers, one per line, on stdout.
+# Range form '<start>-<end>' (both endpoints non-negative integers, base-10 forced
+# to avoid octal interpretation of leading-zero literals) expands to the inclusive
+# integer sequence; bare-integer and URL forms delegate to parse_issue_number.
+# Returns 0 on success, 2 on parse/validation failure.
+expand_arg() {
+  local arg="$1"
+  if [[ "$arg" =~ ^[0-9]+-[0-9]+$ ]]; then
+    local start=$((10#${arg%-*}))
+    local end=$((10#${arg#*-}))
+    if (( start > end )); then
+      printf "batch-open-issues: invalid range '%s': start must be <= end\n" "$arg" >&2
+      return 2
+    fi
+    for (( i = start; i <= end; i++ )); do
+      printf '%s\n' "$i"
+    done
+    return 0
+  fi
+  parse_issue_number "$arg"
+  return $?
+}
+
 ISSUE_NUMBERS=()
 for arg in "$@"; do
-  n=$(parse_issue_number "$arg") || exit 2
-  ISSUE_NUMBERS+=("$n")
+  expanded=$(expand_arg "$arg") || exit 2
+  while IFS= read -r n; do
+    ISSUE_NUMBERS+=("$n")
+  done <<< "$expanded"
 done
 
 LIB="${HOME}/.claude/hooks/lib-tab-rename.sh"

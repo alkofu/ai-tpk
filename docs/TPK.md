@@ -70,10 +70,10 @@ In both cases, run `tpk` without `--skip` to (re)configure.
 **Usage:**
 
 ```bash
-batch-open-issues.sh 42 123 https://github.com/owner/repo/issues/7
+batch-open-issues.sh 42 1-4 https://github.com/owner/repo/issues/7
 ```
 
-Each argument can be a bare integer (`42`) or a GitHub issue URL in the form `https://github.com/<owner>/<repo>/issues/<n>` (with an optional trailing `/`, `?query`, or `#anchor`).
+Each argument can be a bare integer (`42`), an integer range like `1-4` (inclusive; expands to `1 2 3 4` in argument order; `start` must be `<=` `end`; both endpoints are non-negative integers; leading zeros are accepted; no upper bound on range size), or a GitHub issue URL in the form `https://github.com/<owner>/<repo>/issues/<n>` (with an optional trailing `/`, `?query`, or `#anchor`). Ranges apply only to bare integers, not URLs.
 
 **Supported terminals:** tmux (new window with `-c "$PWD"`), iTerm2 (new tab via AppleScript, inherits current session CWD), and cmux (new workspace via `cmux new-workspace --cwd "$PWD" --name "issue-<n>" --command "<cmd>"`). cmux is detected via `$CMUX_WORKSPACE_ID` (set automatically inside any cmux terminal session). The cmux binary is located by searching `$PATH` first, then falling back to the bundled CLI at `/Applications/cmux.app/Contents/Resources/bin/cmux`. If neither resolves, that issue's spawn fails (recorded in the partial-failure summary) but other issues continue. Standalone Ghostty (Ghostty running without cmux) is not supported and produces exit code 3.
 

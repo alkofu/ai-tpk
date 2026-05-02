@@ -37,10 +37,14 @@ The wizard will present a multi-step flow:
 
 ### `--skip`: launch immediately with saved config
 
-Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`:
+Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`. The short alias `-S` (uppercase) is fully equivalent to `--skip` and may be used interchangeably.
 
 ```bash
 tpk --skip
+```
+
+```bash
+tpk -S
 ```
 
 This is useful for scripts, hot-key launches, and users who never want to see the summary screen.
@@ -61,7 +65,7 @@ This is useful for scripts, hot-key launches, and users who never want to see th
 
 In both cases, run `tpk` without `--skip` to (re)configure.
 
-**Unknown flags** are rejected with exit code 2. Any token other than `--skip` prints `Unknown flag: <flag>. Usage: tpk [--skip]` to stderr and exits immediately.
+**Unknown flags** are rejected with exit code 2. Any token other than `--skip` or `-S` prints `Unknown flag: <flag>. Usage: tpk [--skip]` to stderr and exits immediately.
 
 ### `batch-open-issues.sh`: open one tab per issue
 

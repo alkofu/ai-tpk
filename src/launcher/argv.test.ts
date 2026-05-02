@@ -86,6 +86,31 @@ describe('parseArgs', () => {
     );
   });
 
+  it('throws TooManyPositionalsError when two positionals are supplied with -S', () => {
+    assert.throws(
+      () => parseArgs(['-S', 'a', 'b']),
+      (err: unknown) => {
+        assert.ok(
+          err instanceof TooManyPositionalsError,
+          'should be TooManyPositionalsError',
+        );
+        assert.ok(
+          (err as TooManyPositionalsError).message.includes(
+            'Too many positional arguments',
+          ),
+          'message should mention too many positional arguments',
+        );
+        assert.ok(
+          (err as TooManyPositionalsError).message.includes(
+            'Usage: tpk [--skip]',
+          ),
+          'message should contain the usage hint',
+        );
+        return true;
+      },
+    );
+  });
+
   it('still throws UnknownFlagError for an unknown flag in the presence of a positional', () => {
     assert.throws(
       () => parseArgs(['--unknown', '/cmd']),
@@ -123,6 +148,63 @@ describe('parseArgs', () => {
         assert.ok(
           err instanceof UnknownFlagError,
           'should be UnknownFlagError',
+        );
+        return true;
+      },
+    );
+  });
+
+  it("returns { skip: true, initialMessage: undefined } for ['-S']", () => {
+    const result = parseArgs(['-S']);
+    assert.deepStrictEqual(result, { skip: true, initialMessage: undefined });
+  });
+
+  it("returns { skip: true, initialMessage: undefined } for duplicate ['-S', '-S'] (idempotent)", () => {
+    const result = parseArgs(['-S', '-S']);
+    assert.deepStrictEqual(result, { skip: true, initialMessage: undefined });
+  });
+
+  it("treats ['--skip', '-S'] and ['-S', '--skip'] both as skip:true", () => {
+    assert.deepStrictEqual(parseArgs(['--skip', '-S']), {
+      skip: true,
+      initialMessage: undefined,
+    });
+    assert.deepStrictEqual(parseArgs(['-S', '--skip']), {
+      skip: true,
+      initialMessage: undefined,
+    });
+  });
+
+  it('captures initial message with -S in either order', () => {
+    assert.deepStrictEqual(parseArgs(['-S', '/cmd']), {
+      skip: true,
+      initialMessage: '/cmd',
+    });
+    assert.deepStrictEqual(parseArgs(['/cmd', '-S']), {
+      skip: true,
+      initialMessage: '/cmd',
+    });
+  });
+
+  it('throws UnknownFlagError for lowercase -s (alias is uppercase only)', () => {
+    assert.throws(
+      () => parseArgs(['-s']),
+      (err: unknown) => {
+        assert.ok(
+          err instanceof UnknownFlagError,
+          'should be UnknownFlagError',
+        );
+        assert.ok(
+          (err as UnknownFlagError).message.includes('-s'),
+          'message should contain the offending flag',
+        );
+        assert.ok(
+          (err as UnknownFlagError).message.includes('Usage: tpk [--skip]'),
+          'message should contain the usage hint',
+        );
+        assert.ok(
+          !(err as UnknownFlagError).message.includes('-S'),
+          'usage hint must not advertise the -S alias',
         );
         return true;
       },

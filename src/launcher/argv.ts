@@ -1,7 +1,8 @@
 // Parses the argv array passed to the tpk launcher.
 //
 // Rules:
-//   - The literal token `--skip` sets the skip flag (idempotent; duplicates are tolerated).
+//   - The literal token `--skip` (or its short alias `-S`) sets the skip flag (idempotent;
+//     duplicates are tolerated; the two forms may be freely mixed).
 //   - Any other token that starts with `-` (one or two dashes — covers `--unknown`, `-x`, `-h`,
 //     the bare `-`, etc.) throws UnknownFlagError.
 //   - Any token that does NOT start with `-` is captured as the positional initial message
@@ -31,9 +32,9 @@ export class TooManyPositionalsError extends Error {
  * Parse the arguments passed to the tpk launcher.
  *
  * @param argv - the array to parse (pass `process.argv.slice(2)`; never the full argv)
- * @returns `{ skip, initialMessage }` where `skip` is true when `--skip` is present and
+ * @returns `{ skip, initialMessage }` where `skip` is true when `--skip` or `-S` is present and
  *   `initialMessage` is the single optional positional arg (or `undefined` if not supplied)
- * @throws {UnknownFlagError} for any token starting with `-` other than `--skip`
+ * @throws {UnknownFlagError} for any token starting with `-` other than `--skip` or `-S`
  *   (covers single-dash flags like `-h`, the bare `-`, and double-dash flags like `--unknown`)
  * @throws {TooManyPositionalsError} when more than one positional (non-flag) token is supplied
  */
@@ -44,7 +45,7 @@ export function parseArgs(argv: string[]): {
   let skip = false;
   let initialMessage: string | undefined = undefined;
   for (const token of argv) {
-    if (token === '--skip') {
+    if (token === '--skip' || token === '-S') {
       skip = true;
     } else if (token.startsWith('-')) {
       throw new UnknownFlagError(token);

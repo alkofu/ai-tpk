@@ -2,6 +2,7 @@
 set -euo pipefail
 # batch-open-issues.sh
 # Spawns one new terminal tab/window per GitHub issue, each running tpk --skip '/feature-issue <n>'
+# (the script invokes the long form '--skip'; the launcher also accepts the short alias '-S' interchangeably)
 #
 # Usage: batch-open-issues.sh <issue> [<issue> ...]
 #

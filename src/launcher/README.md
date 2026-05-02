@@ -32,6 +32,8 @@ To launch Claude with an initial prompt (bypasses the wizard):
 tpk --skip "/feature-issue 42"
 ```
 
+The short alias `-S` is equivalent to `--skip` (e.g. `tpk -S "/feature-issue 42"`).
+
 Launches Claude with the given string as its first prompt. Requires `--skip` (the wizard cannot also forward an initial message).
 
 ## Startup Behavior
@@ -60,7 +62,7 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 
 If the saved Grafana cluster ID no longer exists in `~/.config/tpk/grafana-clusters.yaml`, the launch path is skipped and the configure flow starts automatically with a warning.
 
-**`--skip` flag:** Pass `--skip` on the command line to bypass the summary screen entirely and launch Claude immediately with the saved config. The flag is parsed by `argv.ts` before `loadConfig` is called. If the saved config is unusable, the launcher exits non-zero with one of two stderr messages (no saved config, or stale/unresolvable config) — it never falls back to the interactive flow. Any unknown flag causes exit code 2. Example: `pnpm exec tsx src/launcher/main.ts --skip`.
+**`--skip` flag:** Pass `--skip` on the command line to bypass the summary screen entirely and launch Claude immediately with the saved config. The flag is parsed by `argv.ts` before `loadConfig` is called. If the saved config is unusable, the launcher exits non-zero with one of two stderr messages (no saved config, or stale/unresolvable config) — it never falls back to the interactive flow. Any unknown flag causes exit code 2. Example: `pnpm exec tsx src/launcher/main.ts --skip`. The short alias `-S` (uppercase) is accepted as a synonym for `--skip` everywhere `--skip` appears.
 
 ## Initial Message Forwarding
 
@@ -72,7 +74,7 @@ tpk --skip <initial-message>
 
 **Rules:**
 
-- `--skip` is required when supplying an initial message. If an initial message is given without `--skip`, the launcher writes `Initial message requires --skip. Usage: tpk --skip <initial-message>` to stderr and exits with code `2`. No wizard banner is printed.
+- `--skip` (or its short alias `-S`) is required when supplying an initial message. If an initial message is given without `--skip`, the launcher writes `Initial message requires --skip. Usage: tpk --skip <initial-message>` to stderr and exits with code `2`. No wizard banner is printed.
 - Only one positional argument is allowed. If two or more are supplied, the launcher writes `Too many positional arguments. Only one initial message is allowed. Usage: tpk [--skip] [<initial-message>]` to stderr and exits with code `2`. No wizard banner is printed.
 - Any token starting with `-` other than `--skip` (including single-dash tokens like `-h` and the bare `-`) is rejected as an unknown flag. It is never captured as the initial message.
 - The message is passed verbatim to `claude` — quoting at the shell level controls whether spaces become one argument or many. The launcher performs no further tokenisation.

@@ -37,10 +37,14 @@ The wizard will present a multi-step flow:
 
 ### `--skip`: launch immediately with saved config
 
-Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`:
+Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`. The short alias `-S` (uppercase) is fully equivalent to `--skip` and may be used interchangeably.
 
 ```bash
 tpk --skip
+```
+
+```bash
+tpk -S
 ```
 
 This is useful for scripts, hot-key launches, and users who never want to see the summary screen.

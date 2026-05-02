@@ -65,7 +65,7 @@ This is useful for scripts, hot-key launches, and users who never want to see th
 
 In both cases, run `tpk` without `--skip` to (re)configure.
 
-**Unknown flags** are rejected with exit code 2. Any token other than `--skip` prints `Unknown flag: <flag>. Usage: tpk [--skip]` to stderr and exits immediately.
+**Unknown flags** are rejected with exit code 2. Any token other than `--skip` or `-S` prints `Unknown flag: <flag>. Usage: tpk [--skip]` to stderr and exits immediately.
 
 ### `batch-open-issues.sh`: open one tab per issue
 

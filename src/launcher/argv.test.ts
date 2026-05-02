@@ -86,6 +86,31 @@ describe('parseArgs', () => {
     );
   });
 
+  it('throws TooManyPositionalsError when two positionals are supplied with -S', () => {
+    assert.throws(
+      () => parseArgs(['-S', 'a', 'b']),
+      (err: unknown) => {
+        assert.ok(
+          err instanceof TooManyPositionalsError,
+          'should be TooManyPositionalsError',
+        );
+        assert.ok(
+          (err as TooManyPositionalsError).message.includes(
+            'Too many positional arguments',
+          ),
+          'message should mention too many positional arguments',
+        );
+        assert.ok(
+          (err as TooManyPositionalsError).message.includes(
+            'Usage: tpk [--skip]',
+          ),
+          'message should contain the usage hint',
+        );
+        return true;
+      },
+    );
+  });
+
   it('still throws UnknownFlagError for an unknown flag in the presence of a positional', () => {
     assert.throws(
       () => parseArgs(['--unknown', '/cmd']),

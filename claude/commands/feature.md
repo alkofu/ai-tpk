@@ -16,7 +16,7 @@ If Bitsmith reports a `gh issue create` failure (e.g., network error, repo permi
 
 On successful issue creation, DM extracts the issue number from the URL Bitsmith returned and stores it in DM session context under `SESSION_ISSUE_NUM` (the exact name used by `/feature-issue`). When DM then runs the Worktree Creation Subroutine, the existing `ISSUE_NUM_VALUE` substitution path (step 4a of `worktree-creation-subroutine.md`) writes `ISSUE_NUM` into the sidecar with no subroutine-mechanic changes required.
 
-Before passing the constructive task description downstream, `/feature` injects `Closes #N` into the task description (where N is the newly captured issue number). The injected task description follows this format: a one-line header summarising the user's request, a blank line, the line `Closes #<number>`, a blank line, then the user's original prose. This injection is performed by `/feature`, not by the protocol, so the protocol remains caller-neutral.
+Before passing the constructive task description downstream, `/feature` injects `Closes #N` into the task description (where N is the newly captured issue number). The injected task description follows this format: a one-line header summarizing the user's request, a blank line, the line `Closes #<number>`, a blank line, then the user's original prose. This injection is performed by `/feature`, not by the protocol, so the protocol remains caller-neutral.
 
 If the user rejects the Phase C confirmation prompt, the entire `/feature` session ends — no Worktree Creation Subroutine, no Intake Gate, no Pathfinder, no plan. This matches `/draft-issue`'s rejection behaviour exactly.
 

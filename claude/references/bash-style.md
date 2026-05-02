@@ -126,6 +126,47 @@ git commit -m "feat(api): add batch endpoint" -m "Implements batch processing fo
 git commit -m "feat(api): add batch endpoint" -m "Implements batch processing for bulk operations." -m "BREAKING CHANGE: removes legacy single-item endpoint"
 ```
 
+## Rule: No Command Substitution in Redirect Targets
+
+Never use command substitution (`$(...)`) inside a redirect target -- the right-hand side of `>`, `>>`, `<`, or any redirect operator. The constraint is identical in mechanism to the git-commit case but is not git-specific: any `$(` token anywhere in the command string blocks auto-approval, regardless of which argument position it occupies.
+
+**Enforcement:** `permission-learn.sh` Guard 5 (`is_simple_expansion_only`) blocks auto-approval for any command containing `$(`. The presence of `$(` in a redirect target is not a special case -- the entire command string is scanned, and the command falls through to the interactive permission dialog instead of being auto-approved.
+
+**Wrong -- command substitution in redirect target:**
+
+```bash
+git log --oneline > $(git rev-parse --show-toplevel)/out.log
+```
+
+**Right -- Write tool (preferred):**
+
+Use the `Write` tool instead of shell redirection for file creation. The Write tool is auto-approved for `~/.ai-tpk/` paths (via `Write(~/.ai-tpk/**)` in `allowedTools`), is idempotent, and produces a legible entry in the tool call log without shell syntax.
+
+**Right -- agent-inlined literal path from a prior Bash call:**
+
+When a Bash command must write to a file and the Write tool is not applicable (e.g. capturing stderr or writing to a path outside `~/.ai-tpk/`), compute the path in a prior Bash call, read the literal result from the tool output, and inline it as a literal string in the subsequent command:
+
+```bash
+# Call 1 -- read only: capture the path
+git rev-parse --show-toplevel
+# → /Users/example/my-repo   (read from tool output)
+
+# Call 2 -- write: use the literal path, not $(...)
+git log --oneline > /Users/example/my-repo/out.log
+```
+
+Note: shell variable state does not persist between Bash calls. The agent (not the shell) inlines the literal value from the prior call's output.
+
+**Wrong -- inline capture and redirect in a single call (two violations):**
+
+```bash
+OUT=$(git rev-parse --show-toplevel) ; git log --oneline > "$OUT/out.log"
+```
+
+This fails for two reasons: (1) the `;` violates the No Compound Commands rule and is denied before execution; (2) even split into two separate calls, the first call (`OUT=$(git rev-parse --show-toplevel)`) still contains `$(` which causes Guard 5 (`is_simple_expansion_only`) to block auto-approval, and the shell variable set in Call 1 does not persist to Call 2 anyway.
+
+Before reaching for either alternative, ask whether the file is load-bearing. Many redirections are unnecessary scaffolding -- if the value is only needed by the next step, keep it in the agent's context window rather than materialising it as a file.
+
 ## Rationale
 
 Compound commands:
@@ -145,6 +186,11 @@ Command substitution in git commits:
 - The `$(cat <<'EOF'...)` pattern contains `$(` which blocks auto-approval in `permission-learn.sh`, triggering a manual permission dialog on every commit
 - The temp-file heredoc alternative (`cat > /tmp/... <<'EOF'` + `git commit -F`) fails multiple guards: `cat` is not in the allowlist, `>` fails Guard 5, and multi-line heredocs trigger the compound-command hard deny
 - Multiple `-m` flags on a single `git commit` command achieve the same result while passing all auto-approval guards
+
+Command substitution in redirect targets:
+- Any `$(` token anywhere in a command string blocks Guard 5 (`is_simple_expansion_only`), regardless of whether it appears in a redirect target, a command argument, or an environment assignment
+- The Write-tool workaround works because the file write is performed by the tool harness, not the shell, so no Bash command containing `$(` is issued at all; the agent-inlined literal path workaround works because the `$(...)` evaluation happens in a separate, prior Bash call that never contains the redirect operator, so neither call individually trips Guard 5
+- This structural separation principle generalises: the same reasoning explains why the multi-`-m`-flag workaround for git commits is preferred -- both approaches push the dynamic content out of the shell command string entirely, satisfying Guard 5 without requiring manual approval
 
 ## Applies To
 

@@ -107,6 +107,8 @@ Verify factual claims and assumptions:
 
 Evaluate from multiple angles:
 
+All findings in this phase must satisfy the high-signal review contract defined in the `code-review` skill (`claude/skills/code-review/SKILL.md`). The skill defines the three reportable categories, the five suppressed categories, and the two-pass identify-then-validate workflow that gates every finding before it ships.
+
 For code reviews:
 - **Correctness**: Does it do what it claims? Are there logic errors, off-by-one mistakes, or missing cases?
 - **Completeness**: Are edge cases handled? Are error paths covered? Are all requirements addressed?
@@ -127,7 +129,7 @@ For plan reviews:
 ### Phase 4: Gap Analysis, Self-Audit, and Realist Check
 
 - **Gap Analysis**: What is missing that should be present? What scenarios are unaddressed? What assumptions are unstated?
-- **Self-Audit**: Challenge your own findings. Are you being fair? Is each finding actionable and justified? Remove any finding that is speculative or nitpicky without substance. Distinguish genuine flaws from stylistic preferences. Do not invent findings to avoid marking a dimension as "no findings." Empty dimensions are expected and valid.
+- **Self-Audit**: Challenge your own findings. Apply the validate pass from the `code-review` skill (`claude/skills/code-review/SKILL.md`) — for each finding, confirm it is in a reportable category, not in a suppressed category, and supported by concrete evidence. Remove any finding that fails this check. Distinguish genuine flaws from stylistic preferences. Do not invent findings to avoid marking a dimension as "no findings." Empty dimensions are expected and valid.
 - **Realist Check**: Given real-world constraints (time, team size, project stage), are your expectations reasonable? Distinguish between "must fix" and "ideally would fix." Pressure-test severity against realistic worst-case scenarios and mitigating factors.
 
 ### Phase 5: Specialist Assessment

@@ -56,16 +56,16 @@ This subroutine is **invoked explicitly** by routing branches in `claude/agents/
 - `{SESSION_TS}` → the literal session-timestamp string (e.g., `20260427-190621`)
 - `{SESSION_SLUG}` → the literal session-slug string (e.g., `send-osc-session-metadata`)
 - `{WORKTREE_PATH}` → the literal absolute worktree path returned by step 2
-- `ISSUE_NUM_VALUE` → DM assigns `""` if no `/feature-issue` was used, or the literal integer string (e.g., `"42"`) if DM's session context contains `SESSION_ISSUE_NUM` from a prior `/feature-issue` invocation. This is a bash variable assigned in the script body — NOT a `{...}` placeholder and NOT a runtime env var.
+- `ISSUE_NUM_VALUE` → DM assigns `""` if no upstream command captured `SESSION_ISSUE_NUM`, or the literal integer string (e.g., `"42"`) if DM's session context contains `SESSION_ISSUE_NUM` from any upstream source (currently `/feature-issue` or `/feature --file-issue`). This is a bash variable assigned in the script body — NOT a `{...}` placeholder and NOT a runtime env var.
 
    **Authoritative sidecar-write block** (no `$ENV.*`, no dead `--argjson` flags, atomic `tmp-then-mv`):
 
    ```bash
    # Substitution: DM substitutes {WORKTREE_PATH}, {SESSION_TS}, {SESSION_SLUG}
    # as literal strings at delegation time. ISSUE_NUM_VALUE is set by DM in the
-   # script body — "" if no /feature-issue was used, or the literal integer (e.g. "42").
+   # script body — "" if no upstream command captured SESSION_ISSUE_NUM, or the literal integer (e.g. "42").
    # These are NOT runtime env vars.
-   ISSUE_NUM_VALUE=""   # DM sets to e.g. "42" if /feature-issue was used
+   ISSUE_NUM_VALUE=""   # DM sets to e.g. "42" if SESSION_ISSUE_NUM was captured upstream
 
    WORKTREE_SLUG=$(basename "{WORKTREE_PATH}")
    SIDECAR="$HOME/.ai-tpk/session-context/by-worktree/${WORKTREE_SLUG}.json"

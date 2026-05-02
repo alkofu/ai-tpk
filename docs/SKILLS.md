@@ -17,7 +17,7 @@ Reference files contain shared behavioral vocabulary loaded by agents at runtime
 
 ### Available References
 
-- **`bash-style.md`** — Required Bash command style for all agents with Bash tool access. Defines four enforced rules: no compound commands (`&&`, `;`), no process substitution (`<(`, `>(`), no `--no-verify` on git commands, and no command substitution (`$(...)`) or heredoc patterns in git commit commands (use multiple `-m` flags instead). The PermissionRequest hook enforces the first three rules automatically; the fourth is an instruction-level override of Claude Code's built-in commit pattern.
+- **`bash-style.md`** — Required Bash command style for all agents with Bash tool access. Defines five enforced rules: no compound commands (`&&`, `;`), no process substitution (`<(`, `>(`), no `--no-verify` on git commands, no command substitution (`$(...)`) or heredoc patterns in git commit commands (use multiple `-m` flags instead), and no command substitution in redirect targets (use the Write tool for `~/.ai-tpk/` paths; inline a pre-computed literal path otherwise). The PermissionRequest hook enforces the first three rules automatically; the last two are instruction-level overrides enforced by Guard 5 (`is_simple_expansion_only`) in `permission-learn.sh`.
 
 - **`implementation-standards.md`** — Shared behavioral norms for implementation, planning, and review agents: Minimal Diff, YAGNI, and Test-First Protocol. Bitsmith, Pathfinder, Ruinor, and Knotcutter cite this as the canonical source. Each agent may elaborate with role-specific depth in its own definition file.
 

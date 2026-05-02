@@ -155,7 +155,7 @@ git rev-parse --show-toplevel
 git log --oneline > /Users/example/my-repo/out.log
 ```
 
-Note: shell variable state does not persist between Bash calls. The agent (not the shell) inlines the literal value from the prior call's output.
+Note: shell variable state does not persist between Bash calls. The agent (not the shell) places the literal value from the prior call's output directly into the next command.
 
 **Wrong -- inline capture and redirect in a single call (two violations):**
 
@@ -165,7 +165,7 @@ OUT=$(git rev-parse --show-toplevel) ; git log --oneline > "$OUT/out.log"
 
 This fails for two reasons: (1) the `;` violates the No Compound Commands rule and is denied before execution; (2) even split into two separate calls, the first call (`OUT=$(git rev-parse --show-toplevel)`) still contains `$(` which causes Guard 5 (`is_simple_expansion_only`) to block auto-approval, and the shell variable set in Call 1 does not persist to Call 2 anyway.
 
-Before reaching for either alternative, ask whether the file is load-bearing. Many redirections are unnecessary scaffolding -- if the value is only needed by the next step, keep it in the agent's context window rather than materialising it as a file.
+Before reaching for either alternative, ask whether the file is load-bearing. Many redirections are unnecessary scaffolding -- if the value is only needed by the next step, keep it in the agent's context window rather than materializing it as a file.
 
 ## Rationale
 
@@ -190,7 +190,7 @@ Command substitution in git commits:
 Command substitution in redirect targets:
 - Any `$(` token anywhere in a command string blocks Guard 5 (`is_simple_expansion_only`), regardless of whether it appears in a redirect target, a command argument, or an environment assignment
 - The Write-tool workaround works because the file write is performed by the tool harness, not the shell, so no Bash command containing `$(` is issued at all; the agent-inlined literal path workaround works because the `$(...)` evaluation happens in a separate, prior Bash call that never contains the redirect operator, so neither call individually trips Guard 5
-- This structural separation principle generalises: the same reasoning explains why the multi-`-m`-flag workaround for git commits is preferred -- both approaches push the dynamic content out of the shell command string entirely, satisfying Guard 5 without requiring manual approval
+- This structural separation principle generalizes: the same reasoning explains why the multi-`-m`-flag workaround for git commits is preferred -- both approaches push the dynamic content out of the shell command string entirely, satisfying Guard 5 without requiring manual approval
 
 ## Applies To
 

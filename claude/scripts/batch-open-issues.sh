@@ -88,11 +88,11 @@ expand_arg() {
   if [[ "$arg" =~ ^[0-9]+-[0-9]+$ ]]; then
     local start=$((10#${arg%-*}))
     local end=$((10#${arg#*-}))
-    if (( start > end )); then
+    if ((start > end)); then
       printf "batch-open-issues: invalid range '%s': start must be <= end\n" "$arg" >&2
       return 2
     fi
-    for (( i = start; i <= end; i++ )); do
+    for ((i = start; i <= end; i++)); do
       printf '%s\n' "$i"
     done
     return 0
@@ -106,7 +106,7 @@ for arg in "$@"; do
   expanded=$(expand_arg "$arg") || exit 2
   while IFS= read -r n; do
     ISSUE_NUMBERS+=("$n")
-  done <<< "$expanded"
+  done <<<"$expanded"
 done
 
 LIB="${HOME}/.claude/hooks/lib-tab-rename.sh"

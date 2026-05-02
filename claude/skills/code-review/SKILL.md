@@ -46,7 +46,7 @@ Do NOT flag:
 
 1. **Pre-existing issues not introduced by this change.** Example: flagging a poorly named variable that existed in the file before the diff. That problem predates this review; it belongs in a separate cleanup task.
 
-2. **Code style or formatting concerns catchable by a linter.** Example: flagging inconsistent spacing or a missing trailing comma. Linters handle these; reviewers should not re-do linter work.
+2. **Code style or formatting concerns detectable by a linter.** Example: flagging inconsistent spacing or a missing trailing comma. Linters handle these; reviewers should not re-do linter work.
 
 3. **Potential issues that depend on specific runtime state or inputs.** Example: "This could fail if the list is empty" when the calling code always populates the list before this point. Speculative failures require evidence, not imagination.
 

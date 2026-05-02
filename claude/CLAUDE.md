@@ -33,6 +33,6 @@ All Bash tool usage is governed by `claude/references/bash-style.md`. The rules 
 
 The `/draft-issue` command runs an advisory-pipeline workflow that turns a short feature description into a filed GitHub issue, optionally clarifying scope through DM-direct Q&A and using `gh issue create` (delegated to Bitsmith) to file the issue.
 
-Use `/draft-issue` to capture an idea for later implementation. Use `/feature-issue <issue-number-or-url>` to pick up a filed issue and start the constructive planning pipeline. Use `/feature` to start a fresh planning session without filing an issue first.
+Use `/draft-issue` to capture an idea for later implementation. Use `/feature-issue <issue-number-or-url>` to pick up a filed issue and start the constructive planning pipeline. Use `/feature` to start a fresh planning session without filing an issue first. Use `/feature --file-issue` to file a GitHub issue and immediately start planning against it in a single session — equivalent to `/draft-issue` followed by `/feature-issue <new-url>` but combined.
 
 `/draft-issue` does not create a worktree, a plan file, or a branch. The only side effect is the GitHub issue creation, which is preceded by an inline confirmation prompt.

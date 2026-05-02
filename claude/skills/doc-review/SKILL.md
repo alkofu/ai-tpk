@@ -15,7 +15,7 @@ The skill does not write or fix documentation. That is the caller's responsibili
 
 ## Discovery
 
-Before analysing gaps, enumerate all in-scope documentation and the context the documentation should describe.
+Before analyzing gaps, enumerate all in-scope documentation and the context the documentation should describe.
 
 **Where to look for user-facing documentation:**
 - Top-level files matching `README*`, `CHANGELOG*`, `CONTRIBUTING*`, `LICENSE*`, `NOTICE*`, `CODE_OF_CONDUCT*`
@@ -69,7 +69,7 @@ Apply the following rules before promoting any finding to the output. If a candi
 
 3. **Generated files are not documentation gaps.** Lockfiles, build outputs, and machine-managed sections of dependency manifests are not documentation. Do not flag their absence from docs.
 
-4. **Declared non-goals are not gaps.** When the project explicitly states a non-goal — in a `NON-GOALS.md` file, an "out of scope" section in `README.md`, a constitution principle, or a similarly authoritative location — do not flag the absence of coverage for features or behaviours listed there.
+4. **Declared non-goals are not gaps.** When the project explicitly states a non-goal — in a `NON-GOALS.md` file, an "out of scope" section in `README.md`, a constitution principle, or a similarly authoritative location — do not flag the absence of coverage for features or behaviors listed there.
 
 5. **Apply the reasonable-new-user test before escalating tier.** Before promoting a finding to Critical or Important, ask: "Would a reasonable new user notice this gap and be blocked by it?" If the answer is no, downgrade the finding to Polish or suppress it entirely.
 

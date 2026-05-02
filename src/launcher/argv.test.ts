@@ -190,7 +190,10 @@ describe('parseArgs', () => {
     assert.throws(
       () => parseArgs(['-s']),
       (err: unknown) => {
-        assert.ok(err instanceof UnknownFlagError, 'should be UnknownFlagError');
+        assert.ok(
+          err instanceof UnknownFlagError,
+          'should be UnknownFlagError',
+        );
         assert.ok(
           (err as UnknownFlagError).message.includes('-s'),
           'message should contain the offending flag',

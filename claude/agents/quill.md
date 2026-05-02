@@ -54,6 +54,7 @@ See `claude/references/worktree-protocol.md` for the shared activation rule.
 - Audit existing documentation against current codebase
 - Compare against recent code changes
 - Flag absent sections (setup instructions, API reference, system design, learning materials)
+- Apply the `doc-review` skill to drive this step. The skill defines the discovery procedure, the four analysis areas (coverage, accuracy, discoverability, onboarding readability), the three finding tiers (critical, important, polish), and the false-positive suppression rules to apply before reporting any gap.
 
 **2. Planning**
 - Outline document structure with hierarchical headings

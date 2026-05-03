@@ -21,6 +21,7 @@ pre-push:
   parallel: true
   commands:
     verify-signed-commits:
+      use_stdin: true
       run: node scripts/verify-signed-commits-on-push.js
     lint:
       glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"

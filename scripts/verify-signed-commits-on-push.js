@@ -27,6 +27,9 @@ const raw = readFileSync(0, 'utf8');
 const lines = raw.split('\n').filter((l) => l.length > 0);
 
 if (lines.length === 0) {
+  process.stderr.write(
+    'verify-signed-commits-on-push: no refs received on stdin (is `use_stdin: true` set on the lefthook command?); skipping — no commits to check.\n',
+  );
   process.exit(0);
 }
 
@@ -121,7 +124,7 @@ for (const { rangeArgs, refPair } of tuples) {
 
   const logLines = result.stdout.split('\n').filter((l) => l.length > 0);
   for (const logLine of logLines) {
-    // %H is 40 hex chars, %ae has no whitespace, %G? is a single char.
+    // %H is 40 hex chars; %ae may contain spaces (user.email is unconstrained by git); %G? is a single char. Slice/join reconstructs the email correctly for space-containing values.
     const parts = logLine.split(' ');
     if (parts.length < 3) continue;
     const sha = parts[0];
@@ -165,7 +168,8 @@ for (const { sha, refPair, sigStatus, reason } of failures) {
   }
 
   const subjectResult = git(['log', '-1', '--format=%s', sha, '--']);
-  const subject = subjectResult.stdout.split('\n')[0] ?? '';
+  const subject =
+    subjectResult.stdout?.split('\n')[0] ?? '(subject unavailable)';
 
   process.stderr.write(
     `BLOCKED: ${reason} commit by ${sanitize(userEmail)}\n` +

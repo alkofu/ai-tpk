@@ -53,7 +53,7 @@ Skills are reusable capabilities that enhance Claude's functionality. Three mand
 
 - **`commit-message-guide`** — Enforces conventional commit format for all git commits
 - **`validate-before-pr`** — Runs lint and format checks (via stack detection: npm, Make, Python, Go, Rust) before opening a PR; gates PR creation on passing checks
-- **`open-pull-request`** — Creates pull requests with conventional naming, draft mode, and pre-flight validation; covers post-creation lifecycle: acting on reviewer feedback and draft-to-ready criteria
+- **`open-pull-request`** — Creates pull requests with conventional naming, draft mode, and pre-flight validation; covers post-creation lifecycle: mandatory implementation review and acting on reviewer feedback
 
 Additional skills (non-mandatory):
 

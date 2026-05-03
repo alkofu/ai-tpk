@@ -10,11 +10,11 @@ pre-commit:
     ruff-check:
       glob: "dungeon/**/*.py"
       root: dungeon/
-      run: uv run ruff check .
+      run: uv run ruff check {staged_files}
     ruff-format-check:
       glob: "dungeon/**/*.py"
       root: dungeon/
-      run: uv run ruff format --check .
+      run: uv run ruff format --check {staged_files}
 
 pre-push:
   commands:

@@ -58,7 +58,7 @@ Skills are reusable capabilities that enhance Claude's functionality. Three mand
 Additional skills (non-mandatory):
 
 - **`write-reliable-tests`** — Guides authorship and review of deterministic, isolated, and idempotent automated tests across unit, integration, and e2e levels; applied automatically whenever test code is being written or evaluated
-- **`file-organization`** — Guide for file and module organization decisions
+- **`file-organization`** — Structural reference for file, module, and directory organization: when to split or merge files, when to create a new directory, where test files should live (co-located vs. separate `tests/`), and how to name directories so their responsibility is immediately legible
 - **`bash-code-quality`** — Defensive coding standards for bash scripts authored as deliverables: strict mode, safe quoting, error trapping, recurring patterns, and anti-patterns; applied automatically when writing or editing `.sh` files or scripts with a bash shebang
 - **`skill-creator`** — Creates and improves skills in this repository
 - **`task-observer`** — Captures lightweight session observations (friction, repeated mistakes, workarounds) as individual timestamp-and-pid-namespaced files under `~/.ai-tpk/observations/`. Observations are reviewed and turned into skill improvements via `/review-observations`, with explicit user approval on a literal unified diff before any skill file is touched. Activates by description-match; does not modify skills autonomously.

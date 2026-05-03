@@ -220,12 +220,6 @@ When inline comments or change requests arrive:
 - Re-run `validate-before-pr` after implementing feedback, before requesting re-review
 - Do not remove the draft flag or request re-review until all feedback has been addressed
 
-**3. Draft → ready**
-Only remove the draft flag when:
-- All Phase 4 review gates have passed (ACCEPT or ACCEPT-WITH-RESERVATIONS from all reviewers)
-- All outstanding reviewer feedback has been addressed and verified
-- `validate-before-pr` passes on the final state of the branch
-
 ## Relationship to other skills
 
 - **Commits**: Follow **commit-message-guide** for message bodies and footers. It also documents **WIP** and **fixup!** subject lines—pair fixup commits with `git rebase -i --autosquash` to merge them into the target commit.

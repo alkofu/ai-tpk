@@ -20,6 +20,8 @@ pre-commit:
 pre-push:
   parallel: true
   commands:
+    verify-signed-commits:
+      run: node scripts/verify-signed-commits-on-push.js
     lint:
       glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"
       run: pnpm run lint

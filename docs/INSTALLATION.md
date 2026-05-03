@@ -48,7 +48,7 @@ pnpm run setup
 
 **Note:** The `pnpm run build` command bundles the installer via esbuild into `dist/installer.js`. The `pnpm run setup` command executes the pre-built bundle, ensuring your development environment uses the same code path as end-users. This keeps installer behavior consistent during development.
 
-After setup, you can test changes locally. Lefthook runs shellcheck + markdownlint at pre-commit and JS/TS lint, format checks, YAML lint, shell format check, spell-check, mypy, and pytest at pre-push.
+After setup, you can test changes locally. Lefthook runs shellcheck + markdownlint at pre-commit and signed-commit verification, JS/TS lint, format checks, YAML lint, shell format check, spell-check, mypy, and pytest at pre-push.
 
 **Note:** The installer automatically backs up any existing configurations with a timestamp before overwriting them.
 
@@ -88,7 +88,7 @@ Lefthook runs shellcheck (`pnpm run lint:sh`) on staged `.sh` files and markdown
 
 **Pre-Push Hook:**
 
-Lefthook runs lint, format, shell format-check, spell-check, and YAML lint on every push. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; shell file changes trigger `pnpm run format:check:sh`; YAML file changes trigger `pnpm run lint:yaml`; Markdown, TypeScript, or shell file changes trigger `pnpm run spellcheck`. If any check fails, the push is blocked. Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown, YAML, and spelling violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
+Lefthook runs signed-commit verification, lint, format, shell format-check, spell-check, and YAML lint on every push. The `verify-signed-commits` check runs first (unconditionally, via stdin): it inspects every commit being pushed that was authored by the current user and fails if any commit is unsigned or has a bad or revoked signature. Signatures that are valid but whose key is not in the local signers database are accepted — no `gpg.ssh.allowedSignersFile` configuration is required. JS/TS file changes trigger `pnpm run lint` and `pnpm run format:check`; shell file changes trigger `pnpm run format:check:sh`; YAML file changes trigger `pnpm run lint:yaml`; Markdown, TypeScript, or shell file changes trigger `pnpm run spellcheck`. If any check fails, the push is blocked. To satisfy the signed-commit check, ensure your commits are GPG- or SSH-signed — see the [GitHub documentation on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits). Run `pnpm run format` to auto-fix TypeScript formatting issues. Markdown, YAML, and spelling violations must be fixed manually. Hook configuration lives in `lefthook.yml`.
 
 **Note for sibling-worktree onboarding:** After pulling this change into existing worktrees, run `pnpm install` to pick up the new `cspell` dependency. Without this, the pre-push hook will fail with `cspell: command not found`.
 
@@ -141,7 +141,7 @@ When making changes to this repository:
 3. **Build and reinstall** — Run `pnpm run build` to rebuild the installer bundle, then `./install.sh` to deploy to `~/.claude/`, then `./clean-backups.sh` to remove stale backups. The `/build-and-install` repo-scope slash command automates all three steps in sequence.
 4. **Test** — Run `pnpm test` to execute the test suite
 5. **Lint and format** — Run `pnpm run format` to auto-fix TypeScript formatting, then `pnpm run lint` to verify code quality, `pnpm run lint:md` to verify Markdown style, `pnpm run lint:yaml` to verify YAML style, and `pnpm run spellcheck` to verify spelling
-6. **Commit and push** — The pre-push hook (Lefthook) automatically runs linting and format checks; they must pass before pushing
+6. **Commit and push** — The pre-push hook (Lefthook) automatically verifies that all pushed commits authored by the current user (per `git config user.email`) are cryptographically signed and runs linting and format checks; both must pass before pushing
 
 ## Updating
 

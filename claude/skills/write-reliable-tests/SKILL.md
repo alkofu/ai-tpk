@@ -180,6 +180,24 @@ Before finalizing any test, confirm:
 - [ ] Is cleanup registered immediately and safe to run multiple times?
 - [ ] Is the test level (unit/integration/e2e) appropriate for what it proves?
 
+## Post-Implementation Self-Check
+
+After writing all tests, perform this verification pass before declaring the step complete.
+
+**1. Plan coverage check**
+Cross-reference every planned behavior and acceptance criterion against the tests that were actually written. For each planned item, confirm at least one test exercises it. A planned scenario with no test is a gap — go back and fill it before marking done.
+
+**2. Scope check**
+Review the test file(s) for scope creep. Are any tests exercising behaviors not listed in the plan? If so, evaluate whether they provide clear, justified value or should be removed to keep the scope clean. Err toward removal unless the additional tests prevent a real, foreseeable regression.
+
+**3. Placement check**
+Confirm test files are in the location the plan specified — co-located vs. a `tests/` directory, unit vs. integration level. A test in the wrong location may not be picked up by the test runner or may conflict with existing test organization conventions.
+
+**4. Execution check**
+Where the environment permits, verify tests run without error. A test that cannot execute due to a missing import, wrong module path, or broken setup provides no value. Fix execution errors before reporting completion.
+
+If any check reveals a gap, address it before marking the step done. Do not report completion based on the number of tests written — report based on the coverage they provide.
+
 ## Output Expectations
 
 **When writing a new test:**
@@ -188,6 +206,7 @@ Before finalizing any test, confirm:
 3. Describe the setup and cleanup approach
 4. Write the test using Arrange / Act / Assert
 5. Briefly explain why the test is reliable
+6. Run the Post-Implementation Self-Check (plan coverage, scope, placement, execution) and report any gaps found and addressed
 
 **When reviewing an existing test:**
 1. Identify flake risks (non-determinism, shared state, timing)

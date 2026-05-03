@@ -28,7 +28,7 @@
     "launch": "tsx src/launcher/main.ts",
     "test": "node --import tsx/esm --test 'src/installer/**/*.test.ts' 'src/launcher/**/*.test.ts'",
     "lint": "oxlint src/installer/ src/launcher/",
-    "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore plans --ignore lessons --ignore 'docs/superpowers' --ignore 'claude/cache' --ignore .worktrees",
+    "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore plans --ignore lessons --ignore 'docs/superpowers' --ignore 'claude/cache' --ignore .worktrees --ignore .git --ignore .claude/worktrees --ignore dungeon/.venv",
     "spellcheck": "cspell '**/*.{md,ts,sh}' --no-progress --exclude 'node_modules/**' --exclude 'dist/**' --exclude 'pnpm-lock.yaml' --exclude 'plans/**' --exclude 'lessons/**' --exclude 'docs/superpowers/**' --exclude 'claude/cache/**' --exclude '.git/**' --exclude '.worktrees/**'",
     "lint:yaml": "yamllint lefthook.yml .github/ .yamllint.yml",
     "format": "oxfmt --write src/installer/ src/launcher/",

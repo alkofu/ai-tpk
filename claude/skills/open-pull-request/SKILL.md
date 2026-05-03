@@ -208,6 +208,24 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 - [ ] PR is opened as a **draft** and **assigned to the user** (`@me` or equivalent)
 - [ ] No AI/tool attribution in title or body
 
+## After PR Creation
+
+**1. Implementation review**
+The PR is in draft state and not ready to merge. Ruinor code review runs as a mandatory next step; treat PR creation as the beginning of the review phase, not the end of the implementation phase.
+
+**2. Acting on reviewer feedback**
+When inline comments or change requests arrive:
+- Read all feedback in full — inline comments, review body, and general comments — before making any changes
+- Address all requested changes in focused commits; do not introduce unrelated refactors or cleanups alongside feedback responses
+- Re-run `validate-before-pr` after implementing feedback, before requesting re-review
+- Do not remove the draft flag or request re-review until all feedback has been addressed
+
+**3. Draft → ready**
+Only remove the draft flag when:
+- All Phase 4 review gates have passed (ACCEPT or ACCEPT-WITH-RESERVATIONS from all reviewers)
+- All outstanding reviewer feedback has been addressed and verified
+- `validate-before-pr` passes on the final state of the branch
+
 ## Relationship to other skills
 
 - **Commits**: Follow **commit-message-guide** for message bodies and footers. It also documents **WIP** and **fixup!** subject lines—pair fixup commits with `git rebase -i --autosquash` to merge them into the target commit.

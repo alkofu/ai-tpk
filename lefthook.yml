@@ -1,5 +1,6 @@
 # Note: lint-sh and lint-md run at pre-commit only and over the full file set (pnpm script scope), not just staged files.
 pre-commit:
+  parallel: true
   commands:
     lint-sh:
       glob: "**/*.sh"
@@ -17,6 +18,7 @@ pre-commit:
       run: uv run ruff format --check {staged_files}
 
 pre-push:
+  parallel: true
   commands:
     lint:
       glob: "**/*.{js,jsx,ts,tsx,mjs,cjs}"

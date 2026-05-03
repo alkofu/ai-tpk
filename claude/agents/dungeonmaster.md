@@ -581,7 +581,7 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
     **Authority statement.** The Phase 5 description is authoritative after a full pipeline run — this step will overwrite any manual `gh pr edit --body` changes the user made between PR creation and the current pipeline completion. This is intentional: the DM-composed description reflects the most recent plan, changes, and reviewer verdicts.
 
     **5e — Worktree log:**
-    Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Run `/open-pr` to create a pull request, or handle cleanup manually."
+    Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Open a PR now? Reply `/open-pr` to proceed, or handle cleanup manually."
 
     **Note:** Plan files are stored in `~/.ai-tpk/plans/{REPO_SLUG}/` and are not affected by worktree removal. To clean up plan files after a merge, use the `/merged` command (which offers plan file deletion) or the `/clean-ai-tpk-artifacts` command (age-based cleanup).
 

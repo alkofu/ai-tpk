@@ -11,7 +11,7 @@ These three fields appear at the end of Templates A, B, and C. Reproduce them ve
 ```
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
 **Token usage:** {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read | unavailable
-**Next action:** {contextual next step suggestion, e.g., "Run /open-pr" or "Run /merge-pr"}
+**Next action:** {contextual directed-prompt suggestion, e.g., "Open a PR now? Reply /open-pr to proceed." or "Merge now? Reply /merge-pr to proceed."}
 ```
 
 **Note on Template D:** Templates A–C reuse the Common Fields block verbatim. Template D uses a specialized subset (Token usage only) due to its post-cleanup context where the Worktree has already been removed and Next action is not applicable. The Worktree field is replaced by the more specific "Worktree removed" field in Template D.
@@ -37,7 +37,7 @@ Used for constructive pipeline sessions (e.g., sessions driven by `/feature`).
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
 **Token usage:** {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read | unavailable
-**Next action:** {contextual next step suggestion, e.g., "Run /open-pr" or "Run /merge-pr"}
+**Next action:** {contextual directed-prompt suggestion, e.g., "Open a PR now? Reply /open-pr to proceed." or "Merge now? Reply /merge-pr to proceed."}
 
 **Risks / follow-ups:**
 - {item, or "None identified"}
@@ -67,7 +67,7 @@ Used for investigative pipeline sessions (e.g., sessions driven by `/bug`). Exte
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
 **Token usage:** {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read | unavailable
-**Next action:** {contextual next step suggestion, e.g., "Run /open-pr" or "Run /merge-pr"}
+**Next action:** {contextual directed-prompt suggestion, e.g., "Open a PR now? Reply /open-pr to proceed." or "Merge now? Reply /merge-pr to proceed."}
 
 **Risks / follow-ups:**
 - {item, or "None identified"}
@@ -90,7 +90,7 @@ Used after a pull request is successfully created by `/open-pr`.
 
 **Worktree:** `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}` | skipped (no worktree)
 **Token usage:** {input}k in / {output}k out / {cache_write}k cache-write / {cache_read}k cache-read | unavailable
-**Next action:** {contextual next step suggestion, e.g., "Run /open-pr" or "Run /merge-pr"}
+**Next action:** {contextual directed-prompt suggestion, e.g., "Open a PR now? Reply /open-pr to proceed." or "Merge now? Reply /merge-pr to proceed."}
 ```
 
 ---

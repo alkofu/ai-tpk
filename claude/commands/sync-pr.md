@@ -11,7 +11,9 @@ be delegated to Bitsmith per the DM delegation policy. Those steps are marked be
 
 ## Step 1 — Run preflight checks
 
-Run: `bash ~/.claude/scripts/git-preflight.sh sync-pr`
+Run: `bash ~/.claude/scripts/git-preflight.sh sync-pr` (with `{WORKING_DIRECTORY}` appended as the second argument when the worktree context block is present in the session; omit the second argument when running outside a worktree session).
+
+The second argument scopes the script's git branch detection to the worktree, ensuring the correct PR branch is detected. Omit it outside a worktree session — the script falls back to the shell's CWD.
 
 This script verifies GitHub authentication, detects the current branch, and guards against
 protected branches (`main`, `master`, `develop`). On success it prints the detected branch

@@ -39,7 +39,13 @@ pre-push:
       glob: "dungeon/**/*.py"
       root: dungeon/
       run: uv run mypy src
+      skip:
+        - merge
+        - rebase
     pytest:
       glob: "dungeon/**/*.py"
       root: dungeon/
       run: uv run pytest
+      skip:
+        - merge
+        - rebase

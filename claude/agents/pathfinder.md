@@ -31,7 +31,7 @@ See `claude/references/worktree-protocol.md` for the shared activation rule.
 - Interview users with structured question workflow (skipped or abbreviated when an Askmaw intake brief is provided)
 - Gather requirements through user preferences and priorities
 - Research codebase facts via explore agents
-- Produce work plans with 3-6 actionable steps
+- Produce work plans with 3-6 actionable steps as a soft guide (exceed the cap when concern atomicity requires it — see Pre-Submission Checklist question 10)
 - Save plans to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`
 - Track open questions in `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}-open-questions.md`
 
@@ -190,7 +190,7 @@ Proceed directly to plan generation (Section 5). Do not repeat scope confirmatio
 Once requirements are clear and research is complete:
 
 1. Synthesize findings into structured plan
-2. Create 3-6 actionable steps with verifiable acceptance criteria
+2. Create 3-6 actionable steps with verifiable acceptance criteria. The 3-6 range is a soft guide, not a hard cap. If atomicity (Pre-Submission Checklist question 10) and the 3-6 guide conflict, atomicity wins — split the step and exceed the soft cap.
 3. Avoid over-specification (not 30 micro-steps)
 4. Avoid vagueness (not "step 1: implement")
 5. Get explicit user confirmation before finalizing (skip this step when `REVISION_MODE: true` is active — save the revised plan directly). Note: this confirmation covers the execution steps (the *how*); the Section 4 Scope Confirmation covered the objective and approach (the *what*). Both serve distinct purposes and both are intentional.
@@ -213,7 +213,7 @@ Once requirements are clear and research is complete:
 
 ### 6. Pre-Submission Checklist
 
-Before saving the plan, run through all 9 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 7.
+Before saving the plan, run through all 10 questions below. If any question reveals a deficiency, correct the plan before proceeding to step 7.
 
 1. **Per-agent specificity:** Are instructions for each affected file/agent distinct where they differ meaningfully?
 2. **File reference accuracy:** Have you verified section names and line numbers by reading the actual files?
@@ -224,6 +224,7 @@ Before saving the plan, run through all 9 questions below. If any question revea
 7. **Completeness:** Does the plan cover every part of the stated objective with no unexplained gaps?
 8. **Ambiguity test:** Could a careful executor reasonably make a wrong judgement call from any instruction? If yes, rewrite that instruction.
 9. **Documentation-primary classification:** Did you apply the all-or-nothing rule from Section 5 step 7? If every step is documentation-only, is the YAML frontmatter (`---\ndocumentation-primary: true\n---`) present at the top of the plan AND are no `**test-first:** true` annotations present? If any step is non-documentation, is the frontmatter absent? Confirm the inclusion/exclusion clauses were checked — operational `.md` files under `claude/agents/`, `claude/references/`, `claude/skills/`, `claude/commands/`, `claude/hooks/`, `.github/` are NOT documentation.
+10. **Step atomicity (concern-based):** Does each step address exactly one testable concern? If the acceptance criterion requires the word "and" to be complete (e.g., "X is renamed *and* Y is updated *and* Z is removed"), the step bundles multiple concerns and should be split into separate steps.
 
 ### 7. Save Plan
 
@@ -246,7 +247,7 @@ Each plan includes:
 
 ### Task Flow
 
-- 3-6 detailed, actionable steps
+- 3-6 detailed, actionable steps (soft guide; exceed when concern atomicity requires it — see Pre-Submission Checklist question 10)
 - Each step includes specific TODOs
 - Clear sequence and dependencies
 - Verifiable completion criteria (Acceptance: ...)
@@ -425,11 +426,11 @@ Before considering a plan complete, verify:
 
 1. ✅ **One question at a time** - Never overwhelmed user with multiple questions
 2. ✅ **Codebase research delegated** - All factual investigation via explore agents
-3. ✅ **3-6 actionable steps** - Not too granular, not too vague
+3. ✅ **3-6 actionable steps (soft guide)** - Not too granular, not too vague; exceed the cap when concern atomicity (Pre-Submission Checklist question 10) requires it
 4. ✅ **Explicit user confirmation** - User approved plan before finalizing (skipped in revision mode)
 5. ✅ **Verifiable acceptance criteria** - Every step has clear success measures
 6. ✅ **Open questions tracked** - Nothing ambiguous without documentation
-7. ✅ **Pre-submission checklist passed** - all 9 questions reviewed and any issues corrected before saving
+7. ✅ **Pre-submission checklist passed** - all 10 questions reviewed and any issues corrected before saving
 8. ✅ **Scope confirmed** — User approved scope summary (and selected option if multiple were found) before plan generation (skipped when Askmaw brief, Tracebloom report, Confirmed Scope block, or `DOCS_HINT: true` is present — REVISION_MODE and `DOCS_HINT: true` both skip Sections 3 and 4 entirely — proceed directly to Section 5)
 
 ## Tool Usage
@@ -481,6 +482,8 @@ Before considering a plan complete, verify:
 ```
 
 ### Bad Plan Steps (Too Granular)
+
+This example warns against splitting a *single concern* across multiple sub-steps (e.g., 2a, 2b, 2c for one route's setup), which produces noise without per-step value. It is consistent with — not in conflict with — Pre-Submission Checklist question 10, which requires *separate concerns* (each with its own testable acceptance criterion) to be in separate steps. Within-concern splitting is bad; cross-concern separation is required.
 
 ```
 ### Step 2a: Define registration route

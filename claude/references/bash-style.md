@@ -167,6 +167,35 @@ This fails for two reasons: (1) the `;` violates the No Compound Commands rule a
 
 Before reaching for either alternative, ask whether the file is load-bearing. Many redirections are unnecessary scaffolding -- if the value is only needed by the next step, keep it in the agent's context window rather than materializing it as a file.
 
+## Rule: No awk/sed for Line-Range File Reads
+
+Do not use `awk` or `sed` to read a specific range of lines from a file. Common forms to avoid:
+
+```bash
+awk 'NR>=10 && NR<=20 {print} NR>20{exit}' file.txt
+sed -n '10,20p' file.txt
+sed -n '10p' file.txt
+```
+
+Use the Read tool with its `offset` and `limit` parameters instead. The Read tool is the correct primitive for targeted file reads.
+
+**Enforcement:** `awk` and `sed` are deliberately excluded from `allowedTools` because their command surface is too large to safely auto-approve — arbitrary file reads, writes, and in-place substitutions are all possible with a single invocation, and the hook cannot distinguish a safe line-range read from a path-traversal or file-modification attempt. Adding either tool to the allowlist would expose arbitrary-file-read and arbitrary-file-write vectors. Although the hook does not hard-deny `awk` or `sed`, every invocation falls through to the manual permission dialog and breaks unattended agent operation.
+
+**Wrong:**
+
+```bash
+awk 'NR>=10 && NR<=20 {print} NR>20{exit}' file.txt
+sed -n '10,20p' file.txt
+```
+
+**Right** — Read tool call with `offset` and `limit`:
+
+```
+Read(file_path: "/abs/path/to/file.txt", offset: 10, limit: 11)
+```
+
+Note: `offset` is the first line to read (1-based), and `limit` is the number of lines to return — not the end-line number. To read lines 10–20 (11 lines), use `offset: 10, limit: 11`. The Read tool returns content with `cat -n` line numbering, so line numbers are visible in the output.
+
 ## Rationale
 
 Compound commands:
@@ -191,6 +220,11 @@ Command substitution in redirect targets:
 - Any `$(` token anywhere in a command string blocks Guard 5 (`is_simple_expansion_only`), regardless of whether it appears in a redirect target, a command argument, or an environment assignment
 - The Write-tool workaround works because the file write is performed by the tool harness, not the shell, so no Bash command containing `$(` is issued at all; the agent-inlined literal path workaround works because the `$(...)` evaluation happens in a separate, prior Bash call that never contains the redirect operator, so neither call individually trips Guard 5
 - This structural separation principle generalizes: the same reasoning explains why the multi-`-m`-flag workaround for git commits is preferred -- both approaches push the dynamic content out of the shell command string entirely, satisfying Guard 5 without requiring manual approval
+
+`awk`/`sed` for line-range reads:
+- The Read tool is auto-approved for any readable path without a hook bypass because it is a tool-harness call, not a shell command; its structured output (with `cat -n` line numbering) is easier to reason about than a raw stdout stream
+- `awk` and `sed` are excluded from `allowedTools` to keep the auto-approve surface small and audit-friendly; their general command surfaces are too wide to vet per-invocation, making a targeted allowlist entry impractical
+- Using the Read tool instead of `awk`/`sed` removes an entire class of manual permission dialogs from routine file-inspection tasks
 
 ## Applies To
 

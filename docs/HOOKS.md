@@ -30,14 +30,18 @@ Runs when a tool call falls outside the `allowedTools` list and requires permiss
 3. Extracts the Bash command and strips quoted strings to avoid false positives
 4. Detects compound operators (`&&`, `;`, embedded newlines) and process substitution (`<(`, `>(`) — denies if found
 5. Detects `--no-verify` (and `-n` for `git commit`) on `git commit` and `git push` commands — denies if found
-6. For commands that pass the deny checks: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. Path-prefix-guarded entries for `bash ~/.claude/scripts/*.sh` (and the `$HOME`-expanded form) are included in the allowlist, allowing installed shell scripts under `~/.claude/scripts/` to be invoked unattended without broadly approving arbitrary `bash` calls. If the neutralized command matches, runs five safety guards; auto-approves if all pass
-7. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
-8. Fails open (no output, exit 0) if `jq` is unavailable
+6. Checks two narrowly-scoped auto-approve exceptions before the general allowedTools match:
+   - **`jq` sidecar write** (`is_jq_sidecar_write`): auto-approves `jq … > "$TMP"` commands whose redirect target is a `*.json.tmp` path under `~/.ai-tpk/session-context/by-worktree/`. A five-phase guard sequence (pre-acceptance, path extraction, redirect-count, shape/path, structural defence-in-depth) enforces the narrow shape; a path-traversal guard (`..` component check) is applied to the redirect target. Intended to cover the first of the three-call atomic sidecar-write recipe used by Bitsmith and DM.
+   - **`basename $(git rev-parse --show-toplevel)`** (`is_repo_slug_basename`): auto-approves this exact command (modulo internal whitespace) using byte-exact comparison with `LC_ALL=C` whitespace normalisation. Intended to cover DM's repo-slug derivation step. No Unicode normalisation is applied; homoglyph variants do not match.
+7. For commands that pass the deny checks and are not matched by the exceptions: neutralizes simple variable expansions (`$VAR`, `${VAR}`, `~`) and checks if the result matches an `allowedTools` Bash pattern. Path-prefix-guarded entries for `bash ~/.claude/scripts/*.sh` (and the `$HOME`-expanded form) are included in the allowlist, allowing installed shell scripts under `~/.claude/scripts/` to be invoked unattended without broadly approving arbitrary `bash` calls. If the neutralized command matches, runs five safety guards; auto-approves if all pass
+8. For commands that do not match any allowedTools pattern, or that fail a safety guard: appends a log entry to `~/.claude/permission-requests.log` and exits without output, leaving the normal permission dialog in place
+9. Fails open (no output, exit 0) if `jq` is unavailable
 
 **Why auto-approve?** Three distinct gaps are closed by this hook:
 - **Bash with variable expansions:** Claude Code classifies commands containing `$VAR`, `${VAR}`, or `~` as "too-complex" and bypasses `allowedTools` pattern matching in `settings.json`, triggering a permission dialog even when the base command (e.g., `git log`, `mkdir`) is already trusted. The hook closes that gap by performing its own pattern match after neutralizing the expansions.
 - **Write/Edit to `~/.ai-tpk/`:** Claude Code's internal permission matcher does not reliably expand `~` before comparing the requested path against the `Write(~/.ai-tpk/**)` / `Edit(~/.ai-tpk/**)` patterns in `settings.json`, triggering a permission dialog on every write to plan, lesson, and open-questions files. The hook closes that gap by performing its own path normalization and matching at runtime.
 - **Read of `~/.claude/` config files:** Agents frequently need to read their own installed configuration (skills, agent definitions, references) from `~/.claude/`. Without hook-level approval, these reads trigger a permission dialog despite being listed in `allowedTools`, because `~` expansion is not reliably applied by Claude Code's internal matcher. The hook closes that gap using an explicit allowlist (`is_allowed_claude_read_path`) that covers only configuration subdirectories — runtime state directories (`projects/`, `sessions/`, `history.jsonl`, etc.) are intentionally excluded and continue to require explicit user approval.
+- **Narrow exceptions for high-frequency safe commands with `$(…)`:** Two high-frequency commands — the `jq` sidecar-write step and `basename $(git rev-parse --show-toplevel)` — contain `$(` which causes Guard 5 (`is_simple_expansion_only`) to block auto-approval even though both commands are structurally safe. Rather than broadening Guard 5 (which would weaken the general defence), the hook applies two dedicated matchers (`is_jq_sidecar_write` and `is_repo_slug_basename`) that verify the exact safe shape before auto-approving. All other commands containing `$(` continue to fall through to the manual dialog.
 
 **Safety guards (auto-approve path only):**
 
@@ -77,6 +81,10 @@ Auto-approved entries include the `[auto-approved]` marker; calls falling throug
 - Denied: `git commit --no-verify -m "msg"` (bypasses pre-commit hooks)
 - Denied: `git commit -n -m "msg"` (short form of `--no-verify` for `git commit`)
 - Denied: `git push --no-verify` (bypasses pre-push hooks)
+- Auto-approved: `jq '. + {"PR_NUM": 42}' "$SIDECAR" > "$HOME/.ai-tpk/session-context/by-worktree/my-feature.json.tmp"` (matches `is_jq_sidecar_write`: first token is `jq`, target is a `.json.tmp` path under `by-worktree/`, five-phase guard passes)
+- Auto-approved: `basename $(git rev-parse --show-toplevel)` (matches `is_repo_slug_basename`: byte-exact match after LC_ALL=C whitespace normalisation)
+- Logged + normal dialog: `jq '.' > /tmp/out.json` (target path is not under `~/.ai-tpk/session-context/by-worktree/` — falls through)
+- Logged + normal dialog: `basename $(pwd)` (does not match the exact `is_repo_slug_basename` shape — falls through)
 - Auto-approved: `bash ~/.claude/scripts/git-preflight.sh merge-pr` (matches path-prefix-guarded `bash ~/.claude/scripts/*.sh *` entry; all safety guards pass)
 - Auto-approved: `git log --format=$FORMAT` (matches `git *`, simple expansion only, no safety guard triggered)
 - Auto-approved: `mkdir -p $HOME/.config` (matches `mkdir *`)

@@ -422,7 +422,8 @@ is_simple_expansion_only_except_one_redirect() {
 #   - claude/references/worktree-creation-subroutine.md (sidecar write block)
 # Both reference sites currently show the recipe as a single compound command
 # of the form `jq … > "$TMP" && mv "$TMP" "$SIDECAR" || rm -f "$TMP"`. The
-# compound-operator deny block above (lines 366-377) denies that whole-line shape
+# compound-operator deny block earlier in this file (the `COMPOUND` / `is_compound`
+# deny block — search for "Check for compound operators") denies that whole-line shape
 # outright, so agents in practice split the recipe into THREE separate Bash calls:
 #   1. jq … > "$TMP"             (matched by this exception)
 #   2. mv "$TMP" "$SIDECAR"      (auto-approved via matches_allowed_tools: mv)
@@ -469,6 +470,15 @@ is_jq_sidecar_write() {
     \'*) return 1 ;;
   esac
 
+  # A.4: Reject '&>' (combined stdout+stderr redirect) and any numeric-fd redirect
+  # like '1>' or '2>' EXCEPT the two closed-list trailing forms (' 2>&1' and
+  # ' 2>/dev/null') already stripped into cmd_no_trailing_stderr above.
+  # We test cmd_no_trailing_stderr (already stripped) so that legitimate trailing
+  # '2>&1' and '2>/dev/null' forms do not trigger a false rejection.
+  if printf '%s' "$cmd_no_trailing_stderr" | grep -qE '&>|[0-9]>'; then
+    return 1
+  fi
+
   # --- Phase B: Path extraction on the raw command ---
   # B.1 already done above (cmd_no_trailing_stderr). Closed list: only ' 2>&1' and
   # ' 2>/dev/null' are stripped — any other '2>' form is NOT stripped here.
@@ -491,6 +501,17 @@ is_jq_sidecar_write() {
   local expanded_target
   expanded_target=$(printf '%s' "$raw_target" | sed "s|^\$HOME|$HOME|")
   expanded_target=$(printf '%s' "$expanded_target" | sed "s|^~|$HOME|")
+
+  # Phase D.0: Reject any '..' path component in the redirect target.
+  # Mirrors the Write/Edit/Read traversal guard in this file — without it,
+  # a target like ".../by-worktree/../../etc/foo.json.tmp" canonicalises
+  # outside the sidecar directory and allows arbitrary-location writes.
+  # The regex matches '..' as a path component (preceded by start-of-string
+  # or '/', followed by end-of-string or '/'), while still permitting
+  # filenames like 'file..backup.json.tmp'.
+  if printf '%s' "$expanded_target" | grep -qE '(^|/)\.\.(/|$)'; then
+    return 1
+  fi
 
   # --- Phase C: Redirect-count guard on SECURITY_STRIPPED ---
   # Operate on the single-quote-stripped version of the command (SECURITY_STRIPPED is
@@ -582,6 +603,7 @@ is_repo_slug_basename() {
   # expand $(...). [ "$a" = "$b" ] in POSIX shell is byte-exact comparison;
   # do not introduce iconv, normalisation, or locale-sensitive comparators
   # here — homoglyph variants must NOT match.
+  # shellcheck disable=SC2016  # '$(' in RHS is intentionally literal — single quotes prevent expansion
   [ "$normalised" = 'basename $(git rev-parse --show-toplevel)' ]
 }
 

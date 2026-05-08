@@ -145,6 +145,8 @@ Apply this rule at delegation time: *Has Bitsmith written to this worktree earli
 
 If Bitsmith returns a halt report whose first line is the literal header `## Working-Tree Audit Halt`, surface it to the user verbatim and ask for direction. Do not auto-decide between reset, retrying with `SKIP_TREE_AUDIT: true`, or scope adjustment — the user owns this choice because it concerns their working state.
 
+**Wrap-on-failure standing instruction.** When emitting a Bitsmith delegation prompt for plan-step execution, DM must include the following best-effort instruction in the prompt: "If you cannot reach your normal completion or six-field escalation output but can still emit a final response, prefix the response with `## Agent-Side Unexpected Failure` and a brief description of what failed. This is best-effort and does not apply when no output at all is reachable."
+
 Ruinor and other reviewer agents do not receive this block — instead, pass worktree-absolute file paths directly in their delegation prompts. Note: Ruinor does receive the separate Project Constitution Injection block — see the Project Constitution Injection section below.
 
 ### Project Constitution Injection
@@ -440,15 +442,33 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
 
     a. **Log the escalation** — include the escalation in session tracking for the completion summary.
 
-    b. **Assess the failure report** — evaluate all six fields from Bitsmith's structured report: Task reference (which plan step failed), Attempts summary (what was tried and how each attempt ended), Failure diagnosis (what failed and why), Codebase discoveries (what the plan did not account for), Recommended action (Bitsmith's suggested next step), and Model tier in effect (the model alias — `haiku`, `sonnet`, or `opus` — Bitsmith was running under; if this signals a degraded tier, prefer `Replan` (which lets Pathfinder re-scope and re-route Phase 3 with the tier context in mind) over `Abort` as the first response).
+    b. **Assess the failure report** — first identify which trigger path applies:
 
-    c. **Decide one of four actions:**
+       - **Path A — Bitsmith returned a well-formed structured failure report** containing all six fields. Evaluate all six fields: Task reference (which plan step failed), Attempts summary (what was tried and how each attempt ended), Failure diagnosis (what failed and why), Codebase discoveries (what the plan did not account for), Recommended action (Bitsmith's suggested next step), and Model tier in effect (the model alias — `haiku`, `sonnet`, or `opus` — Bitsmith was running under; if this signals a degraded tier, prefer `Replan` (which lets Pathfinder re-scope and re-route Phase 3 with the tier context in mind) over `Abort` as the first response). Proceed to sub-step 4c Path A.
+
+       - **Path B — The `Agent` tool returned an error, no result, or an unrecognisable response.** No six-field assessment is possible because there is no structured report. Proceed directly to sub-step 4c Path B.
+
+    c. **Respond per the path identified in 4b:**
+
+       **Path A — Choose one of four actions** (Bitsmith's structured failure report):
        - **Replan:** Delegate to Pathfinder with the full failure report as context, requesting a revised plan for the failed step(s). The revised plan re-enters Phase 2 (Plan Review) before re-entering Phase 3.
        - **Retry with guidance:** Provide Bitsmith with specific adjusted instructions (e.g., a different approach, relaxed constraints) and re-delegate the same step. Counts as a new execution attempt.
        - **Adjust scope:** Remove or defer the blocked step if it is non-critical, document the decision, and continue with remaining steps.
        - **Abort:** If the escalation reveals a fundamental blocker, halt the session, summarize the situation to the user, and ask for direction.
 
-    d. **Do not silently skip the failed step or proceed as if it succeeded.**
+       **Path B — Agent-tool failure: retry once, then surface** (the `Agent` tool returned an error, no result, or an unrecognisable response):
+       1. **Retry once.** Re-issue the same Bitsmith delegation prompt verbatim. The retry preserves all original delegation context — the Worktree Context Block, the Project Constitution Injection block, the `SKIP_TREE_AUDIT: true` field if it was present per the existing rule, and any task-specific content — because it is the *same* prompt re-issued. Transient API errors typically resolve on retry; this gives the system one no-cost recovery attempt before involving the user.
+       2. **If the retry also fails** (any of the same trigger conditions hold on the retry response), **surface to the user.** Construct a user-facing message that includes: (a) the plan step that was being executed (Task reference, equivalent to Bitsmith's structured-report field 1), (b) the nature of the observed failure (e.g., "Agent tool returned an internal error" or "Agent tool returned no recognisable response"), (c) explicit acknowledgement that one automatic retry has already been attempted and also failed, and (d) a request for direction. The message must NOT imply this branch covers in-flight hangs (cases where the `Agent` tool never returns at all) — that scenario remains outside the scope of this handler. Do not pre-select a recovery action.
+
+       After the user replies to the Path B surface message, DM interprets the free-form response and routes the user's stated preference into the most appropriate of the four Path A actions above (Replan / Retry with guidance / Adjust scope / Abort). Path B is a triage front-end for the agent-tool-failure trigger; it does not introduce new resolution-action semantics.
+
+       Path B fires when the `Agent` tool call itself returns an error, no result, or an unrecognisable response. It is distinct from Bitsmith's own three-strike escalation (defined in `bitsmith.md` § Escalation Protocol), which fires when Bitsmith's own logic exhausts attempts and produces a well-formed six-field structured failure report. Path A above handles the latter; Path B handles the former.
+
+       A response beginning with `## Agent-Side Unexpected Failure` (emitted by Bitsmith as a best-effort wrap-on-failure marker) falls under Path B — it is not a six-field structured report — but provides DM with diagnostic context to include in the user-facing surface message in Path B step 2(b) above.
+
+       If the retry itself hangs in flight (the `Agent` tool never returns), this is the same tooling-level limitation as the original hang and is outside this handler's scope; DM cannot detect or interrupt the hang automatically and the user must intervene manually as before.
+
+    d. **Do not silently skip the failed step or proceed as if it succeeded.** Under Path B, do not silently retry beyond the one automatic retry, and do not proceed as if the silent failure resolved itself — the retry-once limit and the surface-to-user requirement are mandatory.
 
 5. Track implementation artifacts (changed files, new code).
 

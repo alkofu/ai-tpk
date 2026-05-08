@@ -270,16 +270,55 @@ This subroutine is **invoked explicitly** by routing branches in this section th
 
 **Intent Override** (before classification):
 
-If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, or `INTENT: advisory`, skip heuristic classification and route directly:
+If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, `INTENT: advisory`, or `INTENT: resume-session`, skip heuristic classification and route directly:
 - `INTENT: investigative` → **do not invoke the Worktree Creation Subroutine yet**. Fire the Investigative Gate immediately; the Worktree Creation Subroutine is invoked later within the gate's routing branches that proceed to a fix (Pathfinder or Bitsmith). Skip the Mutual Exclusivity classification below.
 - `INTENT: constructive` → **invoke the Worktree Creation Subroutine first**, then skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly).
 - `INTENT: advisory` → **do not invoke the Worktree Creation Subroutine** — advisory sessions never create a worktree. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` or `--execute` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report` or `INTENT: advisory --execute`), capture it as an active workflow flag for this session before stripping.
+- `INTENT: resume-session <arg>` → **do not invoke the Worktree Creation Subroutine**. Run the Resume Subroutine defined below; on success, hydrate session memory (overwriting any throwaway Phase 0 captures) and stop, awaiting the user's next free-form message (which will be handled by the standard Phase 0 re-entry guard, now warm). Skip the Mutual Exclusivity classification below.
+
+  Note: because `/resume-session` is a slash command, the Phase 0 bypass at the top of the operating procedure still fires before this Intent Override is reached. Phase 0 will capture throwaway `SESSION_TS`, `SESSION_SLUG`, and `REPO_SLUG` values; the Resume Subroutine's step 6 explicitly overwrites all three with the rehydrated values from the matched sidecar. This is intentional — there is no Phase 0 short-circuit for `INTENT: resume-session`.
 
 The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`, `/ask`, `/ops`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
 
 When an intent override fires, log it: "Intent override: {investigative|constructive|advisory}. Heuristic classification skipped."
 
 Strip the `INTENT:` line (including any flags on it, such as `--save-report` or `--execute`) from the message before passing the remaining text to downstream agents. Workflow flags captured before stripping (`--save-report`, `--execute`) remain active for the session. Constructive-pipeline workflow flags (e.g., `--explore-options`, `--docs`) are unaffected by this override and continue to apply as documented. Exception: when `INTENT: advisory` is active, constructive-pipeline workflow flags (e.g., `--explore-options`) are not applicable — advisory sessions bypass the constructive pipeline.
+
+**Resume Subroutine** (invoked only by the `INTENT: resume-session` Intent Override branch):
+
+1. Extract `<arg>` from the `INTENT: resume-session <arg>` line. Trim whitespace and strip any trailing slash, query string, or fragment. If `<arg>` is empty, abort with the message "`/resume-session` requires an argument. Provide a PR number, PR URL, GitHub issue number, GitHub issue URL, or worktree name/slug." and end the session.
+
+2. **Normalise `<arg>` to a candidate set:** if `<arg>` matches `https://github.com/<owner>/<repo>/pull/<N>`, extract `N` and treat as a PR number; if it matches `https://github.com/<owner>/<repo>/issues/<N>`, extract `N` and treat as an issue number; if it is a bare positive integer, treat as either a PR number or an issue number (the scan tries both); otherwise treat as a worktree slug (the scan tries the filename stem).
+
+3. **Sidecar directory precondition.** If `$HOME/.ai-tpk/session-context/by-worktree/` does not exist, OR exists but contains zero `*.json` files (excluding `*.tmp.*` files left in-flight by the Worktree Creation Subroutine's atomic `tmp-then-mv` write), abort with the message "No session sidecars found at `$HOME/.ai-tpk/session-context/by-worktree/`. There are no in-progress sessions to resume on this machine. Start a new session with `/feature`, `/bug`, or `/ask`." and end the session. The directory iteration must use `find "$HOME/.ai-tpk/session-context/by-worktree/" -maxdepth 1 -type f -name '*.json' ! -name '*.tmp.*'` (or an equivalent `shopt -s nullglob` guard) so that an empty or missing directory expands to an empty list rather than the literal pattern `*.json`. Do not pipe a literal pattern to `jq`.
+
+4. **Single generic sidecar scan with cross-repo filter.** Run a single Bash call that:
+   - Lists every matching sidecar via the `find` invocation in step 3.
+   - For each sidecar, computes `WORKTREE_SLUG` from the filename stem and `EXPECTED_WORKTREE_PATH = {REPO_ROOT}/.worktrees/{WORKTREE_SLUG}` (using the `REPO_ROOT` resolved per step 5 below — DM must run step 5 before step 4 in execution order).
+   - Captures the current repo's worktree path set once via `git worktree list --porcelain | awk '/^worktree /{print $2}'`.
+   - Discards any sidecar whose `EXPECTED_WORKTREE_PATH` is **not** in that path set. This filter naturally prunes cross-repo sidecars (a sidecar belonging to a worktree under a different repo's `.worktrees/` directory will not appear in the current repo's `git worktree list` output).
+   - For the surviving sidecars, applies the matching rule: a sidecar matches if any of (a) its `PR_NUM` field equals the candidate integer (when `<arg>` is a PR URL or bare integer), (b) its `ISSUE_NUM` field equals the candidate integer (when `<arg>` is an issue URL or bare integer), or (c) its filename stem equals `<arg>` (when `<arg>` is a slug). Capture the list of matching file paths.
+
+5. **Resolve `REPO_ROOT` cwd-resiliently.** Cold-start cwd is unpredictable and may be (a) inside a worktree, (b) in an unrelated repo, (c) outside any git repo. Use this resolution rule, in order:
+   - Run `REPO_ROOT_RAW=$(git rev-parse --show-toplevel 2>/dev/null)`. If the command fails (non-zero exit), abort with the message "`/resume-session` must be run from inside a git repository. Change directory to a repo and try again." and end the session.
+   - If `REPO_ROOT_RAW` matches the pattern `*/.worktrees/*` (i.e., the cwd is inside a worktree, not the main checkout), resolve the parent repo root via `REPO_ROOT=$(git rev-parse --git-common-dir)` and strip a trailing `/.git` suffix if present (`REPO_ROOT="${REPO_ROOT%/.git}"`). Convert to an absolute path with `REPO_ROOT=$(cd "$REPO_ROOT" && pwd)` so subsequent path comparisons are unambiguous.
+   - Otherwise, set `REPO_ROOT="$REPO_ROOT_RAW"`.
+   - DM must execute this step before step 4 (since step 4 depends on `REPO_ROOT` to compute `EXPECTED_WORKTREE_PATH`). The numbering reflects narrative grouping; the dependency arrow is step 5 → step 4 → step 6.
+
+6. **Handle scan results:**
+   - **Zero matches:** abort with the message "No session sidecar in this repository matched `{arg}`. Looked under `$HOME/.ai-tpk/session-context/by-worktree/` filtered to worktrees in `{REPO_ROOT}`. If the worktree was already cleaned up via `/merged`, no resume is possible. If the worktree was manually deleted but not pruned, run `git worktree prune` and retry. If you intended to resume a session from a different repo, change directory into that repo first." End the session.
+   - **Multiple matches:** present the list of matching sidecars as a numbered list and ask the user to pick one. Each entry must show the filename stem, the resolved worktree path (so the user can distinguish candidates that share an integer match), the branch, `SESSION_TS`, and `SESSION_SLUG`. Wait for the user's reply. Treat any non-numeric or out-of-range reply as cancellation.
+   - **Exactly one match:** proceed to step 7 (verify-and-hydrate).
+
+7. **Verify the worktree exists, then hydrate conversation memory.** Re-confirm `EXPECTED_WORKTREE_PATH` for the matched sidecar appears in `git worktree list --porcelain` (the step-4 filter already established this; this is a defence-in-depth re-check in case of a TOCTOU prune between scan and hydration). If it does not, abort with the message "Worktree at `{EXPECTED_WORKTREE_PATH}` no longer exists (likely pruned between scan and hydration). If the work is already merged, run `/merged` for cleanup. Otherwise run `git worktree prune` and retry. The sidecar at `$HOME/.ai-tpk/session-context/by-worktree/{WORKTREE_SLUG}.json` is now stale." End the session. Otherwise set the following session variables from the matched sidecar and the worktree-list output, **overwriting any throwaway values captured during Phase 0**:
+   - `WORKTREE_PATH` = `EXPECTED_WORKTREE_PATH`
+   - `WORKTREE_BRANCH` = the `branch` field from the matched `git worktree list --porcelain` block, with the leading `refs/heads/` stripped
+   - `SESSION_TS` = the `SESSION_TS` field from the matched sidecar (overwrites Phase 0 throwaway)
+   - `SESSION_SLUG` = the `SESSION_SLUG` field from the matched sidecar (overwrites Phase 0 throwaway)
+   - `REPO_SLUG = $(basename "$REPO_ROOT")` (overwrites Phase 0 throwaway; uses the resolved `REPO_ROOT` from step 5, not the cwd-derived fallback that Phase 0 may have produced if cwd was inside the worktree)
+   - `PLAN_FILE_PATH = $HOME/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`. Run `[ -f "$PLAN_FILE_PATH" ]`; record the result for the log line below. (Plan-file absence is informational, not fatal — investigative-pipeline trivial-fix sessions and resumed sessions that ended before Pathfinder ran will both lack a plan file.)
+   - Optionally read `PR_NUM` from the sidecar via `jq -r '.PR_NUM // empty'` for use in the log line. Empty if absent.
+   - **Log to user:** "Resumed session: worktree `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}`. Plan: `{PLAN_FILE_PATH}` (or `not found` if the file check failed). PR: `#{PR_NUM}` (or `not yet opened` if the field is absent). Send any follow-up message to continue — for example, 'continue', 'where were we?', or your next instruction. The Phase 0 re-entry guard is now warm and will hand off seamlessly." Stop and wait for the user's next free-form message.
 
 **Mutual exclusivity note:** When no explicit `INTENT:` override is present, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:
 - **(a) Investigative** (the task is "why is X broken?" with unknown root cause) → Investigative Gate → Tracebloom (the Worktree Creation Subroutine is **deferred** and invoked later within the gate's fix-bound routing branches)

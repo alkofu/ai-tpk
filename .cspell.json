@@ -181,7 +181,9 @@
     "canonicalises",
     "Defence",
     "defence",
-    "normalisation"
+    "normalisation",
+    "shopt",
+    "nullglob"
   ],
   "ignoreWords": ["dontAsk"]
 }

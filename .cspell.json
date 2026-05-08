@@ -163,6 +163,8 @@
     "unexecutable",
     "unindexed",
     "unrecognised",
+    "unrecognisable",
+    "recognisable",
     "unparseable",
     "unwritable",
     "undertrigger",

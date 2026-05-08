@@ -301,8 +301,7 @@ Strip the `INTENT:` line (including any flags on it, such as `--save-report` or 
 
 5. **Resolve `REPO_ROOT` cwd-resiliently.** Cold-start cwd is unpredictable and may be (a) inside a worktree, (b) in an unrelated repo, (c) outside any git repo. Use this resolution rule, in order:
    - Run `REPO_ROOT_RAW=$(git rev-parse --show-toplevel 2>/dev/null)`. If the command fails (non-zero exit), abort with the message "`/resume-session` must be run from inside a git repository. Change directory to a repo and try again." and end the session.
-   - If `REPO_ROOT_RAW` matches the pattern `*/.worktrees/*` (i.e., the cwd is inside a worktree, not the main checkout), resolve the parent repo root via `REPO_ROOT=$(git rev-parse --git-common-dir)` and strip a trailing `/.git` suffix if present (`REPO_ROOT="${REPO_ROOT%/.git}"`). Convert to an absolute path with `REPO_ROOT=$(cd "$REPO_ROOT" && pwd)` so subsequent path comparisons are unambiguous.
-   - Otherwise, set `REPO_ROOT="$REPO_ROOT_RAW"`.
+   - Resolve `GIT_COMMON_DIR` via `git rev-parse --git-common-dir`. Strip any trailing `/.git` suffix and absolutize: `REPO_ROOT_CANDIDATE=$(cd "${GIT_COMMON_DIR%/.git}" && pwd)`. If `REPO_ROOT_CANDIDATE` equals `REPO_ROOT_RAW` (i.e., cwd is in the main checkout), set `REPO_ROOT="$REPO_ROOT_RAW"`. If they differ (cwd is in any linked worktree — whether under `.worktrees/`, `.claude/worktrees/`, or any other path), set `REPO_ROOT="$REPO_ROOT_CANDIDATE"`. This structural comparison requires no pattern matching and correctly handles all worktree layouts.
    - DM must execute this step before step 4 (since step 4 depends on `REPO_ROOT` to compute `EXPECTED_WORKTREE_PATH`). The numbering reflects narrative grouping; the dependency arrow is step 5 → step 4 → step 6.
 
 6. **Handle scan results:**

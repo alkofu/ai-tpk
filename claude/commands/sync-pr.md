@@ -56,7 +56,7 @@ Delegate Steps 5.1 through 5.3 to Bitsmith as a single atomic task. Bitsmith run
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
-**Bitsmith completion contract for Step 5:** Success is defined as `git rev-parse origin/<branch>` equalling `git rev-parse HEAD` after the push completes. Bitsmith must not treat `git rebase`'s "Successfully rebased and updated refs/heads/<branch>" message as task completion — that message signals only that sub-step 5.1 completed. The task is complete only when sub-step 5.3 has verified the remote is at the new HEAD. Any intermediate sub-step completion is not a completion signal for the delegated task.
+**Bitsmith completion contract for Step 5:** Success is defined as `git rev-parse origin/<branch>` equalling `git rev-parse HEAD` after the push completes. Bitsmith must not treat `git rebase`'s `Successfully rebased and updated refs/heads/<branch>` message as task completion — that message signals only that sub-step 5.1 completed. The task is complete only when sub-step 5.3 has verified the remote is at the new HEAD. Any intermediate sub-step completion is not a completion signal for the delegated task.
 
 **Step 5.1** — Run: `git rebase refs/remotes/origin/main`
 

@@ -48,19 +48,19 @@ Run: `git status --porcelain`
 If the output is non-empty, abort immediately and tell the user: "Working tree is dirty. Commit
 or stash your changes before syncing."
 
-## Step 5 — Rebase onto refs/remotes/origin/main [write operation — delegate to Bitsmith]
+## Step 5 — Rebase onto refs/remotes/origin/main and force-push [write operation — delegate to Bitsmith]
 
-Delegate Steps 5.1 and 5.2 to Bitsmith as a single task. Bitsmith runs the rebase and, if
-conflicts occur, inline-executes `/resolve-conflicts`. Bitsmith reports back only the final
-outcome (success or abort).
+Delegate Steps 5.1 through 5.3 to Bitsmith as a single atomic task. Bitsmith runs the rebase, inline-executes `/resolve-conflicts` if conflicts occur, and then runs the force-push. **Bitsmith must not report success until the force-push has completed and `origin/<branch>` points at the new local HEAD.** If any sub-step aborts, the whole task aborts — Bitsmith reports the specific abort cause (rebase-abort, resolve-conflicts-abort, or push-failure) so DM can surface the correct message to the user.
 
 (`refs/remotes/origin/main` is used instead of the `origin/main` shorthand to avoid resolution ambiguity when a local branch named `main` exists.)
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
+**Bitsmith completion contract for Step 5:** Success is defined as `git rev-parse origin/<branch>` equalling `git rev-parse HEAD` after the push completes. Bitsmith must not treat `git rebase`'s `Successfully rebased and updated refs/heads/<branch>` message as task completion — that message signals only that sub-step 5.1 completed. The task is complete only when sub-step 5.3 has verified the remote is at the new HEAD. Any intermediate sub-step completion is not a completion signal for the delegated task.
+
 **Step 5.1** — Run: `git rebase refs/remotes/origin/main`
 
-- If the rebase exits with **zero** → proceed directly to Step 6.
+- If the rebase exits with **zero** → proceed directly to Step 5.3.
 - If the rebase exits **non-zero** → continue to Step 5.2.
 
 **Step 5.2** — Inline-execute the `/resolve-conflicts` protocol within the current session.
@@ -71,23 +71,21 @@ inline-executes `/sync-pr`.)
 
 If `/resolve-conflicts` aborts (any abort condition within its protocol), `/sync-pr` also
 aborts — propagate the error message to the user without modification. Do not proceed to
-Step 6.
+Step 5.3.
 
-If `/resolve-conflicts` completes successfully, proceed to Step 6.
+If `/resolve-conflicts` completes successfully, proceed to Step 5.3.
 
-## Step 6 — Force-push and report success [write operation — delegate to Bitsmith]
+**Step 5.3** — Force-push and confirm remote is updated.
 
-Delegate to Bitsmith to run: `git push --force-with-lease origin <branch>`
+Run: `git push --force-with-lease origin <branch>`
 
-(Per DM delegation policy, write operations must not be executed directly by the DM.)
+If the push fails (e.g., lease rejected because the remote has new commits), abort the whole task and report to DM: "Force-push failed. The remote has changes not present locally. Run `git fetch origin` and retry `/sync-pr`." Do not report success.
 
-If the push fails (e.g., lease rejected because the remote has new commits), report the error and
-abort: "Force-push failed. The remote has changes not present locally. Run `git fetch origin` and
-retry `/sync-pr`."
+If the push succeeds, verify remote is at the new HEAD by running: `git rev-parse origin/<branch>` and `git rev-parse HEAD` (as two separate Bash calls per `~/.claude/references/bash-style.md`). If the two SHAs match, report success to DM. If they differ, abort and report: "Push reported success but `origin/<branch>` does not match local HEAD. Do not retry — investigate manually."
 
-If the push succeeds, print: "Branch `<branch>` rebased on `main` and force-pushed. PR is up to date."
+After Bitsmith reports success, DM prints to the user: "Branch `<branch>` rebased on `main` and force-pushed. PR is up to date."
 
-### Step 6.1 — Advisory: refresh the PR description if needed
+## Step 6 — Advisory: refresh the PR description if needed
 
 If the new commits materially change the impact narrative recorded in the PR description (problem solved, user/system benefit, notable risks), the PR body should be refreshed.
 

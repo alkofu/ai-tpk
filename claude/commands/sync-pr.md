@@ -50,13 +50,13 @@ or stash your changes before syncing."
 
 ## Step 5 — Rebase onto refs/remotes/origin/main and force-push [write operation — delegate to Bitsmith]
 
-Delegate Steps 5.1 through 5.3 to Bitsmith as a single atomic task. Bitsmith runs the rebase, inline-executes `/resolve-conflicts` if conflicts occur, and then runs the force-push. **Bitsmith must not report success until the force-push has completed and `origin/<branch>` points at the new local HEAD.** If any substep aborts, the whole task aborts — Bitsmith reports the specific abort cause (rebase-abort, resolve-conflicts-abort, or push-failure) so DM can surface the correct message to the user.
+Delegate Steps 5.1 through 5.3 to Bitsmith as a single atomic task. Bitsmith runs the rebase, inline-executes `/resolve-conflicts` if conflicts occur, and then runs the force-push. **Bitsmith must not report success until the force-push has completed and `origin/<branch>` points at the new local HEAD.** If any sub-step aborts, the whole task aborts — Bitsmith reports the specific abort cause (rebase-abort, resolve-conflicts-abort, or push-failure) so DM can surface the correct message to the user.
 
 (`refs/remotes/origin/main` is used instead of the `origin/main` shorthand to avoid resolution ambiguity when a local branch named `main` exists.)
 
 (Per DM delegation policy, write operations must not be executed directly by the DM.)
 
-**Bitsmith completion contract for Step 5:** Success is defined as `git rev-parse origin/<branch>` equalling `git rev-parse HEAD` after the push completes. Bitsmith must not treat `git rebase`'s "Successfully rebased and updated refs/heads/<branch>" message as task completion — that message signals only that substep 5.1 completed. The task is complete only when substep 5.3 has verified the remote is at the new HEAD. Any intermediate substep completion is not a completion signal for the delegated task.
+**Bitsmith completion contract for Step 5:** Success is defined as `git rev-parse origin/<branch>` equalling `git rev-parse HEAD` after the push completes. Bitsmith must not treat `git rebase`'s "Successfully rebased and updated refs/heads/<branch>" message as task completion — that message signals only that sub-step 5.1 completed. The task is complete only when sub-step 5.3 has verified the remote is at the new HEAD. Any intermediate sub-step completion is not a completion signal for the delegated task.
 
 **Step 5.1** — Run: `git rebase refs/remotes/origin/main`
 

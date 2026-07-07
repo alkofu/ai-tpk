@@ -157,7 +157,7 @@ Action:
 - **Phase 1 Worktree Creation Subroutine not invoked** — advisory branches do not invoke the subroutine, so no worktree or plan is created
 - **Phase A:** Question classified as "How does X work in this codebase?" → select Tracebloom
 - **Phase B:** Invoke Tracebloom with advisory research request: "How does the session isolation work with worktrees?"
-- Tracebloom returns findings: the Phase 1 Worktree Creation Subroutine creates an isolated git worktree at `.worktrees/{branch-slug}` when invoked by a routing branch (advisory branches do not invoke it), Phase 0 captures session variables only, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5e
+- Tracebloom returns findings: the Phase 1 Worktree Creation Subroutine creates an isolated git worktree at `.worktrees/{branch-slug}` when invoked by a routing branch (advisory branches do not invoke it), Phase 0 captures session variables only, all sub-agents receive WORKING_DIRECTORY context, worktree is cleaned up in Phase 5f
 - **Phase C:** DM synthesises Tracebloom's findings into a direct answer, attributing codebase references. Sources: `claude/agents/dungeonmaster.md` (Phase 0 and Phase 1 Worktree Creation Subroutine), `claude/references/worktree-protocol.md`
 - Session complete — no review, no plan, no PR prompt
 

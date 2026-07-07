@@ -608,7 +608,27 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
     - Adding a new validation layer the plan did not anticipate (MAJOR — out of original scope)
     - Restructuring error handling across multiple modules (MAJOR — architectural change)
 
-    **5d — Completion summary:**
+    **5d — Push-state verification gate:**
+    When a session worktree is active, run `bash ~/.claude/scripts/ensure-pushed.sh {WORKING_DIRECTORY} {WORKTREE_BRANCH}` via the Bash tool before emitting the completion summary.
+
+    Reference: `~/.claude/scripts/ensure-pushed.sh` (the installed location after `install.sh` runs — not a repo-relative path).
+
+    **Advisory sessions** (which skip Phase 5 entirely) are naturally exempt — the gate never runs for those sessions.
+
+    **Operational note:** This gate is expected to fire routinely after Phase 5b Quill output (not just exceptionally). Quill writes documentation to the worktree but does not commit or push, and it does not have the Phase 7 commit+push checklist. Quill's documentation writes therefore intentionally flow through this gate for commit/push remediation. Similarly, Phase 5c Resolution Gate auto-fixes may leave uncommitted state that flows through this gate.
+
+    Handle the script's stdout token as follows:
+    - `pushed` → proceed to step 5e (Completion Summary).
+    - `needs-push` → delegate a brief remediation task to Bitsmith. The remediation delegation prompt MUST explicitly identify the likely source of the uncommitted/unpushed changes based on which sub-phase of Phase 5 just completed:
+      - If Phase 5b (Quill documentation update) ran in this session, the prompt MUST state "changes produced by Quill in Phase 5b" so Bitsmith authors a documentation-scoped commit message (e.g., `docs: update ...`).
+      - If Phase 5c (Resolution Gate auto-fix) produced changes, the prompt MUST state "changes produced by the Phase 5c Resolution Gate auto-fix."
+      - Otherwise (rare — indicates Bitsmith's own Phase 7 push step was missed), the prompt MUST state "uncommitted or unpushed changes left after Bitsmith's Phase 7 completion."
+      - In all cases, Bitsmith must commit via the `commit-message-guide` skill and push via `git push --force-with-lease --set-upstream origin HEAD`, then DM re-runs the gate.
+    - `error` → halt, surface the stderr diagnostic to the user, and do not proceed to step 5e (Completion Summary).
+
+    **The remediation loop runs at most once.** If the second `ensure-pushed.sh` invocation still returns `needs-push`, DM MUST halt the pipeline and surface the diagnostic to the user rather than looping further.
+
+    **5e — Completion summary:**
     Format the completion summary using the appropriate template from `claude/references/completion-templates.md`: Template A (Constructive) for constructive sessions, Template B (Investigative) for investigative sessions.
 
     To obtain the values for the template:
@@ -621,8 +641,8 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
 
     If notable coordination issues, repeated escalations, or review loops occurred during this session, suggest: "Consider invoking Everwise to analyze these patterns across sessions."
 
-    **5d.1 — PR description refresh (conditional):**
-    This step fires only after step 5d (Completion summary) has been emitted, and only when the current session has an active worktree. It is intentionally placed after 5d (outside the Resolution Gate's loop in 5c) so it does not re-fire during auto-fix cycles.
+    **5e.1 — PR description refresh (conditional):**
+    This step fires only after step 5e (Completion summary) has been emitted, and only when the current session has an active worktree. It is intentionally placed after 5e (outside the Resolution Gate's loop in 5c) so it does not re-fire during auto-fix cycles.
 
     **Sidecar read.** Derive `WORKTREE_SLUG` from `basename "$WORKTREE_PATH"` and read the file at `$HOME/.ai-tpk/session-context/by-worktree/${WORKTREE_SLUG}.json`. DM may run this read directly via the Bash tool (the read is read-only and within DM's permitted scope per the delegation policy above). Use the following one-line `jq` invocation that returns the `PR_NUM` value or empty string if absent: `jq -r '.PR_NUM // empty' "$SIDECAR"`. If the file does not exist, treat as absent.
 
@@ -632,13 +652,13 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
 
     **Note on merged-PR risk.** This step does not check PR state. If `PR_NUM` remains in the sidecar after a merge (e.g., the user has not yet run `/merged`), this step will mutate the merged PR's description. Run `/merged` after merge to clear sidecar state.
 
-    **Bitsmith delegation reminder.** Include the `WORKING_DIRECTORY` context block in the Bitsmith delegation prompt per the standard rules. The Project Constitution Injection block also applies (Bitsmith is one of the three injected agents). Apply the SKIP_TREE_AUDIT Choice Rule normally — if Bitsmith has written to this worktree earlier in the session (which it almost certainly has, since this step fires after Phase 5d), emit `SKIP_TREE_AUDIT: true`.
+    **Bitsmith delegation reminder.** Include the `WORKING_DIRECTORY` context block in the Bitsmith delegation prompt per the standard rules. The Project Constitution Injection block also applies (Bitsmith is one of the three injected agents). Apply the SKIP_TREE_AUDIT Choice Rule normally — if Bitsmith has written to this worktree earlier in the session (which it almost certainly has, since this step fires after Phase 5e), emit `SKIP_TREE_AUDIT: true`.
 
-    **Outcome logging.** Log the outcome inline as a single line: on success, `"PR #{PR_NUM} description updated."`; on failure (Bitsmith reports a non-zero exit from `gh pr edit`, or the delegation itself fails), `"PR description update failed: {reason}; PR body unchanged."` Do not retry. Do not abort the session. Proceed to step 5e regardless of outcome.
+    **Outcome logging.** Log the outcome inline as a single line: on success, `"PR #{PR_NUM} description updated."`; on failure (Bitsmith reports a non-zero exit from `gh pr edit`, or the delegation itself fails), `"PR description update failed: {reason}; PR body unchanged."` Do not retry. Do not abort the session. Proceed to step 5f regardless of outcome.
 
     **Authority statement.** The Phase 5 description is authoritative after a full pipeline run — this step will overwrite any manual `gh pr edit --body` changes the user made between PR creation and the current pipeline completion. This is intentional: the DM-composed description reflects the most recent plan, changes, and reviewer verdicts.
 
-    **5e — Worktree log:**
+    **5f — Worktree log:**
     Log: "Branch `{WORKTREE_BRANCH}` is ready at `{WORKTREE_PATH}`. Open a PR now? Reply `/open-pr` to proceed, or handle cleanup manually."
 
     **Note:** Plan files are stored in `~/.ai-tpk/plans/{REPO_SLUG}/` and are not affected by worktree removal. To clean up plan files after a merge, use the `/merged` command (which offers plan file deletion) or the `/clean-ai-tpk-artifacts` command (age-based cleanup).

@@ -177,6 +177,8 @@ Before declaring completion:
 - Confirm the diff is as small as it can be while remaining correct
 - Confirm every item in the plan's acceptance criteria is satisfied
 - Pre-completion self-check — before signaling completion, verify against common review criteria: (1) all error paths have explicit handling, (2) edge cases for boundary conditions are addressed, (3) no missing input validation on public interfaces.
+- **All changes committed.** Before declaring this task complete, verify the worktree is clean: run `git status --porcelain` in the worktree and confirm the output is empty. If the output is non-empty, commit all staged and unstaged changes by invoking the `commit-message-guide` skill to author an appropriate commit message. Do not skip this step even for "trivial" or "minor" changes — uncommitted work is invisible to code review and puts work at risk. This bullet must pass before proceeding to the push bullet below.
+- **All commits pushed to remote.** After "All changes committed" passes, push the branch to its remote using `git push --force-with-lease --set-upstream origin HEAD`. This command handles both first-push (sets upstream tracking) and subsequent pushes (uses lease protection to avoid overwriting concurrent remote work). Confirm the push succeeded before self-reporting task completion. This is the final Phase 7 bullet — task completion is not claimed until this bullet passes.
 
 Only when all checks pass does she set down the hammer.
 

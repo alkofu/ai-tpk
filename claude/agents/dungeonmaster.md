@@ -540,7 +540,7 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
 
 ### Phase 5: Completion
 
-1. Before finishing, execute the following five sub-steps in order:
+1. Before finishing, execute the following six sub-steps in order:
 
     **5a — Reservations logging:**
     This step is mandatory whenever any reviewer has issued ACCEPT-WITH-RESERVATIONS during the session; the session must not proceed to step 5d until reservations are logged. After Phase 4 is complete, extract the reservations from the review findings and include them in your completion summary. Then delegate to Bitsmith to write them to a per-plan file:
@@ -627,6 +627,8 @@ This routing decision is **re-derivable on demand**: no in-memory `PHASE_3_AGENT
     - `error` → halt, surface the stderr diagnostic to the user, and do not proceed to step 5e (Completion Summary).
 
     **The remediation loop runs at most once.** If the second `ensure-pushed.sh` invocation still returns `needs-push`, DM MUST halt the pipeline and surface the diagnostic to the user rather than looping further.
+
+    If the script's stdout contains anything other than one of these three tokens, treat it as `error` — halt and surface the raw stdout output to the user.
 
     **5e — Completion summary:**
     Format the completion summary using the appropriate template from `claude/references/completion-templates.md`: Template A (Constructive) for constructive sessions, Template B (Investigative) for investigative sessions.

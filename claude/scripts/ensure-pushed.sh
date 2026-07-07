@@ -47,6 +47,8 @@ if [[ -n "$PORCELAIN" ]]; then
 fi
 
 # Step 5: Verify upstream is configured.
+# @{u} is git's upstream-tracking-branch shorthand, not a shell brace expansion
+# shellcheck disable=SC1083
 UPSTREAM=$(git -C "$WORKTREE" rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)
 if [[ -z "$UPSTREAM" ]]; then
   printf 'needs-push\n'

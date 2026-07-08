@@ -16,7 +16,7 @@ Before invoking `gh`, perform the following checks:
 
 3. **Cross-repo URL guard:** If the argument is a full URL, compare the `<owner>/<repo>` segment against the worktree's `origin` remote. If they do not match, stop and ask the user to confirm intent before continuing.
 
-Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url,comments` using the Bash tool. Use this exact flag set.
+Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url,comments,state` using the Bash tool. Use this exact flag set.
 
 **On gh failure:** If `gh` fails, surface the exact error message and ask the user to either fix the problem and retry, or provide the bug description manually.
 
@@ -26,6 +26,19 @@ Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,
 
 If the `comments` array returned by `gh` is non-empty, append a blank line and a `## Comments` section after the issue body. Render each comment in array order as a sub-section: `### Comment by @<login> — <createdAt> ([link](<url>))` on one line, then a blank line, then the comment `body` verbatim, then a blank line. Use the comment's `author.login`, `createdAt`, and `url` fields for the heading and the `body` field for the content. If the `comments` array is empty, omit the `## Comments` section entirely (do not emit an empty header or a placeholder).
 
+**Relevance check** *(runs before the Worktree Creation Subroutine — see ordering note at end of file):* Before firing the Investigative Gate, re-evaluate whether this issue still applies. Use the `state` field already fetched, and scan the issue body for file paths, symbol names, and error/pattern excerpts. Run at most 5 Read/Grep checks to verify those elements still exist in the codebase and the described bug still holds.
+
+- If `state == "OPEN"` **and** codebase evidence clearly confirms the described bug still holds (referenced files exist, described error pattern still present, no obvious fix commit visible in `git log --oneline -n 50`) → proceed silently to the Routing step below.
+- In every other case (issue closed, referenced files or symbols gone, fix commit visible, or too little codebase evidence to confirm) → surface the following disclosure and wait for an explicit response:
+
+  > **Issue #\<number\> may be stale.**
+  > GitHub: \<open / closed\>
+  > Codebase: \<one-sentence finding, e.g. "The referenced function `foo()` no longer exists" or "No codebase references found to verify"\>
+  >
+  > Reply "proceed" to continue anyway, or "abort" to stop.
+
+On any clearly affirmative reply, continue to the Routing step (Tracebloom investigates). On any clearly negative reply, end the session immediately — do not invoke the Worktree Creation Subroutine or fire the Investigative Gate. On an ambiguous reply, ask once for clarification; treat a second ambiguous reply as abort.
+
 **Routing:** The `INTENT: investigative` line above is an explicit routing signal. Per the Intent Override Block in Phase 1, skip heuristic classification and fire the Investigative Gate (Tracebloom) directly, using the constructed task description as the input. Strip this routing note and the `INTENT:` line — downstream agents see only the constructed task description.
 
-Phase 0 (session-variable capture) applies as documented. **`/bug-issue` deviates from the general investigative doctrine** in `dungeonmaster.md` lines 272 and 283 (which says `INTENT: investigative` defers the Worktree Creation Subroutine until after Tracebloom investigates within the gate's fix-bound routing branches): `/bug-issue` instead invokes the Worktree Creation Subroutine **before** firing the Investigative Gate. This deviation is intentional and user-confirmed: the issue number is known at command invocation time (parsed from `$ARGUMENTS`), so DM can create the worktree, populate the sidecar with `ISSUE_NUM` via the existing `SESSION_ISSUE_NUM` → `ISSUE_NUM_VALUE` path, and then fire the Investigative Gate with Tracebloom's working directory set to the new worktree. All other Phase 1 gates apply normally. Workflow flags (e.g., `--explore-options`) are unaffected by this deviation and continue to apply as documented.
+Phase 0 (session-variable capture) applies as documented. **`/bug-issue` deviates from the general investigative doctrine** in `dungeonmaster.md` lines 272 and 283 (which says `INTENT: investigative` defers the Worktree Creation Subroutine until after Tracebloom investigates within the gate's fix-bound routing branches): `/bug-issue` instead invokes the Worktree Creation Subroutine **before** firing the Investigative Gate. This deviation is intentional and user-confirmed: the issue number is known at command invocation time (parsed from `$ARGUMENTS`), so DM can create the worktree, populate the sidecar with `ISSUE_NUM` via the existing `SESSION_ISSUE_NUM` → `ISSUE_NUM_VALUE` path, and then fire the Investigative Gate with Tracebloom's working directory set to the new worktree. All other Phase 1 gates apply normally. Workflow flags (e.g., `--explore-options`) are unaffected by this deviation and continue to apply as documented. **Ordering constraint:** The relevance check above must run before the Worktree Creation Subroutine is invoked. If the user aborts at the relevance check, end the session immediately — the Worktree Creation Subroutine is never invoked and Tracebloom is not fired.

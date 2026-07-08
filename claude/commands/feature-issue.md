@@ -24,7 +24,7 @@ After validating that `<argument>` resolves to a positive integer issue number `
 
 This command performs NO direct sidecar write of its own. If DM does not run the Worktree Creation Subroutine after `/feature-issue` (an unsupported flow), `ISSUE_NUM` is simply lost — no sidecar is written. This is acceptable: the fallback is graceful (advisory-mode OSC 6800 still emits without `ISSUE_NUM`).
 
-Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url,comments` using the Bash tool. Use this exact flag set.
+Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,number,url,comments,state` using the Bash tool. Use this exact flag set.
 
 **On gh failure:** If `gh` fails, surface the exact error message and ask the user to either fix the problem and retry, or provide the feature description manually.
 
@@ -33,6 +33,19 @@ Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,
 **Constructing the task description:** Build a one-line header — `Issue #<number> (<url>) [<label1>, <label2>, ...]: <title>` (omit `[...]` if labels is empty) — followed by a blank line, then the line `Closes #<number>`, followed by a blank line, then the issue body verbatim (if non-empty). The `Closes #<number>` line is a GitHub closing keyword: when this task description (or a derivative such as a commit message or PR body) appears on a merged PR, GitHub auto-closes the linked issue.
 
 If the `comments` array returned by `gh` is non-empty, append a blank line and a `## Comments` section after the issue body. Render each comment in array order as a sub-section: `### Comment by @<login> — <createdAt> ([link](<url>))` on one line, then a blank line, then the comment `body` verbatim, then a blank line. Use the comment's `author.login`, `createdAt`, and `url` fields for the heading and the `body` field for the content. If the `comments` array is empty, omit the `## Comments` section entirely (do not emit an empty header or a placeholder).
+
+**Relevance check** *(runs before the Worktree Creation Subroutine — see ordering note at end of file):* Before proceeding to the `review:*` label mapping and routing, re-evaluate whether this issue still applies. Use the `state` field already fetched, and scan the issue body for file paths, symbol names, and error/pattern excerpts. Run at most 5 Read/Grep checks to verify those elements still exist in the codebase and the described situation still holds.
+
+- If `state == "OPEN"` **and** codebase evidence clearly confirms the described situation still holds (referenced files exist, described patterns still present, no obvious fix commit visible in `git log --oneline -n 50`) → proceed silently to the `review:*` label mapping below.
+- In every other case (issue closed, referenced files or symbols gone, fix commit visible, or too little codebase evidence to confirm) → surface the following disclosure and wait for an explicit response:
+
+  > **Issue #\<number\> may be stale.**
+  > GitHub: \<open / closed\>
+  > Codebase: \<one-sentence finding, e.g. "The referenced function `foo()` no longer exists" or "No codebase references found to verify"\>
+  >
+  > Reply "proceed" to continue anyway, or "abort" to stop.
+
+On any clearly affirmative reply, continue to the `review:*` label mapping. On any clearly negative reply, end the session immediately — do not invoke the Worktree Creation Subroutine or proceed to the pipeline. On an ambiguous reply, ask once for clarification; treat a second ambiguous reply as abort.
 
 **Mapping `review:*` labels to DM review-flag tokens (embedded in task description body):** After the task description is constructed, inspect the `labels` array returned by `gh issue view`. For each `review:*` label present, **embed the matching DM review-flag token as a literal text token in the task description body** so DM's standard message-body flag scan picks it up. DM scans the entire message body for review-flag tokens (the same text-scan model used for `--docs` and `--explore-options` — see `dungeonmaster.md` line 383). No special wrapper block is required.
 
@@ -55,4 +68,4 @@ Labels that do not match the `review:*` pattern (e.g., `bug`, `enhancement`, `go
 
 **`--docs` flag (optional).** If you pass `--docs` anywhere in your message (e.g., `/feature-issue --docs 42`), DM detects the flag using the same text-scan path as `--explore-options` and emits `DOCS_HINT: true` in its Pathfinder delegation. Pathfinder will then skip its Section 3 (Interview) and Section 4 (Scope Confirmation) steps and proceed directly to plan generation. The Section 5 plan-confirmation step still applies, and all downstream review gates (Phase 2 Ruinor plan review, Phase 4 Ruinor implementation review) run unchanged. Use `--docs` only for self-evidently documentation-only tasks; if the task is ambiguous, omit the flag and let Pathfinder run the full interview.
 
-Phase 0 (session-variable capture) and the Phase 1 Worktree Creation Subroutine both apply: Phase 0 captures session variables, and because `INTENT: constructive` is set, the Intent Override branch invokes the Worktree Creation Subroutine before proceeding to the Intake Gate. All other Phase 1 gates (Intake, Explore-Options, etc.) apply normally. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented.
+Phase 0 (session-variable capture) and the Phase 1 Worktree Creation Subroutine both apply: Phase 0 captures session variables, and because `INTENT: constructive` is set, the Intent Override branch invokes the Worktree Creation Subroutine before proceeding to the Intake Gate. All other Phase 1 gates (Intake, Explore-Options, etc.) apply normally. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. **Ordering constraint:** The relevance check above must run before the Worktree Creation Subroutine is invoked. If the user aborts at the relevance check, end the session immediately — the Worktree Creation Subroutine is never invoked.

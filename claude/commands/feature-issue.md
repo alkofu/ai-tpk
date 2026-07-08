@@ -34,10 +34,10 @@ Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,
 
 If the `comments` array returned by `gh` is non-empty, append a blank line and a `## Comments` section after the issue body. Render each comment in array order as a sub-section: `### Comment by @<login> — <createdAt> ([link](<url>))` on one line, then a blank line, then the comment `body` verbatim, then a blank line. Use the comment's `author.login`, `createdAt`, and `url` fields for the heading and the `body` field for the content. If the `comments` array is empty, omit the `## Comments` section entirely (do not emit an empty header or a placeholder).
 
-**Relevance check** *(runs before the Worktree Creation Subroutine — see ordering note at end of file):* Before proceeding to the `review:*` label mapping and routing, re-evaluate whether this issue still applies. Use the `state` field already fetched, and scan the issue body for file paths, symbol names, and error/pattern excerpts. Run at most 5 Read/Grep checks to verify those elements still exist in the codebase and the described situation still holds.
+**Relevance check:** Before proceeding to the `review:*` label mapping and routing, re-evaluate whether this issue still applies. Use the `state` field already fetched, and scan the issue body for file paths, symbol names, and error/pattern excerpts. Run at most 5 Read/Grep checks to verify those elements still exist in the codebase and the described situation still holds.
 
-- If `state == "OPEN"` **and** codebase evidence clearly confirms the described situation still holds (referenced files exist, described patterns still present, no obvious fix commit visible in `git log --oneline -n 50`) → proceed silently to the `review:*` label mapping below.
-- In every other case (issue closed, referenced files or symbols gone, fix commit visible, or too little codebase evidence to confirm) → surface the following disclosure and wait for an explicit response:
+- If `state == "OPEN"` **and** codebase evidence clearly confirms the described situation still holds (referenced files exist, described patterns still present) → proceed silently to the `review:*` label mapping below.
+- In every other case (issue closed, referenced files or symbols gone, or too little codebase evidence to confirm) → surface the following disclosure and wait for an explicit response:
 
   > **Issue #\<number\> may be stale.**
   > GitHub: \<open / closed\>

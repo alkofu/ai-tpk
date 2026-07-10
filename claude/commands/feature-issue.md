@@ -34,16 +34,28 @@ Once all guards pass, invoke `gh issue view <argument> --json title,body,labels,
 
 If the `comments` array returned by `gh` is non-empty, append a blank line and a `## Comments` section after the issue body. Render each comment in array order as a sub-section: `### Comment by @<login> — <createdAt> ([link](<url>))` on one line, then a blank line, then the comment `body` verbatim, then a blank line. Use the comment's `author.login`, `createdAt`, and `url` fields for the heading and the `body` field for the content. If the `comments` array is empty, omit the `## Comments` section entirely (do not emit an empty header or a placeholder).
 
-**Relevance check:** Before proceeding to the `review:*` label mapping and routing, re-evaluate whether this issue still applies. Use the `state` field already fetched, and scan the issue body for file paths, symbol names, and error/pattern excerpts. Run at most 5 Read/Grep checks to verify those elements still exist in the codebase and the described situation still holds.
+**Issue evaluation:** Before proceeding to the `review:*` label mapping and routing, evaluate this issue across three dimensions. Use the `state` field already fetched and run at most 5 Read/Grep checks total, chosen strategically.
 
-- If `state == "OPEN"` **and** codebase evidence clearly confirms the described situation still holds (referenced files exist, described patterns still present) → proceed silently to the `review:*` label mapping below.
-- In every other case (issue closed, referenced files or symbols gone, or too little codebase evidence to confirm) → surface the following disclosure and wait for an explicit response:
+**1. Staleness** — Scan the issue body for file paths, symbol names, and error/pattern excerpts. Verify those elements still exist in the codebase and the described situation still holds.
 
-  > **Issue #\<number\> may be stale.**
-  > GitHub: \<open / closed\>
-  > Codebase: \<one-sentence finding, e.g. "The referenced function `foo()` no longer exists" or "No codebase references found to verify"\>
-  >
-  > Reply "proceed" to continue anyway, or "abort" to stop.
+**2. Fact-check** — Verify factual claims in the issue body: code snippets against actual code, error messages against what the code produces, file paths against the filesystem, behavioral descriptions against code flow. Flag any meaningful discrepancy.
+
+**3. Concerns** — Assess whether the issue's approach, framing, or proposed solution is sound. Surface only meaningful disagreements: conflicting architecture, proposed solution addressing the wrong problem, or obvious missing constraints.
+
+Proceed silently to the `review:*` label mapping if and only if **all three** of the following hold:
+- `state == "OPEN"` and codebase evidence clearly confirms the described situation still holds
+- No factual errors found
+- No meaningful concerns about approach or framing
+
+In every other case, surface the findings and wait for an explicit response:
+
+> **Issue #\<number\> requires your attention.**
+>
+> **Staleness:** \<one-sentence finding\> *(omit this line if no staleness signals)*
+> **Fact-check:** \<one sentence per discrepancy\> *(omit this line if facts check out)*
+> **Concerns:** \<one sentence per concern\> *(omit this line if no meaningful concerns)*
+>
+> Reply "proceed" to continue anyway, or "abort" to stop.
 
 On any clearly affirmative reply, continue to the `review:*` label mapping. On any clearly negative reply, end the session immediately — do not invoke the Worktree Creation Subroutine or proceed to the pipeline. On an ambiguous reply, ask once for clarification; treat a second ambiguous reply as abort.
 
@@ -68,4 +80,4 @@ Labels that do not match the `review:*` pattern (e.g., `bug`, `enhancement`, `go
 
 **`--docs` flag (optional).** If you pass `--docs` anywhere in your message (e.g., `/feature-issue --docs 42`), DM detects the flag using the same text-scan path as `--explore-options` and emits `DOCS_HINT: true` in its Pathfinder delegation. Pathfinder will then skip its Section 3 (Interview) and Section 4 (Scope Confirmation) steps and proceed directly to plan generation. The Section 5 plan-confirmation step still applies, and all downstream review gates (Phase 2 Ruinor plan review, Phase 4 Ruinor implementation review) run unchanged. Use `--docs` only for self-evidently documentation-only tasks; if the task is ambiguous, omit the flag and let Pathfinder run the full interview.
 
-Phase 0 (session-variable capture) and the Phase 1 Worktree Creation Subroutine both apply: Phase 0 captures session variables, and because `INTENT: constructive` is set, the Intent Override branch invokes the Worktree Creation Subroutine before proceeding to the Intake Gate. All other Phase 1 gates (Intake, Explore-Options, etc.) apply normally. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. **Ordering constraint:** The relevance check above must run before the Worktree Creation Subroutine is invoked. If the user aborts at the relevance check, end the session immediately — the Worktree Creation Subroutine is never invoked.
+Phase 0 (session-variable capture) and the Phase 1 Worktree Creation Subroutine both apply: Phase 0 captures session variables, and because `INTENT: constructive` is set, the Intent Override branch invokes the Worktree Creation Subroutine before proceeding to the Intake Gate. All other Phase 1 gates (Intake, Explore-Options, etc.) apply normally. Workflow flags (e.g., `--explore-options`) are unaffected by this override and continue to apply as documented. **Ordering constraint:** The issue evaluation above must run before the Worktree Creation Subroutine is invoked. If the user aborts at the issue evaluation, end the session immediately — the Worktree Creation Subroutine is never invoked.

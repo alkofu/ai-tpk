@@ -43,7 +43,7 @@ Current pinning across all 14 agents (post-change):
 
 Total: 4 + 8 + 1 + 1 = 14 agents.
 
-Pre-change: 13 pinned (Bitsmith at Sonnet) + 0 inherit. Post-change: 13 pinned + 1 inherit (Bitsmith). Net change: one agent moves from Sonnet-pinned to inherit.
+All 14 agents now use short aliases (`sonnet`, `opus`, `haiku`, `inherit`) in their frontmatter `model:` fields. Full model IDs (e.g., `claude-sonnet-4-6`) are no longer used in agent definitions — aliases resolve automatically to the current model in each tier.
 
 ## 4. Per-Invocation Override Discipline
 

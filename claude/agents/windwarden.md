@@ -2,7 +2,7 @@
 name: windwarden
 color: yellow
 description: "Performance and scalability reviewer for plans and code."
-model: claude-sonnet-4-6
+model: sonnet
 effort: medium
 permissionMode: auto
 level: 3

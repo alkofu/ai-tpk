@@ -2,7 +2,7 @@
 name: ruinor
 color: red
 description: "Mandatory baseline quality gate reviewer issuing REJECT/REVISE/ACCEPT verdicts."
-model: claude-opus-4-7
+model: opus
 effort: high
 permissionMode: auto
 level: 3

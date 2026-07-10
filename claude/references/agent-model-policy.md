@@ -8,7 +8,7 @@ When an agent is invoked, the model is resolved in priority order:
 
 1. **Per-invocation `model` parameter** (highest priority) — passed directly on the Agent tool call at the time of invocation. Accepts aliases only: `haiku`, `sonnet`, `opus`. Full model IDs (e.g., `claude-haiku-4-5`) are not accepted here. Example: passing `model: haiku` on the Agent call forces that invocation to use Haiku regardless of the agent's frontmatter.
 
-2. **Agent frontmatter `model:` value** — set in the agent's YAML front matter. This is the default for most agents. Example: `model: claude-opus-4-7` in `ruinor.md` pins every Ruinor invocation to Opus unless priority #1 overrides it. The special value `model: inherit` at this layer skips this priority and falls through to priority #3.
+2. **Agent frontmatter `model:` value** — set in the agent's YAML front matter. This is the default for most agents. Example: `model: opus` in `ruinor.md` pins every Ruinor invocation to Opus unless priority #1 overrides it. The special value `model: inherit` at this layer skips this priority and falls through to priority #3.
 
 3. **Session-level model** (lowest priority) — the model active in the parent session. When an agent declares `model: inherit`, it runs under whatever model the invoking session is using, unless priority #1 provides an override.
 
@@ -43,7 +43,7 @@ Current pinning across all 14 agents (post-change):
 
 Total: 4 + 8 + 1 + 1 = 14 agents.
 
-Pre-change: 13 pinned (Bitsmith at Sonnet) + 0 inherit. Post-change: 13 pinned + 1 inherit (Bitsmith). Net change: one agent moves from Sonnet-pinned to inherit.
+All 14 agents now use short aliases (`sonnet`, `opus`, `haiku`, `inherit`) in their frontmatter `model:` fields. Full model IDs (e.g., `claude-sonnet-4-6`) are no longer used in agent definitions — aliases resolve automatically to the current model in each tier.
 
 ## 4. Per-Invocation Override Discipline
 

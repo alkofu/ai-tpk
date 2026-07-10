@@ -27,7 +27,7 @@ Start by understanding what the agent should do:
 2. **When should this agent be invoked?** (what user requests or scenarios)
 3. **What should it produce?** (output format, deliverables)
 4. **What tools does it need?** (Read, Write, Edit, Bash, Grep, Glob, Task, etc.)
-5. **What model should power it?** (claude-sonnet-4-6, claude-opus-4-7, claude-haiku-4-5)
+5. **What model should power it?** (sonnet, opus, haiku)
 
 ### 2. Research Existing Agents
 
@@ -91,7 +91,7 @@ Create the agent file at `claude/agents/{agent-name}.md` following this pattern:
 ---
 name: agent-name
 description: "Brief role description. Include specific use cases and keywords. Use when [scenario 1], [scenario 2], or [scenario 3]."
-model: claude-sonnet-4-6
+model: sonnet
 tools: "Read, Write, Edit, Bash, Grep, Glob"
 ---
 
@@ -216,9 +216,9 @@ description: "Security vulnerability detection specialist (OWASP Top 10, secrets
 
 Select based on the agent's needs:
 
-- **claude-opus-4-7**: Complex reasoning, planning, security analysis
-- **claude-sonnet-4-6**: General-purpose work, orchestration, balanced tasks
-- **claude-haiku-4-5**: Fast, simple, straightforward tasks
+- **opus**: Complex reasoning, planning, security analysis
+- **sonnet**: General-purpose work, orchestration, balanced tasks
+- **haiku**: Fast, simple, straightforward tasks
 
 Most agents use Sonnet. Use Opus for planning/security work requiring deeper reasoning.
 
@@ -277,7 +277,7 @@ For agents that analyze but never modify code:
 ---
 name: riskmancer
 description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
-model: claude-opus-4-7
+model: opus
 level: 3
 disallowedTools: Write, Edit
 ---
@@ -301,7 +301,7 @@ For agents that coordinate other agents:
 name: dungeonmaster
 description: "Use this agent to coordinate multi-step software development work..."
 tools: "Task, Read, Grep, Glob, Bash"
-model: claude-sonnet-4-6
+model: sonnet
 ---
 ```
 
@@ -349,7 +349,7 @@ For agents that research and plan but don't execute:
 ---
 name: pathfinder
 description: "Strategic planning consultant with interview workflow"
-model: claude-opus-4-7
+model: opus
 level: 4
 tools: "Read, Write, Grep, Glob, Bash, Agent"
 ---
@@ -530,7 +530,7 @@ Let's create a hypothetical "CodeReviewer" agent:
 - Invoke when: "review this code", "check code quality", "any issues with this PR"
 - Produces: Review report with findings and recommendations
 - Tools: Read, Grep, Glob, Bash (read-only)
-- Model: claude-sonnet-4-6
+- Model: sonnet
 
 **2. Choose Name:** "sentinel" (guarding code quality)
 
@@ -539,7 +539,7 @@ Let's create a hypothetical "CodeReviewer" agent:
 ---
 name: sentinel
 description: "Code quality and best practices reviewer. Use when reviewing pull requests, checking code quality, identifying anti-patterns, or ensuring adherence to project conventions."
-model: claude-sonnet-4-6
+model: sonnet
 tools: "Read, Grep, Glob, Bash"
 disallowedTools: Write, Edit
 ---

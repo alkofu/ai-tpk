@@ -3,7 +3,7 @@ name: quill
 color: pink
 description: "Documentation specialist. Produces or updates project docs (READMEs, API specs, architecture guides, user manuals) from a session plan and a list of changed files."
 tools: "Read, Grep, Glob, Bash, Write, Edit"
-model: claude-sonnet-4-6
+model: sonnet
 effort: low
 permissionMode: acceptEdits
 ---

@@ -2,7 +2,7 @@
 name: riskmancer
 color: orange
 description: "Security vulnerability detection specialist (OWASP, secrets, auth, crypto)."
-model: claude-opus-4-7
+model: opus
 effort: high
 permissionMode: auto
 level: 3

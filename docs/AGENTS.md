@@ -4,20 +4,20 @@
 
 | Agent | Purpose | Primary Use Cases | Model | Review Type |
 |-------|---------|-------------------|-------|-------------|
-| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | claude-sonnet-4-6 | N/A |
-| **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | claude-sonnet-4-6 | N/A |
-| **Tracebloom** | Read-only investigative tracker | Open-ended "why is this broken?" diagnosis, pre-plan root cause analysis | claude-sonnet-4-6 | N/A |
-| **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | claude-sonnet-4-6 | N/A |
-| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | claude-opus-4-7 | Specialist (opt-in) |
-| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | claude-opus-4-7 | N/A |
-| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | claude-opus-4-7 | Specialist (opt-in) |
-| **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | claude-opus-4-7 | Mandatory baseline |
-| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | claude-sonnet-4-6 | Specialist (opt-in) |
-| **Truthhammer** | Factual validation specialist | Verifying external system claims, config keys, API signatures, version compatibility | claude-sonnet-4-6 | Specialist (opt-in) |
+| **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | sonnet | N/A |
+| **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | sonnet | N/A |
+| **Tracebloom** | Read-only investigative tracker | Open-ended "why is this broken?" diagnosis, pre-plan root cause analysis | sonnet | N/A |
+| **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | sonnet | N/A |
+| **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | opus | Specialist (opt-in) |
+| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | opus | N/A |
+| **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | opus | Specialist (opt-in) |
+| **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | opus | Mandatory baseline |
+| **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | sonnet | Specialist (opt-in) |
+| **Truthhammer** | Factual validation specialist | Verifying external system claims, config keys, API signatures, version compatibility | sonnet | Specialist (opt-in) |
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | inherit | N/A |
 | **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | claude-haiku-4-5 | N/A |
-| **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | claude-sonnet-4-6 | N/A |
-| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | claude-sonnet-4-6 | N/A |
+| **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | sonnet | N/A |
+| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | sonnet | N/A |
 
 ## When to Use Which Agent
 

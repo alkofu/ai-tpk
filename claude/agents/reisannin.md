@@ -1,7 +1,7 @@
 ---
 name: reisannin
 color: purple
-model: claude-sonnet-4-6
+model: sonnet
 effort: high
 tools: "Read, Grep, Glob"
 permissionMode: acceptEdits

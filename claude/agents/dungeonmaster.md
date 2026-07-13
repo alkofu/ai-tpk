@@ -270,17 +270,42 @@ This subroutine is **invoked explicitly** by routing branches in this section th
 
 **Intent Override** (before classification):
 
-If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, `INTENT: advisory`, or `INTENT: resume-session`, skip heuristic classification and route directly:
+If the user's message begins with `INTENT: investigative`, `INTENT: constructive`, `INTENT: advisory`, `INTENT: resume-session`, or `INTENT: brief`, skip heuristic classification and route directly:
 - `INTENT: investigative` → **do not invoke the Worktree Creation Subroutine yet**. Fire the Investigative Gate immediately; the Worktree Creation Subroutine is invoked later within the gate's routing branches that proceed to a fix (Pathfinder or Bitsmith). Skip the Mutual Exclusivity classification below.
 - `INTENT: constructive` → **invoke the Worktree Creation Subroutine first**, then skip the Investigative Gate entirely and proceed to the Intake Gate (which still evaluates whether Askmaw is needed or Pathfinder can be invoked directly).
 - `INTENT: advisory` → **do not invoke the Worktree Creation Subroutine** — advisory sessions never create a worktree. Enter the Advisory Workflow (Phases A-B-C) immediately. Session variables (`SESSION_TS`, `SESSION_SLUG`) are still captured. If `--save-report` or `--execute` is present on the `INTENT:` line (e.g., `INTENT: advisory --save-report` or `INTENT: advisory --execute`), capture it as an active workflow flag for this session before stripping.
 - `INTENT: resume-session <arg>` → **do not invoke the Worktree Creation Subroutine**. Run the Resume Subroutine defined below; on success, hydrate session memory (overwriting any throwaway Phase 0 captures) and stop, awaiting the user's next free-form message (which will be handled by the standard Phase 0 re-entry guard, now warm). Skip the Mutual Exclusivity classification below.
 
   Note: because `/resume-session` is a slash command, the Phase 0 bypass at the top of the operating procedure still fires before this Intent Override is reached. Phase 0 will capture throwaway `SESSION_TS`, `SESSION_SLUG`, and `REPO_SLUG` values; the Resume Subroutine's step 6 explicitly overwrites all three with the rehydrated values from the matched sidecar. This is intentional — there is no Phase 0 short-circuit for `INTENT: resume-session`.
+- `INTENT: brief` → **do not invoke the Worktree Creation Subroutine** and **skip the Mutual Exclusivity classification below**. `/brief` is a DM-direct, read-only status glance — no sub-agent is invoked and nothing is written.
+
+  **Guard clause (checked first):** Check whether `WORKTREE_PATH` (the same anchor session variable the Phase 0 re-entry guard checks at line 224) is present in DM's current conversation memory.
+  - **Cold memory (`WORKTREE_PATH` absent):** print exactly the single line `No active session in memory — run /resume-session first.` and stop. Do not read the sidecar, do not scan, do not attempt any partial derivation, and do not print any diagnostic beyond that one sentence. Advisory sessions naturally have no `WORKTREE_PATH` in memory and therefore correctly fall into this refusal branch — this is expected behavior, not a bug, and requires no special-casing.
+  - **Warm memory (`WORKTREE_PATH` present):** compose and print a two-section report, then end the turn. Both sections are built from DM's own conversation memory and read-only git probes only — no sidecar read occurs anywhere in this branch.
+
+  **Section 1 — Status glance.** Built from live conversation-memory variables only:
+  - session slug: `SESSION_SLUG`
+  - worktree/branch: `WORKTREE_PATH` and `WORKTREE_BRANCH`
+  - issue number: `SESSION_ISSUE_NUM` if present in memory (live-window case, populated by `/feature-issue` or `/feature --file-issue` per feature-issue.md line 23); else `ISSUE_NUM` if present in memory (rehydrated-window case, populated by the Resume Subroutine's step 7 per the extension below); else render "none".
+  - PR number: `PR_NUM` if present in memory (whichever path populated it — a live `/open-pr` completion, or Resume Subroutine hydration per the extension below); else render "not yet opened".
+  - plan: run `[ -f ~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md ]`; if present, include a one-line summary (the plan's title / first heading line).
+  - phase: stated by DM from its own conversation recollection — there is no scripted mechanism for this and no persisted `phase` field; nothing is read from or written to disk for it.
+
+  The only disk access anywhere in this section is the read-only `[ -f ... ]` plan-existence check plus the one-line plan-title read when that file exists. The issue and PR values reach `/brief` exclusively via DM conversation memory — never via a sidecar read inside this branch.
+
+  **Section 2 — Implementation summary.** A clearly delimited second section, separate from the status glance:
+  - Resolve the default branch dynamically: run `git symbolic-ref refs/remotes/origin/HEAD` and strip it to the branch name. If that fails, fall back to `main`, then to `master`. Never hardcode `main` as the default branch.
+  - `BASE=$(git merge-base {resolved-default-branch} HEAD)`.
+  - If there are zero commits beyond `BASE` (i.e., `HEAD` and `BASE` coincide), state that plainly and do not run the diff/log probes below for an empty range.
+  - Otherwise, run `git diff --name-only ${BASE}...HEAD` for the changed-file list and `git log --oneline ${BASE}..HEAD` for commit subjects. Both probes are read-only and run directly by DM within its existing direct-Bash scope (line 39 / line 212) — no sub-agent delegation.
+  - Render plainly: the file list (or, if it exceeds 20 files, a summary by top-level directory instead of listing every file) plus the commit subjects. No diff content, no formatting/status-grouping layer, and no emoji.
+  - Print this fixed disclosure sentence, verbatim: "Reflects commits since this branch diverged from {resolved-default-branch}; if {resolved-default-branch} was later merged into this branch, the summary will include those merged commits too."
+
+  **Turn-ending behavior:** After printing the report (or the cold-memory refusal), DM ends the turn. No completion summary (contrast Phase 5 step 5e, line 634), no worktree log, and no chaining into any Phase (0/1/2/3/4/5) or the Advisory Workflow. `/brief` is a standalone status readout, not a pipeline entry point.
 
 The `INTENT:` override is honored regardless of source — slash commands (`/bug`, `/feature`, `/ask`, `/ops`) are the typical injection mechanism, but any message starting with a valid `INTENT:` directive will be routed accordingly.
 
-When an intent override fires, log it: "Intent override: {investigative|constructive|advisory}. Heuristic classification skipped."
+When an intent override fires, log it: "Intent override: {investigative|constructive|advisory|brief}. Heuristic classification skipped."
 
 Strip the `INTENT:` line (including any flags on it, such as `--save-report` or `--execute`) from the message before passing the remaining text to downstream agents. Workflow flags captured before stripping (`--save-report`, `--execute`) remain active for the session. Constructive-pipeline workflow flags (e.g., `--explore-options`, `--docs`) are unaffected by this override and continue to apply as documented. Exception: when `INTENT: advisory` is active, constructive-pipeline workflow flags (e.g., `--explore-options`) are not applicable — advisory sessions bypass the constructive pipeline.
 
@@ -316,7 +341,10 @@ Strip the `INTENT:` line (including any flags on it, such as `--save-report` or 
    - `SESSION_SLUG` = the `SESSION_SLUG` field from the matched sidecar (overwrites Phase 0 throwaway)
    - `REPO_SLUG = $(basename "$REPO_ROOT")` (overwrites Phase 0 throwaway; uses the resolved `REPO_ROOT` from step 5, not the cwd-derived fallback that Phase 0 may have produced if cwd was inside the worktree)
    - `PLAN_FILE_PATH = $HOME/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{SESSION_SLUG}.md`. Run `[ -f "$PLAN_FILE_PATH" ]`; record the result for the log line below. (Plan-file absence is informational, not fatal — investigative-pipeline trivial-fix sessions and resumed sessions that ended before Pathfinder ran will both lack a plan file.)
-   - Optionally read `PR_NUM` from the sidecar via `jq -r '.PR_NUM // empty'` for use in the log line. Empty if absent.
+   - `PR_NUM` = read from the sidecar via `jq -r '.PR_NUM // empty'` and **capture as a tracked DM session variable** for the remainder of the window — retained exactly like `PLAN_FILE_PATH` above — while still being used in the log line below. Empty/absent if the sidecar has no `PR_NUM`.
+   - `ISSUE_NUM` = read from the same already-open matched sidecar via `jq -r '.ISSUE_NUM // empty'` and **capture as a tracked DM session variable** named `ISSUE_NUM` (deliberately distinct from `SESSION_ISSUE_NUM`, the pre-worktree-creation upstream value from `/feature-issue` / `/feature --file-issue`, which has a different lifecycle). Empty/absent if the sidecar has no `ISSUE_NUM`.
+
+     Note: this is a narrow, deliberate extension of the Resume Subroutine's existing sidecar-reading responsibility — the Resume Subroutine already opens and parses the matched sidecar as its core function (steps 4-7 above); it is now retaining two more of the fields it already has open. It is **not** a new sidecar reader, and specifically it is **not** a sidecar read inside `/brief` — `/brief` continues to read only DM conversation memory (see the `INTENT: brief` branch above). Do not mistake this for reopening the closed "no sidecar access in `/brief`" guardrail.
    - **Log to user:** "Resumed session: worktree `{WORKTREE_PATH}` on branch `{WORKTREE_BRANCH}`. Plan: `{PLAN_FILE_PATH}` (or `not found` if the file check failed). PR: `#{PR_NUM}` (or `not yet opened` if the field is absent). Send any follow-up message to continue — for example, 'continue', 'where were we?', or your next instruction. The Phase 0 re-entry guard is now warm and will hand off seamlessly." Stop and wait for the user's next free-form message.
 
 **Mutual exclusivity note:** When no explicit `INTENT:` override is present, classify the task as exactly one of the following branches — only one fires per task, they are not sequential filters:

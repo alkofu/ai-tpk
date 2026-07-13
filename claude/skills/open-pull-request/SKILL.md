@@ -175,6 +175,14 @@ Keep it short (2–5 sentences), **impact-first**: problem solved, user or syste
 
 **Closing keywords:** If the task description, session context, or commit messages on this branch contain any GitHub issue-closing keyword (`Closes #N`, `Fixes #N`, `Resolves #N`, including the `Close`/`Closed`/`Fix`/`Fixed`/`Resolve`/`Resolved` variants), append the matching line(s) verbatim to the end of the PR body so GitHub auto-closes the linked issue(s) on merge. Do not invent a closing keyword; only propagate what the upstream context supplied. If the same `Closes #N` keyword appears in multiple sources, emit it only once in the PR body.
 
+**Optional issue-link prompt:** If the scan in the *Closing keywords* paragraph above found no keyword in any upstream source, the executing agent offers to file a brand-new issue and link it to this PR instead of opening the PR unlinked. This prompt runs **after workflow step 7 (Push) has succeeded and immediately before workflow step 8 (Open PR)** — once the branch is pushed and the PR is essentially certain to open, right before the PR body is constructed for `gh pr create` — so that an aborted earlier step (e.g., step 6's rebase) cannot orphan a freshly-filed issue.
+
+- **Prompt:** Ask the user, via `AskUserQuestion`, a single strictly binary yes/no question: "File one now and link it? (y/n)" — file a brand-new GitHub issue, or skip.
+- **On "yes":** Page in and execute `claude/references/draft-issue-protocol.md` (the same invocation `/feature --file-issue` uses; the protocol requires no changes), then append the resulting `Closes #N` line (derived from the issue number the protocol returns) verbatim to the end of the PR body, exactly as an upstream-supplied closing keyword would have been appended.
+- **On "no":** Proceed unchanged — the PR is opened with no linked issue and no closing keyword.
+- **Mid-flow abort/cancel/decline fallback:** `draft-issue-protocol.md` was written for the top-level `/draft-issue` session, so two of its branches end the whole session — its gh-auth pre-flight ("### Pre-flight: gh auth status check") on a non-zero `gh auth status`, and its final confirmation ("### User confirmation before delegation") if the user rejects the drafted issue. When the protocol is invoked from `/open-pr`, those "end the session" branches are reinterpreted as "return control to `/open-pr` and proceed on the *no* path" — open the PR with no linked issue and no closing keyword. This reinterpretation is caller-side only and does not alter `draft-issue-protocol.md`; no abort, cancel, decline, or gh-auth failure during the inline protocol may terminate the PR-opening flow.
+- **Standing guardrails:** (a) the prompt is strictly binary — filing a brand-new issue or skipping; there is no path to look up, search, or enter an existing issue number (deferred to a future iteration); (b) a "no" decline is not persisted — no state is stored, and a later retry will ask again.
+
 ## Examples (end-to-end)
 
 After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @me --title "feat(reports): add csv export for quarterly view" --body "..."`.
@@ -205,6 +213,7 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 - [ ] PR title is a conventional commit subject line (and matches the main commit when single-commit)
 - [ ] PR body adds context, not a file inventory
 - [ ] If the task description or commit history contains a closing keyword (`Closes #N` / `Fixes #N` / `Resolves #N` etc.), the PR body includes the matching line at the end (deduplicated if the same keyword appears in multiple sources)
+- [ ] If no upstream closing keyword was found, the optional "file & link an issue" prompt was offered after the push step and before opening the PR; if accepted and the inline protocol completed, the resulting `Closes #N` was injected into the PR body; if declined or the inline protocol aborted/cancelled/failed, the PR was opened unlinked
 - [ ] PR is opened as a **draft** and **assigned to the user** (`@me` or equivalent)
 - [ ] No AI/tool attribution in title or body
 

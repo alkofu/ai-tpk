@@ -20,6 +20,19 @@ fi
 # Fetch remote-tracking refs so merged-PR data is current.
 git fetch origin
 
+# Linear membership check against an indexed array. Bash-3.2-safe replacement
+# for associative-array-backed sets. Branch names are newline-safe git refs,
+# so a simple loop comparison is sufficient.
+contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    [[ "$item" == "$needle" ]] && return 0
+  done
+  return 1
+}
+
 # Collect merged PR branch names (one per line) into an array.
 merged_branches=()
 while IFS= read -r line; do
@@ -35,10 +48,12 @@ done < <(git branch --format='%(refname:short)')
 # Detect current branch (may be empty in detached-HEAD state).
 current_branch="$(git branch --show-current)"
 
-# Parse `git worktree list --porcelain` into a path-by-branch lookup map.
-# Associative array: worktree_path_for_branch[branch]=path
+# Parse `git worktree list --porcelain` into a path-by-branch lookup, stored
+# as parallel indexed arrays (wpb_branches/wpb_paths) — Bash-3.2-safe
+# replacement for the worktree_path_for_branch associative array.
 # Skip prunable entries and the first (main) worktree block.
-declare -A worktree_path_for_branch
+wpb_branches=()
+wpb_paths=()
 worktree_raw="$(git worktree list --porcelain)"
 wt_path=""
 wt_branch=""
@@ -50,7 +65,8 @@ while IFS= read -r wt_line; do
     # Flush the previous block before starting a new one.
     if [[ $block_count -gt 1 && -n "$wt_path" && "$wt_prunable" == false ]]; then
       if [[ -n "$wt_branch" && "$wt_branch" != "(detached HEAD)" ]]; then
-        worktree_path_for_branch["$wt_branch"]="$wt_path"
+        wpb_branches+=("$wt_branch")
+        wpb_paths+=("$wt_path")
       fi
     fi
     wt_path="${wt_line#worktree }"
@@ -70,30 +86,21 @@ done <<<"$worktree_raw"
 # Flush the final block.
 if [[ $block_count -gt 1 && -n "$wt_path" && "$wt_prunable" == false ]]; then
   if [[ -n "$wt_branch" && "$wt_branch" != "(detached HEAD)" ]]; then
-    worktree_path_for_branch["$wt_branch"]="$wt_path"
+    wpb_branches+=("$wt_branch")
+    wpb_paths+=("$wt_path")
   fi
 fi
 
-# Build a set of local branches for O(1) lookup.
-declare -A local_branch_set
-for b in "${local_branches[@]+"${local_branches[@]}"}"; do
-  local_branch_set["$b"]=1
-done
-
-# Build a set of protected branches.
-declare -A protected_set
-protected_set["main"]=1
-protected_set["master"]=1
-protected_set["HEAD"]=1
-[[ -n "$current_branch" ]] && protected_set["$current_branch"]=1
+# Build the set of protected branches as a plain indexed array.
+protected_branches=("main" "master" "HEAD")
+[[ -n "$current_branch" ]] && protected_branches+=("$current_branch")
 
 # Compute candidates: in merged_branches AND in local_branches AND NOT protected.
 candidates=()
-declare -A candidate_set
 for mb in "${merged_branches[@]+"${merged_branches[@]}"}"; do
-  if [[ -n "${local_branch_set[$mb]+_}" && -z "${protected_set[$mb]+_}" ]]; then
+  if contains "$mb" "${local_branches[@]+"${local_branches[@]}"}" \
+    && ! contains "$mb" "${protected_branches[@]+"${protected_branches[@]}"}"; then
     candidates+=("$mb")
-    candidate_set["$mb"]=1
   fi
 done
 
@@ -103,25 +110,33 @@ branches_to_delete=("${candidates[@]+"${candidates[@]}"}")
 wtr_branches=()
 wtr_paths=()
 for c in "${candidates[@]+"${candidates[@]}"}"; do
-  if [[ -n "${worktree_path_for_branch[$c]+_}" ]]; then
-    wtr_branches+=("$c")
-    wtr_paths+=("${worktree_path_for_branch[$c]}")
-  fi
+  for i in "${!wpb_branches[@]}"; do
+    if [[ "${wpb_branches[$i]}" == "$c" ]]; then
+      wtr_branches+=("$c")
+      wtr_paths+=("${wpb_paths[$i]}")
+      break
+    fi
+  done
 done
 
-# Build skipped_reasons for merged branches that exist locally but were excluded.
+# Build skipped_reasons for merged branches that exist locally but were excluded,
+# stored as parallel indexed arrays (sr_branches/sr_reasons) — Bash-3.2-safe
+# replacement for the skipped_reasons associative array.
 # Priority order: protected → current branch.
-declare -A skipped_reasons
+sr_branches=()
+sr_reasons=()
 for mb in "${merged_branches[@]+"${merged_branches[@]}"}"; do
   # Only surface branches that exist locally.
-  [[ -z "${local_branch_set[$mb]+_}" ]] && continue
+  contains "$mb" "${local_branches[@]+"${local_branches[@]}"}" || continue
   # Skip if already a candidate.
-  [[ -n "${candidate_set[$mb]+_}" ]] && continue
+  contains "$mb" "${candidates[@]+"${candidates[@]}"}" && continue
   # Determine reason.
   if [[ "$mb" == "main" || "$mb" == "master" || "$mb" == "HEAD" ]]; then
-    skipped_reasons["$mb"]="protected"
+    sr_branches+=("$mb")
+    sr_reasons+=("protected")
   elif [[ -n "$current_branch" && "$mb" == "$current_branch" ]]; then
-    skipped_reasons["$mb"]="current branch"
+    sr_branches+=("$mb")
+    sr_reasons+=("current branch")
   fi
 done
 
@@ -132,11 +147,11 @@ while IFS= read -r ref_line; do
   ref_track="${ref_line##* }"
   [[ "$ref_track" != "[gone]" ]] && continue
   # Already a candidate — skip.
-  [[ -n "${candidate_set[$ref_branch]+_}" ]] && continue
+  contains "$ref_branch" "${candidates[@]+"${candidates[@]}"}" && continue
   # Only add if not already recorded with a higher-priority reason.
-  if [[ -z "${skipped_reasons[$ref_branch]+_}" ]]; then
-    skipped_reasons["$ref_branch"]="upstream gone (PR not in merged-list — possibly closed-without-merge)"
-  fi
+  contains "$ref_branch" "${sr_branches[@]+"${sr_branches[@]}"}" && continue
+  sr_branches+=("$ref_branch")
+  sr_reasons+=("upstream gone (PR not in merged-list — possibly closed-without-merge)")
 done < <(git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads/)
 
 # Serialize branches_to_delete as a JSON array.
@@ -164,11 +179,11 @@ worktrees_json="$(
 
 # Serialize skipped_reasons as a JSON object.
 skipped_json="$(
-  if [[ ${#skipped_reasons[@]} -eq 0 ]]; then
+  if [[ ${#sr_branches[@]} -eq 0 ]]; then
     printf '{}'
   else
-    for sk_br in "${!skipped_reasons[@]}"; do
-      jq -n --arg k "$sk_br" --arg v "${skipped_reasons[$sk_br]}" '{($k): $v}'
+    for i in "${!sr_branches[@]}"; do
+      jq -n --arg k "${sr_branches[$i]}" --arg v "${sr_reasons[$i]}" '{($k): $v}'
     done | jq -s 'add // {}'
   fi
 )"

@@ -575,6 +575,30 @@ function writePatsFile(
   return patsPath;
 }
 
+/** Creates a settings.json with an allowedTools array (and optional extra tools). */
+function writeSettings(
+  fakeHome: string,
+  allowedTools: string[],
+  extra: Record<string, unknown> = {},
+): string {
+  const settingsPath = path.join(fakeHome, '.claude', 'settings.json');
+  const content = { allowedTools, ...extra };
+  fs.writeFileSync(
+    settingsPath,
+    JSON.stringify(content, null, 2) + '\n',
+    'utf8',
+  );
+  return settingsPath;
+}
+
+function readSettings(fakeHome: string): Record<string, unknown> {
+  const settingsPath = path.join(fakeHome, '.claude', 'settings.json');
+  return JSON.parse(fs.readFileSync(settingsPath, 'utf8')) as Record<
+    string,
+    unknown
+  >;
+}
+
 /** Captured spawnSync call record. */
 interface SpawnCall {
   cmd: string;
@@ -1023,30 +1047,6 @@ describe('removeStaleGithubRegistrations', () => {
 // ---------------------------------------------------------------------------
 
 describe('updateGithubAllowList', () => {
-  /** Creates a settings.json with an allowedTools array (and optional extra tools). */
-  function writeSettings(
-    fakeHome: string,
-    allowedTools: string[],
-    extra: Record<string, unknown> = {},
-  ): string {
-    const settingsPath = path.join(fakeHome, '.claude', 'settings.json');
-    const content = { allowedTools, ...extra };
-    fs.writeFileSync(
-      settingsPath,
-      JSON.stringify(content, null, 2) + '\n',
-      'utf8',
-    );
-    return settingsPath;
-  }
-
-  function readSettings(fakeHome: string): Record<string, unknown> {
-    const settingsPath = path.join(fakeHome, '.claude', 'settings.json');
-    return JSON.parse(fs.readFileSync(settingsPath, 'utf8')) as Record<
-      string,
-      unknown
-    >;
-  }
-
   it('adds mcp__github-personal__* and mcp__github-work__* in sorted order', () => {
     const fakeHome = makeFakeHome();
     writeSettings(fakeHome, ['Bash(git *)']);

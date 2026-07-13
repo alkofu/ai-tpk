@@ -9,10 +9,10 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import * as fs from 'node:fs';
 
-// scriptDir = repo root; at runtime __filename is dist/installer.js so one
+// scriptDir = repo root; at runtime currentFilename is dist/installer.js so one
 // dirname reaches dist/ and a second reaches the repo root.
-const __filename = fileURLToPath(import.meta.url);
-const installerDir = path.dirname(__filename);
+const currentFilename = fileURLToPath(import.meta.url);
+const installerDir = path.dirname(currentFilename);
 const scriptDir = path.dirname(installerDir);
 
 try {

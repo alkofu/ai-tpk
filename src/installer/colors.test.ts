@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 // We use child_process.execFileSync to run a small inline script in a fresh process
 // with and without NO_COLOR set.
 
-const __filename = fileURLToPath(import.meta.url);
-const installerDir = path.dirname(__filename);
+const currentFilename = fileURLToPath(import.meta.url);
+const installerDir = path.dirname(currentFilename);
 
 function runColorCheck(colorName: string, noColor: boolean): string {
   const script = `

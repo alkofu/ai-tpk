@@ -298,7 +298,7 @@ If the user's message begins with `INTENT: investigative`, `INTENT: constructive
   - `BASE=$(git merge-base {resolved-default-branch} HEAD)`.
   - If there are zero commits beyond `BASE` (i.e., `HEAD` and `BASE` coincide), state that plainly and do not run the diff/log probes below for an empty range.
   - Otherwise, run `git diff --name-only ${BASE}...HEAD` for the changed-file list and `git log --oneline ${BASE}..HEAD` for commit subjects. Both probes are read-only and run directly by DM within its existing direct-Bash scope (line 39 / line 212) — no sub-agent delegation.
-  - Render plainly: the file list (or, if it exceeds 20 files, a summary by top-level directory instead of listing every file) plus the commit subjects. No diff content, no formatting/status-grouping layer, and no emoji.
+  - Render plainly: always print the flat `git diff --name-only` file list, regardless of count, plus the commit subjects. No diff content, no formatting/status-grouping layer, and no emoji.
   - Print this fixed disclosure sentence, verbatim: "Reflects commits since this branch diverged from {resolved-default-branch}; if {resolved-default-branch} was later merged into this branch, the summary will include those merged commits too."
 
   **Turn-ending behavior:** After printing the report (or the cold-memory refusal), DM ends the turn. No completion summary (contrast Phase 5 step 5e, line 634), no worktree log, and no chaining into any Phase (0/1/2/3/4/5) or the Advisory Workflow. `/brief` is a standalone status readout, not a pipeline entry point.

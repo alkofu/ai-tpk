@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Read-only slurp-and-filter query over the cross-session task/session index.
-# See claude/references/session-task-index.md for the full schema and the
-# issue-join / worktree_slug lookup idioms this script implements.
+# See session-task-index.md for the full schema and the issue-join /
+# worktree_slug lookup idioms this script implements.
 #
 # Usage:
 #   index-query.sh [--type idea|issue|session] [--status <s>] [--repo <slug>]
@@ -212,9 +212,12 @@ if [ -n "$WORKTREE_SLUG" ]; then
   FILTER="${FILTER} and (.worktree_slug == \$f_wts)"
 fi
 if [ -n "$SEARCH" ]; then
-  # Fixed-string containment only — never treat --search as a regex.
+  # Fixed-string containment over string VALUES only — never field names or
+  # JSON structure, and never treat --search as a regex. This deliberately
+  # includes the injected "key" field (the record's filename), so searching
+  # for a key fragment is supported alongside content search.
   JQ_ARGS+=(--arg f_search "$SEARCH")
-  FILTER="${FILTER} and ((. | tostring) | contains(\$f_search))"
+  FILTER="${FILTER} and (([.. | strings] | join(\" \")) | contains(\$f_search))"
 fi
 
 MATCHES="${WORKDIR}/matches.jsonl"

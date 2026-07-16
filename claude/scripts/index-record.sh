@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Create or update a single-file record in the cross-session task/session
-# index. See claude/references/session-task-index.md for the full schema,
-# lifecycle, and idiom this script implements.
+# index. See session-task-index.md for the full schema, lifecycle, and
+# idiom this script implements.
 #
 # Usage:
 #   index-record.sh --mode create --key <slug> --type idea|issue|session --repo-slug <slug> [flags...]
@@ -119,6 +119,17 @@ if [ "$MODE" = "create" ]; then
   [ -n "$REPO_SLUG" ] || fail "--repo-slug is required in create mode"
 fi
 
+if [ -n "$ISSUE" ]; then
+  case "$ISSUE" in
+    *[!0-9]*) fail "--issue must be numeric (got: $ISSUE)" ;;
+  esac
+fi
+if [ -n "$PR" ]; then
+  case "$PR" in
+    *[!0-9]*) fail "--pr must be numeric (got: $PR)" ;;
+  esac
+fi
+
 # Build the jq --arg/--argjson pipeline shared by both modes. Each optional
 # field is only merged in when the corresponding flag was supplied, so
 # update mode never clobbers an unspecified field with an empty string.
@@ -191,6 +202,20 @@ if [ "$MODE" = "create" ]; then
   mkdir -p "$RECORDS_DIR"
 
   NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  JQ_ARGS_FULL=("${JQ_ARGS[@]+"${JQ_ARGS[@]}"}" --arg created_ts "$NOW" --arg updated_ts "$NOW")
+  FULL_FILTER="${JQ_FILTER} + {created_ts: \$created_ts, updated_ts: \$updated_ts}"
+
+  # Build the full record body ONCE, up front, into a variable rather than
+  # redirecting straight to $TARGET. This way a jq/argument error fails hard
+  # here — before any file is touched — and can never be confused with an
+  # O_EXCL filename collision in the retry loop below.
+  JQ_ERR_FILE="$(mktemp "${TMPDIR:-/tmp}/index-record-jqerr.XXXXXX")"
+  if ! CONTENT="$(jq -n "${JQ_ARGS_FULL[@]}" "$FULL_FILTER" 2>"$JQ_ERR_FILE")"; then
+    JQ_ERR_MSG="$(cat "$JQ_ERR_FILE")"
+    rm -f "$JQ_ERR_FILE"
+    fail "failed to build record content: ${JQ_ERR_MSG}"
+  fi
+  rm -f "$JQ_ERR_FILE"
 
   CANDIDATE_KEY="$KEY"
   ATTEMPT=1
@@ -198,12 +223,11 @@ if [ "$MODE" = "create" ]; then
   while true; do
     TARGET="${RECORDS_DIR}/${CANDIDATE_KEY}.json"
 
-    JQ_ARGS_FULL=("${JQ_ARGS[@]+"${JQ_ARGS[@]}"}" --arg created_ts "$NOW" --arg updated_ts "$NOW")
-    FULL_FILTER="${JQ_FILTER} + {created_ts: \$created_ts, updated_ts: \$updated_ts}"
-
+    # The content is already known-good, so a failure here is unambiguously
+    # an O_EXCL collision on an existing file, never a jq/content error.
     if (
       set -C
-      jq -n "${JQ_ARGS_FULL[@]}" "$FULL_FILTER" >"$TARGET"
+      printf '%s\n' "$CONTENT" >"$TARGET"
     ) 2>/dev/null; then
       printf '%s\n' "$CANDIDATE_KEY"
       exit 0

@@ -102,6 +102,22 @@ else
   fail "TC-06: --search matches fixed string only, not regex" "out=$OUT6 $(cat /tmp/tq06.err 2>/dev/null)"
 fi
 
+# --- TC-08: --search on a field name (not a value) does not spuriously match every record ---
+OUT8=$(HOME="$HOME_A" bash "$SCRIPT" --search "stage" --format key 2>/tmp/tq08.err)
+if [ -z "$OUT8" ] || [ "$OUT8" = "no matching records" ]; then
+  pass "TC-08: --search on a field name does not spuriously match every record"
+else
+  fail "TC-08: --search on a field name does not spuriously match every record" "out=$OUT8 $(cat /tmp/tq08.err 2>/dev/null)"
+fi
+
+# --- TC-09: --search on an actual summary value still matches correctly ---
+OUT9=$(HOME="$HOME_A" bash "$SCRIPT" --search "fine idea" --format key 2>/tmp/tq09.err)
+if [ "$OUT9" = "idea-one" ]; then
+  pass "TC-09: --search on an actual summary value still matches correctly"
+else
+  fail "TC-09: --search on an actual summary value still matches correctly" "out=$OUT9 $(cat /tmp/tq09.err 2>/dev/null)"
+fi
+
 # --- TC-07: empty/absent records directory yields friendly message and exit 0 ---
 HOME_C=$(new_scratch_home)
 OUT7=$(HOME="$HOME_C" bash "$SCRIPT" 2>/tmp/tq07.err)

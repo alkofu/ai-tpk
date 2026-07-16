@@ -114,8 +114,29 @@ else
   pass "TC-07: invalid --type exits non-zero"
 fi
 
+# --- TC-08: malformed --issue exits non-zero, clear error, no junk files left ---
+HOME_8=$(new_scratch_home)
+if HOME="$HOME_8" bash "$SCRIPT" --mode create --key "bad-issue" --type idea --repo-slug "ai-tpk" --issue "not-a-number" >/tmp/tc08.out 2>/tmp/tc08.err; then
+  fail "TC-08: malformed --issue exits non-zero" "expected non-zero exit, got 0"
+else
+  RECORDS_DIR_8="$(RECORDS_DIR_FOR "$HOME_8")"
+  JSON_COUNT_8=0
+  if [ -d "$RECORDS_DIR_8" ]; then
+    JSON_COUNT_8=$(find "$RECORDS_DIR_8" -name '*.json' | wc -l | tr -d ' ')
+  fi
+  if grep -qi 'collision' /tmp/tc08.err; then
+    fail "TC-08: malformed --issue exits non-zero, clear error, no junk files left" "error mentioned collision: $(cat /tmp/tc08.err)"
+  elif [ "$JSON_COUNT_8" != "0" ]; then
+    fail "TC-08: malformed --issue exits non-zero, clear error, no junk files left" "expected no .json files, found $JSON_COUNT_8"
+  elif ! grep -qi 'issue' /tmp/tc08.err; then
+    fail "TC-08: malformed --issue exits non-zero, clear error, no junk files left" "error did not mention --issue: $(cat /tmp/tc08.err)"
+  else
+    pass "TC-08: malformed --issue exits non-zero, clear error, no junk files left"
+  fi
+fi
+
 # --- Cleanup ---
-rm -rf "$HOME_1" "$HOME_2" "$HOME_3" "$HOME_4" "$HOME_5" "$HOME_6" "$HOME_7"
+rm -rf "$HOME_1" "$HOME_2" "$HOME_3" "$HOME_4" "$HOME_5" "$HOME_6" "$HOME_7" "$HOME_8"
 rm -f /tmp/tc0[0-9]*.out /tmp/tc0[0-9]*.err
 
 printf '\n=== Results: %d passed, %d failed ===\n' "$PASS" "$FAIL"

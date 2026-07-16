@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Delete a single record from the cross-session task/session index. See
-# claude/references/session-task-index.md for the full schema and delete
-# semantics this script implements.
+# session-task-index.md for the full schema and delete semantics this
+# script implements.
 #
 # Usage:
 #   index-delete.sh <key>

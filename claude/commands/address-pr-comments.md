@@ -25,7 +25,7 @@ posting. Follow every step below in order. All Bash commands must follow
      not exist, or the command outputs nothing (no `PR_NUM` field), skip this fallback and go
      to step 3.
    - Otherwise, store the output as `<pr-number>` and announce the auto-selection -- never
-     silent: "Using PR #`<pr-number>` from the active session (no PR number was provided)."
+     silent: "Using PR #`<pr-number>` from the active session (no valid PR number was provided)."
 3. **Ask the user (final fallback).** If `<pr-number>` is still unresolved, ask the user:
    "Which PR number should I address comments for?"
 

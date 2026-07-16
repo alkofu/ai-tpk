@@ -10,13 +10,27 @@ posting. Follow every step below in order. All Bash commands must follow
 
 ## Step 1 -- Parse arguments and generate session timestamp
 
-`$ARGUMENTS` should contain the PR number.
+`$ARGUMENTS` should contain the PR number. Resolve `<pr-number>` using this precedence order:
 
-- If `$ARGUMENTS` is empty or contains no numeric value, ask the user: "Which PR number should
-  I address comments for?"
-- If `$ARGUMENTS` contains a numeric value, extract it and store as `<pr-number>`.
-- Validate that `<pr-number>` is a positive integer. If not, abort with: "Invalid PR number:
-  `<value>`. Please provide a valid PR number."
+1. **Explicit argument (highest precedence).** If `$ARGUMENTS` contains a numeric value,
+   extract it and store as `<pr-number>`. Do not consult the session-context sidecar in this
+   case.
+2. **Active-session fallback.** If `$ARGUMENTS` is empty or contains no numeric value, look for
+   the current worktree's active-session PR number before asking the user:
+   - Run `git rev-parse --show-toplevel` as its own Bash call. If it fails (not inside a git
+     worktree), skip this fallback and go to step 3.
+   - Take the `basename` of that path as `<worktree-slug>`.
+   - Run `jq -r '.PR_NUM // empty' ~/.ai-tpk/session-context/by-worktree/<worktree-slug>.json`
+     (with `<worktree-slug>` inlined literally) as a single Bash call. If the sidecar file does
+     not exist, or the command outputs nothing (no `PR_NUM` field), skip this fallback and go
+     to step 3.
+   - Otherwise, store the output as `<pr-number>` and announce the auto-selection -- never
+     silent: "Using PR #`<pr-number>` from the active session (no valid PR number was provided)."
+3. **Ask the user (final fallback).** If `<pr-number>` is still unresolved, ask the user:
+   "Which PR number should I address comments for?"
+
+Validate that `<pr-number>` is a positive integer. If not, abort with: "Invalid PR number:
+`<value>`. Please provide a valid PR number."
 
 Generate `<session-ts>` in the format `YYYYMMDD-HHMMSS` using the current date and time. Store
 it for use in the summary file path.

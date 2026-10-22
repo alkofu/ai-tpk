@@ -35,7 +35,7 @@ if [[ -z "$pr_number" ]] || [[ -z "$comment_full_database_id" ]] || [[ -z "$body
 fi
 
 # Verify GitHub authentication. On failure: emit JSON to stdout + exit 1.
-if ! gh auth status >/dev/null 2>&1; then
+if ! gh auth status --active >/dev/null 2>&1; then
   jq -n '{ok: false, error: "GitHub authentication is required. Run `gh auth login` and try again.", error_kind: "auth"}'
   exit 1
 fi

@@ -24,7 +24,7 @@ GIT=(git)
 [[ -n "$DIR" ]] && GIT=(git -C "$DIR")
 
 # Step 1: Verify GitHub authentication.
-if ! gh auth status >/dev/null 2>&1; then
+if ! gh auth status --active >/dev/null 2>&1; then
   printf '%s\n' "GitHub authentication is required. Run \`gh auth login\` and try again." >&2
   exit 1
 fi

@@ -19,7 +19,7 @@ if [[ -z "$pr_number" ]] || ! [[ "$pr_number" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 # Verify GitHub authentication.
-if ! gh auth status >/dev/null 2>&1; then
+if ! gh auth status --active >/dev/null 2>&1; then
   # shellcheck disable=SC2016  # backtick inside single-quoted printf is intentional (literal output)
   printf 'GitHub authentication is required. Run `gh auth login` and try again.\n' >&2
   exit 1

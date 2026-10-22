@@ -8,7 +8,7 @@ This reference is paged in by any command that needs to file a GitHub issue usin
 
 ### Pre-flight: gh auth status check
 
-Before entering Phase B clarification, DM must run `gh auth status` via the Bash tool. If `gh auth status` exits non-zero (gh not installed, or not authenticated), surface the exact stderr to the user along with this message: *"This command requires the `gh` CLI to be installed and authenticated against the target repository. Run `gh auth login` and re-invoke the command."* Then end the session — do not proceed to Phase B. If `gh auth status` exits zero, proceed to Phase B.
+Before entering Phase B clarification, DM must run `gh auth status --active` via the Bash tool. `--active` checks only the active account, so a stale token on another logged-in account does not fail the check. If `gh auth status --active` exits non-zero (gh not installed, or not authenticated), surface the exact stderr to the user along with this message: *"This command requires the `gh` CLI to be installed and authenticated against the target repository. Run `gh auth login` and re-invoke the command."* Then end the session — do not proceed to Phase B. If `gh auth status --active` exits zero, proceed to Phase B.
 
 ### Phase A: Classification override
 

@@ -1,5 +1,8 @@
 export type GrafanaRole = 'viewer' | 'editor';
 
+// 'default' launches plain `claude` with no `--agent` flag.
+export type LauncherAgent = 'dungeonmaster' | 'default';
+
 export interface GrafanaCluster {
   id: string;
   name: string;
@@ -53,6 +56,7 @@ export type SkippedMap = {
 
 export interface LauncherConfig {
   selectedMcps: string[];
+  agent?: LauncherAgent;
   grafana?: {
     clusterId: string;
     role: GrafanaRole;

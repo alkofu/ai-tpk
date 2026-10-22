@@ -2,6 +2,7 @@ import { note, select } from '@clack/prompts';
 import { handleCancel } from './cancel.js';
 import type { LauncherConfig } from './types.js';
 import { registry } from './mcp-command.js';
+import { formatAgentLine } from './agent.js';
 
 export function formatSummaryLines(config: LauncherConfig): string[] {
   if (config.selectedMcps.length === 0) {
@@ -18,7 +19,7 @@ export function formatSummaryLines(config: LauncherConfig): string[] {
 export async function promptSummaryAction(
   config: LauncherConfig,
 ): Promise<'launch' | 'configure'> {
-  const lines = formatSummaryLines(config);
+  const lines = [formatAgentLine(config), ...formatSummaryLines(config)];
   note(lines.join('\n'), 'Current Configuration');
   const result = await select({
     message: 'What would you like to do?',

@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import { intro, outro } from '@clack/prompts';
 import { loadConfig, saveConfig } from './config.js';
-import { selectMcps } from './prompts.js';
+import { selectAgent, selectMcps } from './prompts.js';
+import { AGENT_LABELS, resolveSavedAgent } from './agent.js';
 import { buildEnvVars } from './env.js';
 import { buildOutroLines } from './outro.js';
 import { promptSummaryAction } from './summary.js';
@@ -41,11 +42,12 @@ function launchClaude(
   // or exits non-zero, the launch must still proceed.
   // stderr is suppressed to silence noise from a potentially misconfigured binary.
   spawnSync('clear', [], { stdio: ['inherit', 'inherit', 'ignore'] });
-  outro(`Launching: ${lines.join(' · ')}`);
+  const agent = resolveSavedAgent(savedConfig);
+  outro(`Launching ${AGENT_LABELS[agent]}: ${lines.join(' · ')}`);
 
   // Launch Claude with merged env vars
   const env = { ...process.env, ...envVars };
-  const claudeArgs = buildClaudeArgs(initialMessage);
+  const claudeArgs = buildClaudeArgs(agent, initialMessage);
   const result = spawnSync('claude', claudeArgs, {
     stdio: 'inherit',
     env,
@@ -118,13 +120,17 @@ async function main(): Promise<void> {
         // Fall through to configure flow.
         // Warning already logged by buildResolvedFromSaved (e.g., stale Grafana cluster).
       } else {
-        // Direct launch: no config was modified, so do NOT call saveConfig.
-        // The direct-launch path intentionally does not call saveConfig because
-        // no configuration was modified. Only the configure path (below) persists
-        // changes. This prevents an implementer from accidentally inserting a
-        // saveConfig call here or moving it into launchClaude where it would be
-        // called on both paths.
-        launchClaude(resolved, savedConfig);
+        // Direct launch: MCP config is not modified on this path. The only
+        // possible change is the agent choice, so saveConfig is called here
+        // only when that choice differs from what was saved. Do NOT move
+        // saveConfig into launchClaude, where it would run on every path
+        // (including --skip, which must never write config).
+        const agent = await selectAgent(resolveSavedAgent(savedConfig));
+        const launchConfig: LauncherConfig = { ...savedConfig, agent };
+        if (agent !== savedConfig.agent) {
+          saveConfig(launchConfig);
+        }
+        launchClaude(resolved, launchConfig);
       }
     }
     // If action === "configure", fall through to existing menu flow below.
@@ -153,6 +159,8 @@ async function main(): Promise<void> {
     Object.assign(resolved, result.resolved);
     Object.assign(updatedConfig, result.persistable);
   }
+
+  updatedConfig.agent = await selectAgent(resolveSavedAgent(savedConfig));
 
   // Persist updated selections (configure path only -- user changed config)
   saveConfig(updatedConfig);

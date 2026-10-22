@@ -6,7 +6,7 @@ import { AGENT_LABELS, resolveSavedAgent } from './agent.js';
 import { buildEnvVars } from './env.js';
 import { buildOutroLines } from './outro.js';
 import { promptSummaryAction } from './summary.js';
-import { buildResolvedFromSaved } from './resolve.js';
+import { buildResolvedFromSaved, withKnownMcpsOnly } from './resolve.js';
 import { registry } from './mcp-command.js';
 import { applyKubernetesContextSwitch } from './mcp/kubernetes.js';
 import {
@@ -68,7 +68,7 @@ function runSkipLaunch(
   const resolved = buildResolvedFromSaved(savedConfig);
   if (resolved === null) {
     console.error(
-      'Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run tpk without --skip to reconfigure.',
+      'Saved config could not be resolved (e.g. ArgoCD cluster is no longer valid) — re-run tpk without --skip to reconfigure.',
     );
     process.exit(1);
   }
@@ -102,7 +102,7 @@ async function main(): Promise<void> {
 
   intro('tpk — Session Launcher');
 
-  const savedConfig = loadConfig();
+  const savedConfig = withKnownMcpsOnly(loadConfig());
 
   if (skip) {
     runSkipLaunch(savedConfig, initialMessage);
@@ -118,7 +118,7 @@ async function main(): Promise<void> {
       const resolved = buildResolvedFromSaved(savedConfig);
       if (resolved === null) {
         // Fall through to configure flow.
-        // Warning already logged by buildResolvedFromSaved (e.g., stale Grafana cluster).
+        // Warning already logged by buildResolvedFromSaved (e.g., stale ArgoCD cluster).
       } else {
         // Direct launch: MCP config is not modified on this path. The only
         // possible change is the agent choice, so saveConfig is called here

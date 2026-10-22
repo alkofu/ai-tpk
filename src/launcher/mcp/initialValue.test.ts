@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 // Step 7: initialValue staleness guard logic (Finding 7)
 //
 // These tests verify the staleness guard expressions that will be used in
-// configureCloudWatch, configureGrafana, and configureKubernetes.
+// configureCloudWatch and configureKubernetes.
 // They test the logic inline without extracting a shared helper, matching
 // the inline approach prescribed by the plan.
 // ---------------------------------------------------------------------------
@@ -16,14 +16,6 @@ function resolveStringDefault(
   previous?: string,
 ): string | undefined {
   return previous && list.includes(previous) ? previous : list[0];
-}
-
-// Grafana pattern: previousId && list.some(c => c.id === previousId) ? previousId : list[0]?.id
-function resolveGrafanaDefault(
-  ids: string[],
-  previous?: string,
-): string | undefined {
-  return previous && ids.includes(previous) ? previous : ids[0];
 }
 
 // Kubernetes pattern: (previous && list.includes(previous)) ? previous : (currentContext || list[0])
@@ -56,29 +48,6 @@ describe('CloudWatch initialValue staleness guard', () => {
     assert.strictEqual(
       resolveStringDefault(['default', 'dev'], undefined),
       'default',
-    );
-  });
-});
-
-describe('Grafana initialValue staleness guard', () => {
-  it('returns previousClusterId when it exists in the list', () => {
-    assert.strictEqual(
-      resolveGrafanaDefault(['prod', 'staging', 'dev'], 'staging'),
-      'staging',
-    );
-  });
-
-  it('returns first cluster id when previousClusterId is not in the list (stale)', () => {
-    assert.strictEqual(
-      resolveGrafanaDefault(['prod', 'staging'], 'deleted-cluster'),
-      'prod',
-    );
-  });
-
-  it('returns first cluster id when previousClusterId is undefined', () => {
-    assert.strictEqual(
-      resolveGrafanaDefault(['prod', 'staging'], undefined),
-      'prod',
     );
   });
 });

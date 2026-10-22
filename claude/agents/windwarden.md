@@ -281,7 +281,7 @@ Brief explanation of why this verdict was chosen based on performance impact.
 
 | Tool | Purpose |
 |------|---------|
-| `mcp__grafana__*` | Query Prometheus metrics, Loki logs, dashboards, alerts, and incidents for deployed services. Read-only. |
+| `mcp__grafana-<cluster>__*` | Query Prometheus metrics, Loki logs, dashboards, alerts, and incidents for deployed services. One server per Grafana cluster; query the cluster that matches the environment under review. Read-only. |
 | `mcp__kubernetes__*` | Inspect Kubernetes resource state, read pod logs, describe objects, check resource limits and current usage. Read-only. |
 | `mcp__cloudwatch__*` | Query AWS CloudWatch logs (Logs Insights), metrics, and active alarms across configured AWS regions. Read-only. |
 | `mcp__gcp-observability__*` | Query Google Cloud logs and metrics for services running on GCP. Read-only. |

@@ -23,13 +23,13 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it('returns correct line for grafana with clusterId and role', () => {
+  it('returns correct line for argocd with clusterId', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana'],
-      grafana: { clusterId: 'prod-eu', role: 'viewer' },
+      selectedMcps: ['argocd'],
+      argocd: { clusterId: 'prod-eu' },
     };
     assert.deepStrictEqual(formatSummaryLines(config), [
-      'Grafana: cluster prod-eu, role viewer',
+      'ArgoCD: cluster prod-eu',
     ]);
   });
 
@@ -65,10 +65,10 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it("returns '(not yet configured)' when grafana is in selectedMcps but sub-object is missing", () => {
-    const config: LauncherConfig = { selectedMcps: ['grafana'] };
+  it("returns '(not yet configured)' when argocd is in selectedMcps but sub-object is missing", () => {
+    const config: LauncherConfig = { selectedMcps: ['argocd'] };
     assert.deepStrictEqual(formatSummaryLines(config), [
-      'Grafana: (not yet configured)',
+      'ArgoCD: (not yet configured)',
     ]);
   });
 
@@ -95,22 +95,17 @@ describe('formatSummaryLines', () => {
 
   it('returns four correct lines when all four MCPs are configured', () => {
     const config: LauncherConfig = {
-      selectedMcps: [
-        'grafana',
-        'cloudwatch',
-        'gcp-observability',
-        'kubernetes',
-      ],
-      grafana: { clusterId: 'prod-us', role: 'editor' },
+      selectedMcps: ['cloudwatch', 'gcp-observability', 'kubernetes', 'argocd'],
       cloudwatch: { profile: 'prod' },
       gcpObservability: { project: 'gcp-prod' },
       kubernetes: { context: 'prod-cluster' },
+      argocd: { clusterId: 'prod-us' },
     };
     assert.deepStrictEqual(formatSummaryLines(config), [
-      'Grafana: cluster prod-us, role editor',
       'CloudWatch: profile prod',
       'GCP Observability: project gcp-prod',
       'Kubernetes: context prod-cluster',
+      'ArgoCD: cluster prod-us',
     ]);
   });
 

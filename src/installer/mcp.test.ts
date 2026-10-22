@@ -15,6 +15,13 @@ import {
   removeLegacyGithubRegistration,
   assertWrappersDirNotWorldWritable,
   updateGithubAllowList,
+  removeLegacyGrafanaRegistration,
+  loadGrafanaViewerClusters,
+  registerGrafanaClusters,
+  removeStaleGrafanaRegistrations,
+  updateGrafanaAllowList,
+  expandGrafanaAgentTools,
+  updateGrafanaAgentTools,
 } from './mcp.js';
 
 // ---------------------------------------------------------------------------
@@ -1230,6 +1237,344 @@ describe('updateGithubAllowList', () => {
       tempFiles.length,
       0,
       `temp files must be cleaned up, found: ${tempFiles.join(', ')}`,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Grafana per-cluster support
+// ---------------------------------------------------------------------------
+
+/** Writes grafana-clusters.yaml under the fake home with the given mode. */
+function writeGrafanaClusters(
+  fakeHome: string,
+  yamlText: string,
+  mode: number = 0o600,
+): string {
+  const clustersPath = path.join(
+    fakeHome,
+    '.config',
+    'tpk',
+    'grafana-clusters.yaml',
+  );
+  fs.writeFileSync(clustersPath, yamlText, 'utf8');
+  fs.chmodSync(clustersPath, mode);
+  return clustersPath;
+}
+
+const SAMPLE_CLUSTERS_YAML = [
+  'clusters:',
+  '  - id: aws-prd-use1',
+  '    url: https://prd.example.com',
+  '    viewer_token: tok-prd-viewer',
+  '    editor_token: tok-prd-editor',
+  '  - id: aws-npr-use1',
+  '    url: https://npr.example.com',
+  '    viewer_token: tok-npr-viewer',
+  '  - id: gcp-no-viewer',
+  '    url: https://gcp.example.com',
+  "    viewer_token: ''",
+  '  - id: no-url',
+  '    viewer_token: tok-no-url',
+  '  - id: has.dot',
+  '    url: https://dot.example.com',
+  '    viewer_token: tok-dot',
+  '  - id: aws-prd-use1',
+  '    url: https://dup.example.com',
+  '    viewer_token: tok-dup',
+  '',
+].join('\n');
+
+const SAMPLE_TOKENS = [
+  'tok-prd-viewer',
+  'tok-prd-editor',
+  'tok-npr-viewer',
+  'tok-no-url',
+  'tok-dot',
+  'tok-dup',
+];
+
+describe('removeLegacyGrafanaRegistration', () => {
+  it('invokes claude mcp remove -s user grafana exactly once', () => {
+    const calls: SpawnCall[] = [];
+    removeLegacyGrafanaRegistration((cmd, args) => calls.push({ cmd, args }));
+    assert.deepStrictEqual(calls, [
+      { cmd: 'claude', args: ['mcp', 'remove', '-s', 'user', 'grafana'] },
+    ]);
+  });
+
+  it('does not throw when the command fails (legacy registration absent)', () => {
+    assert.doesNotThrow(() => removeLegacyGrafanaRegistration(alwaysThrowStub));
+  });
+});
+
+describe('loadGrafanaViewerClusters', () => {
+  it('returns sorted ids of clusters with a valid id, url and viewer_token', () => {
+    const fakeHome = makeFakeHome();
+    writeGrafanaClusters(fakeHome, SAMPLE_CLUSTERS_YAML);
+    const ids = loadGrafanaViewerClusters(fakeHome, () => {});
+    assert.deepStrictEqual(ids, ['aws-npr-use1', 'aws-prd-use1']);
+  });
+
+  it('warns once per skipped cluster, naming ids but never tokens', () => {
+    const fakeHome = makeFakeHome();
+    writeGrafanaClusters(fakeHome, SAMPLE_CLUSTERS_YAML);
+    const warnings: string[] = [];
+    loadGrafanaViewerClusters(fakeHome, (m) => warnings.push(m));
+
+    assert.strictEqual(warnings.length, 4, warnings.join('\n'));
+    assert.ok(warnings.some((w) => w.includes("'gcp-no-viewer'")));
+    assert.ok(warnings.some((w) => w.includes("'no-url'")));
+    assert.ok(warnings.some((w) => w.includes('cluster #5')));
+    assert.ok(
+      warnings.some((w) => w.includes("duplicate cluster id 'aws-prd-use1'")),
+    );
+    for (const w of warnings) {
+      for (const token of SAMPLE_TOKENS) {
+        assert.ok(!w.includes(token), `token leaked into warning: ${w}`);
+      }
+    }
+  });
+
+  it('returns [] with a warning when the file is absent', () => {
+    const fakeHome = makeFakeHome();
+    const warnings: string[] = [];
+    assert.deepStrictEqual(
+      loadGrafanaViewerClusters(fakeHome, (m) => warnings.push(m)),
+      [],
+    );
+    assert.ok(warnings.some((w) => w.includes('not found')));
+  });
+
+  it('warns about a non-0600 file mode but still returns the clusters', () => {
+    const fakeHome = makeFakeHome();
+    writeGrafanaClusters(fakeHome, SAMPLE_CLUSTERS_YAML, 0o644);
+    const warnings: string[] = [];
+    const ids = loadGrafanaViewerClusters(fakeHome, (m) => warnings.push(m));
+    assert.deepStrictEqual(ids, ['aws-npr-use1', 'aws-prd-use1']);
+    assert.ok(warnings.some((w) => w.includes('recommended mode is 0600')));
+  });
+
+  it('throws on malformed YAML without echoing file contents', () => {
+    const fakeHome = makeFakeHome();
+    writeGrafanaClusters(
+      fakeHome,
+      'clusters:\n  - id: x\n    viewer_token: "tok-secret-unterminated\n',
+    );
+    assert.throws(
+      () => loadGrafanaViewerClusters(fakeHome, () => {}),
+      (err: unknown) =>
+        err instanceof Error &&
+        err.message.includes('invalid YAML') &&
+        !err.message.includes('tok-secret'),
+    );
+  });
+
+  it('throws when the top level has no clusters list', () => {
+    const fakeHome = makeFakeHome();
+    writeGrafanaClusters(fakeHome, 'servers: []\n');
+    assert.throws(
+      () => loadGrafanaViewerClusters(fakeHome, () => {}),
+      /top-level 'clusters' list/,
+    );
+  });
+});
+
+describe('registerGrafanaClusters', () => {
+  it('registers grafana-<id> per cluster with only GRAFANA_CLUSTER env', () => {
+    const fakeHome = makeFakeHome();
+    const calls: SpawnCall[] = [];
+    const result = registerGrafanaClusters(
+      ['aws-npr-use1', 'aws-prd-use1'],
+      fakeHome,
+      (cmd, args) => calls.push({ cmd, args }),
+    );
+
+    const wrapperPath = path.join(
+      fakeHome,
+      '.claude',
+      'wrappers',
+      'mcp-grafana.sh',
+    );
+    assert.deepStrictEqual(
+      calls.filter((c) => c.args[1] === 'add').map((c) => c.args),
+      ['aws-npr-use1', 'aws-prd-use1'].map((id) => [
+        'mcp',
+        'add',
+        '-s',
+        'user',
+        '-t',
+        'stdio',
+        '-e',
+        `GRAFANA_CLUSTER=${id}`,
+        '--',
+        `grafana-${id}`,
+        wrapperPath,
+      ]),
+    );
+    // Each add is preceded by a best-effort remove of the same server.
+    assert.deepStrictEqual(
+      calls.filter((c) => c.args[1] === 'remove').map((c) => c.args[4]),
+      ['grafana-aws-npr-use1', 'grafana-aws-prd-use1'],
+    );
+    assert.deepStrictEqual(result, new Set(['aws-npr-use1', 'aws-prd-use1']));
+  });
+
+  it('omits clusters whose mcp add fails from the returned set', () => {
+    const fakeHome = makeFakeHome();
+    const result = registerGrafanaClusters(
+      ['ok', 'broken'],
+      fakeHome,
+      (_cmd, args) => {
+        if (args[1] === 'add' && args.includes('grafana-broken')) {
+          throw new Error('add failed');
+        }
+      },
+    );
+    assert.deepStrictEqual(result, new Set(['ok']));
+  });
+});
+
+describe('removeStaleGrafanaRegistrations', () => {
+  it('removes only grafana-<id> servers whose id is no longer desired', () => {
+    const fakeHome = makeFakeHome();
+    fs.writeFileSync(
+      path.join(fakeHome, '.claude.json'),
+      JSON.stringify({
+        mcpServers: {
+          grafana: { type: 'stdio' },
+          'grafana-keep': { type: 'stdio' },
+          'grafana-old': { type: 'stdio' },
+          'github-old': { type: 'stdio' },
+        },
+      }),
+      'utf8',
+    );
+    const calls: SpawnCall[] = [];
+    removeStaleGrafanaRegistrations(
+      new Set(['keep']),
+      fakeHome,
+      (cmd, args) => calls.push({ cmd, args }),
+      () => {},
+    );
+    assert.deepStrictEqual(calls, [
+      { cmd: 'claude', args: ['mcp', 'remove', '-s', 'user', 'grafana-old'] },
+    ]);
+  });
+});
+
+describe('updateGrafanaAllowList', () => {
+  it('sets per-cluster wildcards and drops legacy and stale Grafana entries only', () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, [
+      'Bash(git status)',
+      'mcp__grafana__search_dashboards',
+      'mcp__grafana__query_loki_logs',
+      'mcp__grafana-old__*',
+      'mcp__grafana-keep__*',
+      'mcp__github-personal__*',
+    ]);
+    updateGrafanaAllowList(new Set(['keep', 'new']), fakeHome, () => {});
+    assert.deepStrictEqual(readSettings(fakeHome)['allowedTools'], [
+      'Bash(git status)',
+      'mcp__grafana-keep__*',
+      'mcp__github-personal__*',
+      'mcp__grafana-new__*',
+    ]);
+  });
+
+  it('removes every Grafana entry when no clusters are registered', () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ['Read', 'mcp__grafana-old__*']);
+    updateGrafanaAllowList(new Set(), fakeHome, () => {});
+    assert.deepStrictEqual(readSettings(fakeHome)['allowedTools'], ['Read']);
+  });
+});
+
+/** Builds a minimal agent file with the given frontmatter tools line. */
+function agentFile(toolsLine: string, body = '\n# Agent\n'): string {
+  return `---\nname: probe\n${toolsLine}\nmodel: sonnet\n---\n${body}`;
+}
+
+describe('expandGrafanaAgentTools', () => {
+  it('replaces the placeholder in a quoted tools line, keeping entry order', () => {
+    const input = agentFile(
+      'tools: "Read, Bash, mcp__grafana__*, mcp__kubernetes__*"',
+    );
+    assert.strictEqual(
+      expandGrafanaAgentTools(input, ['a', 'b']),
+      agentFile(
+        'tools: "Read, Bash, mcp__grafana-a__*, mcp__grafana-b__*, mcp__kubernetes__*"',
+      ),
+    );
+  });
+
+  it('removes the placeholder entirely when there are no clusters', () => {
+    const input = agentFile('tools: "Read, mcp__grafana__*, Bash"');
+    assert.strictEqual(
+      expandGrafanaAgentTools(input, []),
+      agentFile('tools: "Read, Bash"'),
+    );
+  });
+
+  it('handles an unquoted tools line', () => {
+    const input = agentFile('tools: Read, mcp__grafana__*');
+    assert.strictEqual(
+      expandGrafanaAgentTools(input, ['a']),
+      agentFile('tools: Read, mcp__grafana-a__*'),
+    );
+  });
+
+  it('leaves content unchanged when the placeholder is only in the body', () => {
+    const input = agentFile(
+      'tools: "Read, Bash"',
+      '\nUse `mcp__grafana__*` tools.\n',
+    );
+    assert.strictEqual(expandGrafanaAgentTools(input, ['a']), input);
+  });
+
+  it('leaves content without frontmatter unchanged', () => {
+    const input = 'tools: "mcp__grafana__*"\n';
+    assert.strictEqual(expandGrafanaAgentTools(input, ['a']), input);
+  });
+});
+
+describe('updateGrafanaAgentTools', () => {
+  it('rewrites only installed agents whose tools line has the placeholder', () => {
+    const fakeHome = makeFakeHome();
+    const agentsDir = path.join(fakeHome, '.claude', 'agents');
+    fs.mkdirSync(agentsDir, { recursive: true });
+    const withPlaceholder =
+      '---\nname: a\ntools: "Read, mcp__grafana__*"\n---\nbody\n';
+    const without = '---\nname: b\ntools: "Read"\n---\nbody\n';
+    fs.writeFileSync(path.join(agentsDir, 'a.md'), withPlaceholder, 'utf8');
+    fs.writeFileSync(path.join(agentsDir, 'b.md'), without, 'utf8');
+    fs.writeFileSync(
+      path.join(agentsDir, 'notes.txt'),
+      'mcp__grafana__*',
+      'utf8',
+    );
+
+    updateGrafanaAgentTools(new Set(['z', 'y']), fakeHome);
+
+    assert.strictEqual(
+      fs.readFileSync(path.join(agentsDir, 'a.md'), 'utf8'),
+      '---\nname: a\ntools: "Read, mcp__grafana-y__*, mcp__grafana-z__*"\n---\nbody\n',
+    );
+    assert.strictEqual(
+      fs.readFileSync(path.join(agentsDir, 'b.md'), 'utf8'),
+      without,
+    );
+    assert.strictEqual(
+      fs.readFileSync(path.join(agentsDir, 'notes.txt'), 'utf8'),
+      'mcp__grafana__*',
+    );
+  });
+
+  it('does not throw when the agents directory is absent', () => {
+    const fakeHome = makeFakeHome();
+    assert.doesNotThrow(() =>
+      updateGrafanaAgentTools(new Set(['a']), fakeHome),
     );
   });
 });

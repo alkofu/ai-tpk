@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { deepMergeJson, installMergedJson } from './settings.js';
+import {
+  deepMergeJson,
+  installMergedJson,
+  isRepoManagedHook,
+  mergeHooks,
+} from './settings.js';
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-test-'));
 
@@ -118,7 +123,178 @@ describe('deepMergeJson', () => {
   });
 });
 
+const HOME = '/home/test';
+
+const repoHook = (script: string, extra: Record<string, unknown> = {}) => ({
+  type: 'command',
+  command: `bash ~/.claude/hooks/${script}`,
+  ...extra,
+});
+
+const userHook = (command: string) => ({ type: 'command', command });
+
+describe('isRepoManagedHook', () => {
+  it('recognizes every home-anchored form of the installed hooks dir', () => {
+    for (const command of [
+      'bash ~/.claude/hooks/a.sh',
+      'bash $HOME/.claude/hooks/a.sh',
+      'bash "${HOME}/.claude/hooks/a.sh"',
+      '/home/test/.claude/hooks/a.sh --flag',
+    ]) {
+      assert.strictEqual(
+        isRepoManagedHook({ type: 'command', command }, HOME),
+        true,
+        command,
+      );
+    }
+  });
+
+  it('does not claim hooks outside the home .claude/hooks dir', () => {
+    for (const command of [
+      '/home/test/.config/iterm2/cc-status',
+      'bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/project.sh',
+      'bash /other/home/.claude/hooks/a.sh',
+      'bash ~/.claude/scripts/a.sh',
+    ]) {
+      assert.strictEqual(
+        isRepoManagedHook({ type: 'command', command }, HOME),
+        false,
+        command,
+      );
+    }
+  });
+
+  it('returns false for hooks without a string command', () => {
+    assert.strictEqual(isRepoManagedHook({ type: 'prompt' }, HOME), false);
+    assert.strictEqual(isRepoManagedHook('not-an-object', HOME), false);
+  });
+});
+
+describe('mergeHooks', () => {
+  it('replaces drifted repo groups with the template and appends user groups', () => {
+    // Live repo group lacks `async: true`: a value-based union would keep it
+    // alongside the template group and run the hook twice.
+    const live = {
+      Stop: [
+        { hooks: [repoHook('talekeeper-enrich.sh')] },
+        { hooks: [userHook('/home/test/.config/iterm2/cc-status')] },
+      ],
+    };
+    const template = {
+      Stop: [{ async: true, hooks: [repoHook('talekeeper-enrich.sh')] }],
+    };
+    assert.deepStrictEqual(mergeHooks(live, template, HOME), {
+      Stop: [
+        { async: true, hooks: [repoHook('talekeeper-enrich.sh')] },
+        { hooks: [userHook('/home/test/.config/iterm2/cc-status')] },
+      ],
+    });
+  });
+
+  it('keeps user hooks from a group that mixes repo and user hooks', () => {
+    const live = {
+      Stop: [
+        {
+          matcher: '*',
+          hooks: [repoHook('old.sh'), userHook('notify-send done')],
+        },
+      ],
+    };
+    const template = { Stop: [{ hooks: [repoHook('new.sh')] }] };
+    assert.deepStrictEqual(mergeHooks(live, template, HOME), {
+      Stop: [
+        { hooks: [repoHook('new.sh')] },
+        { matcher: '*', hooks: [userHook('notify-send done')] },
+      ],
+    });
+  });
+
+  it('keeps user-only events the template does not define', () => {
+    const live = { Notification: [{ hooks: [userHook('cc-status')] }] };
+    const template = { Stop: [{ hooks: [repoHook('a.sh')] }] };
+    assert.deepStrictEqual(mergeHooks(live, template, HOME), {
+      Stop: [{ hooks: [repoHook('a.sh')] }],
+      Notification: [{ hooks: [userHook('cc-status')] }],
+    });
+  });
+
+  it('drops an event the template removed when only repo hooks remain', () => {
+    const live = {
+      Stop: [{ hooks: [repoHook('a.sh')] }],
+      PreCompact: [{ hooks: [repoHook('removed-from-template.sh')] }],
+    };
+    const template = { Stop: [{ hooks: [repoHook('a.sh')] }] };
+    assert.deepStrictEqual(mergeHooks(live, template, HOME), {
+      Stop: [{ hooks: [repoHook('a.sh')] }],
+    });
+  });
+
+  it('keeps live values with an unrecognized shape unchanged', () => {
+    const live = {
+      Stop: [{ matcher: 'no-hooks-array' }, 'not-an-object'],
+      Custom: { not: 'an array' },
+    };
+    const template = { Stop: [{ hooks: [repoHook('a.sh')] }] };
+    assert.deepStrictEqual(mergeHooks(live, template, HOME), {
+      Stop: [
+        { hooks: [repoHook('a.sh')] },
+        { matcher: 'no-hooks-array' },
+        'not-an-object',
+      ],
+      Custom: { not: 'an array' },
+    });
+  });
+
+  it('does not mutate its inputs', () => {
+    const live = {
+      Stop: [{ hooks: [repoHook('a.sh'), userHook('cc-status')] }],
+    };
+    const template = { Stop: [{ hooks: [repoHook('b.sh')] }] };
+    const liveCopy = JSON.parse(JSON.stringify(live));
+    const templateCopy = JSON.parse(JSON.stringify(template));
+    mergeHooks(live, template, HOME);
+    assert.deepStrictEqual(live, liveCopy);
+    assert.deepStrictEqual(template, templateCopy);
+  });
+});
+
 describe('installMergedJson', () => {
+  it('preserves user-owned hooks across a merge while the template owns repo hooks', () => {
+    const src = path.join(tmpDir, 'template-hooks.json');
+    const dest = path.join(tmpDir, 'dest-hooks.json');
+    fs.writeFileSync(
+      src,
+      JSON.stringify({
+        hooks: {
+          SessionStart: [
+            { async: true, hooks: [repoHook('session-start.sh')] },
+          ],
+        },
+      }),
+    );
+    fs.writeFileSync(
+      dest,
+      JSON.stringify({
+        hooks: {
+          SessionStart: [
+            { hooks: [repoHook('session-start.sh')] },
+            { hooks: [userHook('cc-status')] },
+          ],
+          UserPromptSubmit: [{ hooks: [userHook('cc-status')] }],
+        },
+      }),
+    );
+    installMergedJson(src, dest);
+    const merged = JSON.parse(fs.readFileSync(dest, 'utf8'));
+    assert.deepStrictEqual(merged.hooks, {
+      SessionStart: [
+        { async: true, hooks: [repoHook('session-start.sh')] },
+        { hooks: [userHook('cc-status')] },
+      ],
+      UserPromptSubmit: [{ hooks: [userHook('cc-status')] }],
+    });
+  });
+
   it('merges into an existing valid-JSON dest and creates a backup', () => {
     const src = path.join(tmpDir, 'template-valid.json');
     const dest = path.join(tmpDir, 'dest-valid.json');

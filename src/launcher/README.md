@@ -1,6 +1,6 @@
 # Launcher Module — tpk Interactive Wizard
 
-The launcher is a TypeScript module that implements the `tpk` interactive wizard. It allows users to configure MCP environment variables and launch Claude with the Dungeon Master agent in a single command.
+The launcher is a TypeScript module that implements the `tpk` interactive wizard. It allows users to configure MCP environment variables and launch Claude — with the Dungeon Master agent or the default Claude agent — in a single command.
 
 ## Quick Start
 
@@ -46,6 +46,7 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 ┌  tpk — Session Launcher
 │
 ◆  Current Configuration
+│  Agent: Dungeon Master
 │  Grafana: cluster prod-us-east, role viewer
 │  CloudWatch: profile my-aws-profile
 └
@@ -55,10 +56,12 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 └
 ```
 
-| Action    | Key                | Effect                                                                     |
-| --------- | ------------------ | -------------------------------------------------------------------------- |
-| Launch    | Enter              | Launches Claude immediately with the saved config. Config is not re-saved. |
-| Configure | Arrow-down + Enter | Enters the full MCP selection flow. Config is re-saved on completion.      |
+| Action    | Key                | Effect                                                                                                                      |
+| --------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Launch    | Enter              | Prompts for the agent, then launches Claude with the saved MCP config. Config is re-saved only if the agent choice changed. |
+| Configure | Arrow-down + Enter | Enters the full MCP selection flow, then prompts for the agent. Config is re-saved on completion.                           |
+
+**Agent selection:** every interactive launch asks `Which agent?` — **Dungeon Master** (`claude --agent dungeonmaster`) or **Default Claude** (`claude` with no `--agent` flag). The last choice is preselected and persisted as `agent` (`"dungeonmaster"` or `"default"`) in `~/.config/tpk/config.json`. A missing or unrecognised value falls back to Dungeon Master. `--skip` never prompts; it launches the saved agent.
 
 If the saved Grafana cluster ID no longer exists in `~/.config/tpk/grafana-clusters.yaml`, the launch path is skipped and the configure flow starts automatically with a warning.
 
@@ -81,7 +84,7 @@ tpk --skip <initial-message>
 
 ## Testing
 
-Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`, `argocd.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`agent.test.ts`, `argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `grafana.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`, `argocd.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -147,12 +150,13 @@ The `McpCommand` interface captures every per-MCP responsibility:
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `main.ts`        | Entry point. Parses argv via `argv.ts` and short-circuits to a saved-config launch when `--skip` is present. Configure flow iterates `registry` to call `configureInteractive` for each selected MCP. Calls `applyKubernetesContextSwitch` explicitly after `saveConfig` and before `buildEnvVars` |
 | `argv.ts`        | `parseArgs(argv)` — pure lexical parser; returns `{ skip, initialMessage }`. Throws `UnknownFlagError` for unknown flags and `TooManyPositionalsError` for more than one positional.                                                                                                               |
-| `claude-args.ts` | `buildClaudeArgs(initialMessage)` — pure helper that produces the `claude` spawn argv. Single source of truth for the spawn-arg shape; called from `launchClaude` in `main.ts`.                                                                                                                    |
+| `claude-args.ts` | `buildClaudeArgs(agent, initialMessage)` — pure helper that produces the `claude` spawn argv (`--agent dungeonmaster` only for the Dungeon Master). Single source of truth for the spawn-arg shape; called from `launchClaude` in `main.ts`.                                                       |
+| `agent.ts`       | Agent labels, `resolveSavedAgent` (falls back to Dungeon Master for missing/unknown values), and `formatAgentLine` for the summary screen                                                                                                                                                          |
 | `resolve.ts`     | `buildResolvedFromSaved` — iterates `config.selectedMcps`, calls `cmd.resolveFromSaved`, catches `StaleResourceError`                                                                                                                                                                              |
 | `env.ts`         | `buildEnvVars` — iterates `registry`, calls `cmd.emitEnvVars`                                                                                                                                                                                                                                      |
 | `outro.ts`       | `buildOutroLines` — two registry passes: success lines first, then skip lines, both in registry order                                                                                                                                                                                              |
 | `summary.ts`     | `formatSummaryLines` + `promptSummaryAction` — looks up each selected MCP in the registry by id                                                                                                                                                                                                    |
-| `prompts.ts`     | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`                                                                                                                                                                                                           |
+| `prompts.ts`     | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`; `selectAgent` — the agent `select` prompt                                                                                                                                                                |
 | `config.ts`      | Persistence: load/save `~/.config/tpk/config.json`                                                                                                                                                                                                                                                 |
 | `types.ts`       | All shared TypeScript types (`ResolvedConfig`, `LauncherConfig`, `SkippedMap`, per-MCP config interfaces)                                                                                                                                                                                          |
 
@@ -259,7 +263,7 @@ The selected context is saved under `kubernetes.context` in `~/.config/tpk/confi
 ## See Also
 
 - **`src/launcher/argv.ts`** — Argv parser used by `main.ts`; exports `parseArgs`, `UnknownFlagError`, and `TooManyPositionalsError`
-- **`src/launcher/claude-args.ts`** — `buildClaudeArgs` helper that produces the `claude` spawn argv from the optional initial message; used by `launchClaude` in `main.ts`.
+- **`src/launcher/claude-args.ts`** — `buildClaudeArgs` helper that produces the `claude` spawn argv from the selected agent and the optional initial message; used by `launchClaude` in `main.ts`.
 - **`src/mcp/wrappers/mcp-grafana.sh`** — Bash wrapper that translates `GRAFANA_DISABLE_WRITE=true` to `--disable-write`
 - **`src/mcp/wrappers/mcp-gcp-observability.sh`** — Bash wrapper that resolves the GCP project from the dotfile and launches the Observability MCP server
 - **`src/launcher/mcp-command-types.ts`** — `McpCommand` interface and `StaleResourceError` class

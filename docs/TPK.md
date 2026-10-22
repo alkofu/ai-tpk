@@ -17,7 +17,7 @@ If you have used a previous version of this tool (before the rename to `tpk`), t
 
 ## Overview
 
-The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with the Dungeon Master agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
+The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
 
 **Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/tpk`.
 
@@ -31,13 +31,16 @@ The wizard will present a multi-step flow:
 
 1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, GCP Observability, Kubernetes, and/or ArgoCD)
 2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
-3. **Launch** — Claude opens with `--agent dungeonmaster` and the correct environment variables set
+3. **Agent Selection** — Choose **Dungeon Master** (`claude --agent dungeonmaster`) or **Default Claude** (`claude` with no `--agent` flag)
+4. **Launch** — Claude opens with the chosen agent and the correct environment variables set
 
-**Persistence:** Your last-used selections are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
+The agent prompt is also shown after choosing **Launch** on the summary screen, so you can switch agents on every run without reconfiguring MCPs. Your last choice is preselected; if none is saved, Dungeon Master is preselected.
+
+**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
 
 ### `--skip`: launch immediately with saved config
 
-Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`. The short alias `-S` (uppercase) is fully equivalent to `--skip` and may be used interchangeably.
+Pass `--skip` to bypass the interactive summary screen and launch Claude immediately using whatever is currently saved in `~/.config/tpk/config.json`, including the saved agent (Dungeon Master if none is saved). The short alias `-S` (uppercase) is fully equivalent to `--skip` and may be used interchangeably.
 
 ```bash
 tpk --skip
@@ -203,4 +206,4 @@ K8S_CONTEXT={context_name}
 
 ArgoCD does not set environment variables. The selected cluster name is written to `~/.claude/.current-argocd-cluster` and read by the wrapper at MCP server boot time.
 
-These variables (and the dotfiles written by ArgoCD and Kubernetes) are passed to `claude --agent dungeonmaster`, and they flow through to all MCP server subprocesses.
+These variables (and the dotfiles written by ArgoCD and Kubernetes) are passed to the `claude` process (with `--agent dungeonmaster` when the Dungeon Master is selected), and they flow through to all MCP server subprocesses.

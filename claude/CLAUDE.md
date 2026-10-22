@@ -36,3 +36,9 @@ The `/draft-issue` command runs an advisory-pipeline workflow that turns a short
 Use `/draft-issue` to capture an idea for later implementation. Use `/feature-issue <issue-number-or-url>` to pick up a filed issue and start the constructive planning pipeline. Use `/feature` to start a fresh planning session without filing an issue first. Use `/feature --file-issue` to file a GitHub issue and immediately start planning against it in a single session — equivalent to `/draft-issue` followed by `/feature-issue <new-url>` but combined.
 
 `/draft-issue` does not create a worktree, a plan file, or a branch. The only side effect is the GitHub issue creation, which is preceded by an inline confirmation prompt.
+
+## Worktrees Over Branches
+
+When I ask for code changes, ALWAYS start the work in a new worktree (via the `EnterWorktree` tool) and NEVER on a plain git branch. This applies to every project. The only exceptions:
+- I explicitly ask to use a branch (or to work in place).
+- A skill or command I invoke already manages its own worktree (e.g. `/feature`, `/feature-issue`, `/resume-session`) — use that path rather than creating a second one.

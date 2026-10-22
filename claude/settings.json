@@ -22,6 +22,7 @@
     "Bash(gh release view *)",
     "Bash(gh auth switch *)",
     "Bash(gh auth status)",
+    "Bash(gh auth status --active)",
     "Bash(mkdir *)",
     "Bash(rm *)",
     "Bash(cp *)",

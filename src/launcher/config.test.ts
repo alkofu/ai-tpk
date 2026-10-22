@@ -117,8 +117,8 @@ describe('saveConfig', () => {
 
   it('round-trip: saveConfig then loadConfig returns the same data', () => {
     const config = {
-      selectedMcps: ['grafana', 'cloudwatch'],
-      grafana: { clusterId: 'prod', role: 'viewer' as const },
+      selectedMcps: ['argocd', 'cloudwatch'],
+      argocd: { clusterId: 'prod' },
       cloudwatch: { profile: 'default' },
     };
     saveConfig(config);

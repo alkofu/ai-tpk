@@ -17,12 +17,6 @@
       "wrapper": "wrappers/mcp-cloudwatch.sh"
     },
     {
-      "name": "grafana",
-      "scope": "user",
-      "transport": "stdio",
-      "wrapper": "wrappers/mcp-grafana.sh"
-    },
-    {
       "name": "gcp-observability",
       "scope": "user",
       "transport": "stdio",

@@ -60,7 +60,7 @@ Restate the reported symptom in precise terms. Identify what "working as expecte
 
 Read relevant files, grep for error messages and related patterns, check git history for recent changes in the affected area, and examine configuration. Record what was examined and what was found at each step — the investigation log feeds directly into the Diagnostic Report.
 
-Consistent with the tool requirements stated in the Scope section and Tool Usage table, query `mcp__grafana__*` tools (Loki logs, Prometheus metrics), `mcp__kubernetes__*` tools (pod logs, resource state), `mcp__cloudwatch__*` tools (AWS logs, metrics, alarms), and `mcp__gcp-observability__*` tools (GCP logs, metrics) when those tools are available at runtime. Do not proceed to Phase 3 until one of the following is true:
+Consistent with the tool requirements stated in the Scope section and Tool Usage table, query `mcp__grafana-<cluster>__*` tools (Loki logs, Prometheus metrics — one read-only server per Grafana cluster; pick the cluster that matches the affected environment), `mcp__kubernetes__*` tools (pod logs, resource state), `mcp__cloudwatch__*` tools (AWS logs, metrics, alarms), and `mcp__gcp-observability__*` tools (GCP logs, metrics) when those tools are available at runtime. Do not proceed to Phase 3 until one of the following is true:
 
 - (a) External data (logs, metrics, or Kubernetes resource state) has been collected and recorded in the investigation log
 - (b) The symptom type does not warrant infrastructure queries — document the reason in one sentence before proceeding
@@ -113,7 +113,7 @@ After delivering the report, Tracebloom halts. He does not follow up, monitor, o
 | `Glob` | Locate files by name or pattern |
 | `Bash` | Run read-only investigation commands (see Bash Constraints below). **Hard constraint:** no write-bearing commands. |
 | `mcp__kubernetes__*` | Inspect Kubernetes resource state, read pod logs, describe objects. All read-only. **Required** when available — do not ask the user for information these tools can retrieve. |
-| `mcp__grafana__*` | Query Prometheus metrics, Loki logs, dashboards, alerts, incidents, and on-call state. All read-only. **Required** when available — do not ask the user for information these tools can retrieve. |
+| `mcp__grafana-<cluster>__*` | Query Prometheus metrics, Loki logs, dashboards, alerts, incidents, and on-call state. One server per Grafana cluster (e.g. `mcp__grafana-aws-prd-use1__*`); query the cluster that matches the affected environment. All read-only. **Required** when available — do not ask the user for information these tools can retrieve. |
 | `mcp__cloudwatch__*` | Query AWS CloudWatch logs (Logs Insights), metrics, and active alarms. All read-only. **Required** when available — do not ask the user for information these tools can retrieve. |
 | `mcp__gcp-observability__*` | Query Google Cloud logs and metrics for services running on GCP. All read-only. **Required** when available — do not ask the user for information these tools can retrieve. |
 | `gh` (CLI via Bash) | Inspect PRs, issues, CI runs, releases, repository metadata, and auth status. Permitted subcommands: `gh pr *`, `gh issue *`, `gh run *`, `gh repo view *`, `gh repo clone *`, `gh api graphql *`, `gh release view *`, `gh auth switch *`, `gh auth status`. All read-only with respect to repository state. Use directly to check CI state, PR status, or release history during investigation — do not ask the user to run these commands. |

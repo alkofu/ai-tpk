@@ -3,51 +3,48 @@ import assert from 'node:assert/strict';
 import { buildOutroLines } from './outro.js';
 import type { ResolvedConfig, SkippedMap } from './types.js';
 
+const fakeArgoCdCluster = {
+  id: 'prod-argo',
+  url: 'https://argocd.prod.example.com',
+  token: 'argocd-token',
+};
+
 describe('buildOutroLines', () => {
   it('(a) returns four success lines in canonical order when all MCPs are configured and none are skipped', () => {
     const resolved: ResolvedConfig = {
-      grafana: {
-        cluster: {
-          id: 'prod-us-east',
-          name: 'Production US-East',
-          url: 'https://grafana.prod.example.com',
-          viewer_token: 'viewer-token',
-          editor_token: 'editor-token',
-        },
-        role: 'viewer',
-      },
       cloudwatch: { profile: 'my-aws-profile' },
       gcpObservability: { project: 'my-gcp-project' },
       kubernetes: { context: 'prod-us-east' },
+      argocd: { cluster: fakeArgoCdCluster },
     };
     const effectiveSkipped: SkippedMap = {};
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
     assert.deepStrictEqual(lines, [
-      'Grafana: Production US-East (viewer)',
       'CloudWatch: my-aws-profile',
       'GCP Observability: my-gcp-project',
       'Kubernetes: prod-us-east',
+      'ArgoCD: prod-argo',
     ]);
   });
 
   it('(b) returns four skip lines in canonical order when all MCPs are skipped via loader failure', () => {
     const resolved: ResolvedConfig = {};
     const effectiveSkipped: SkippedMap = {
-      grafana: 'loader-failed',
       cloudwatch: 'loader-failed',
       gcp: 'loader-failed',
       kubernetes: 'loader-failed',
+      argocd: 'loader-failed',
     };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
     assert.deepStrictEqual(lines, [
-      'Grafana: skipped (clusters unavailable)',
       'CloudWatch: skipped (profiles unavailable)',
       'GCP Observability: skipped (auth unavailable)',
       'Kubernetes: skipped (contexts unavailable)',
+      'ArgoCD: skipped (accounts unavailable)',
     ]);
   });
 
@@ -85,46 +82,37 @@ describe('buildOutroLines', () => {
     // skip lines (same canonical order). CloudWatch has no resolved value here
     // so it only appears as a skip line — after the three success lines.
     const resolved: ResolvedConfig = {
-      grafana: {
-        cluster: {
-          id: 'prod-us-east',
-          name: 'Production US-East',
-          url: 'https://grafana.prod.example.com',
-          viewer_token: 'viewer-token',
-          editor_token: 'editor-token',
-        },
-        role: 'viewer',
-      },
       gcpObservability: { project: 'my-gcp-project' },
       kubernetes: { context: 'prod-us-east' },
+      argocd: { cluster: fakeArgoCdCluster },
     };
     const effectiveSkipped: SkippedMap = { cloudwatch: 'loader-failed' };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
     assert.deepStrictEqual(lines, [
-      'Grafana: Production US-East (viewer)',
       'GCP Observability: my-gcp-project',
       'Kubernetes: prod-us-east',
+      'ArgoCD: prod-argo',
       'CloudWatch: skipped (profiles unavailable)',
     ]);
   });
 
   it('(e2) success lines precede skip lines even when the skipped MCP ranks before the resolved one in canonical order', () => {
-    // Grafana is skipped (1st in canonical order); CloudWatch resolves (2nd).
-    // "All-successes-first" → ["CloudWatch: ...", "Grafana: skipped (...)"].
-    // "Per-MCP-interleaved" would produce the opposite: ["Grafana: skipped...", "CloudWatch: ..."].
+    // CloudWatch is skipped (1st in canonical order); GCP resolves (2nd).
+    // "All-successes-first" → ["GCP Observability: ...", "CloudWatch: skipped (...)"].
+    // "Per-MCP-interleaved" would produce the opposite order.
     // This test distinguishes the two models.
     const resolved: ResolvedConfig = {
-      cloudwatch: { profile: 'my-aws-profile' },
+      gcpObservability: { project: 'my-gcp-project' },
     };
-    const effectiveSkipped: SkippedMap = { grafana: 'loader-failed' };
+    const effectiveSkipped: SkippedMap = { cloudwatch: 'loader-failed' };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
     assert.deepStrictEqual(lines, [
-      'CloudWatch: my-aws-profile',
-      'Grafana: skipped (clusters unavailable)',
+      'GCP Observability: my-gcp-project',
+      'CloudWatch: skipped (profiles unavailable)',
     ]);
   });
 
@@ -140,24 +128,15 @@ describe('buildOutroLines', () => {
   });
 
   it('(g) renders success line when effectiveSkipped.<mcp> is false', () => {
-    // effectiveSkipped.grafana === false must NOT suppress the success line.
+    // effectiveSkipped.argocd === false must NOT suppress the success line.
     // Only truthy discriminants suppress the success line.
     const resolved: ResolvedConfig = {
-      grafana: {
-        cluster: {
-          id: 'prod-us-east',
-          name: 'Production US-East',
-          url: 'https://grafana.prod.example.com',
-          viewer_token: 'viewer-token',
-          editor_token: 'editor-token',
-        },
-        role: 'viewer',
-      },
+      argocd: { cluster: fakeArgoCdCluster },
     };
-    const effectiveSkipped: SkippedMap = { grafana: false };
+    const effectiveSkipped: SkippedMap = { argocd: false };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
-    assert.deepStrictEqual(lines, ['Grafana: Production US-East (viewer)']);
+    assert.deepStrictEqual(lines, ['ArgoCD: prod-argo']);
   });
 });

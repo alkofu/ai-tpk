@@ -17,7 +17,7 @@ If you have used a previous version of this tool (before the rename to `tpk`), t
 
 ## Overview
 
-The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (Grafana cluster + role, AWS profile, GCP project), then launch a pre-configured Claude session.
+The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (AWS profile, GCP project, kube context, ArgoCD cluster), then launch a pre-configured Claude session. Grafana is not part of the wizard: the installer registers one always-on, read-only MCP server per Grafana cluster (see [Grafana Configuration](#grafana-configuration)).
 
 **Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/tpk`.
 
@@ -29,14 +29,14 @@ tpk
 
 The wizard will present a multi-step flow:
 
-1. **MCP Selection** — Choose which MCPs to configure for this session (Grafana, CloudWatch, GCP Observability, Kubernetes, and/or ArgoCD)
-2. **Per-MCP Configuration** — For each selected MCP, choose its settings (cluster/role for Grafana; AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
+1. **MCP Selection** — Choose which MCPs to configure for this session (CloudWatch, GCP Observability, Kubernetes, and/or ArgoCD)
+2. **Per-MCP Configuration** — For each selected MCP, choose its settings (AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes; cluster for ArgoCD)
 3. **Agent Selection** — Choose **Dungeon Master** (`claude --agent dungeonmaster`) or **Default Claude** (`claude` with no `--agent` flag)
 4. **Launch** — Claude opens with the chosen agent and the correct environment variables set
 
 The agent prompt is also shown after choosing **Launch** on the summary screen, so you can switch agents on every run without reconfiguring MCPs. Your last choice is preselected; if none is saved, Dungeon Master is preselected.
 
-**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them.
+**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them. A `grafana` selection saved by an older `tpk` is ignored.
 
 ### `--skip`: launch immediately with saved config
 
@@ -60,10 +60,10 @@ This is useful for scripts, hot-key launches, and users who never want to see th
   No saved config found — run tpk without --skip first to configure.
   ```
 
-- **Stale saved config:** If the saved config cannot be resolved (e.g. the saved Grafana cluster ID no longer exists in `~/.config/tpk/grafana-clusters.yaml`), the launcher prints to stderr and exits with code 1:
+- **Stale saved config:** If the saved config cannot be resolved (e.g. the saved ArgoCD cluster no longer exists in `~/.config/tpk/argocd-accounts.json`), the launcher prints to stderr and exits with code 1:
 
   ```
-  Saved config could not be resolved (e.g. Grafana cluster is no longer valid) — re-run tpk without --skip to reconfigure.
+  Saved config could not be resolved (e.g. ArgoCD cluster is no longer valid) — re-run tpk without --skip to reconfigure.
   ```
 
 In both cases, run `tpk` without `--skip` to (re)configure.
@@ -101,7 +101,7 @@ The script header comment is the authoritative reference for usage, exit codes, 
 
 ## Grafana Configuration
 
-Create `~/.config/tpk/grafana-clusters.yaml` with your cluster definitions. The file must use this YAML schema:
+Grafana is configured by the installer, not by the `tpk` wizard. Create `~/.config/tpk/grafana-clusters.yaml` with your cluster definitions, then run `chmod 600 ~/.config/tpk/grafana-clusters.yaml` and `./install.sh`. The file must use this YAML schema:
 
 ```yaml
 clusters:
@@ -109,25 +109,22 @@ clusters:
     name: Production US-East
     url: https://grafana.prod.us-east.example.com
     viewer_token: glsa_xxxxxxxxxxxxxxxx_viewer
-    editor_token: glsa_xxxxxxxxxxxxxxxx_editor
 
   - id: staging
     name: Staging
     url: https://grafana.staging.example.com
     viewer_token: glsa_yyyyyyyyyyyyyyyy_viewer
-    editor_token: glsa_yyyyyyyyyyyyyyyy_editor
 ```
 
-Each cluster requires:
-- `id` — Unique identifier for the cluster
-- `name` — Display name shown in the wizard
-- `url` — Grafana URL (must start with `http://` or `https://`)
-- `viewer_token` — Grafana service account token with read-only permissions
-- `editor_token` — Grafana service account token with read-write permissions
+Each cluster uses:
+- `id` — Unique identifier; letters, digits, and hyphens only. It names the MCP server (`grafana-<id>`) and its tools (`mcp__grafana-<id>__*`).
+- `url` — Grafana URL
+- `viewer_token` — Grafana service account token with read-only permissions. Clusters without one get no MCP server.
+- `name` — Optional display name (not used by the installer or wrapper)
 
-The wizard lets you select a cluster and choose a role (Viewer or Editor). If you select Viewer, the launcher automatically sets `GRAFANA_DISABLE_WRITE=true`, which the Grafana MCP server wrapper translates into the `--disable-write` CLI flag.
+Every cluster with a `url` and `viewer_token` gets its own read-only MCP server, always on in every session, started with `--disable-write`. Re-run `install.sh` after adding, removing, or renaming a cluster; token changes take effect on the next session without reinstalling. See [docs/MCP.md § Server Roster](/docs/MCP.md#server-roster) for how registration, allow-listing, and agent access work.
 
-**Legacy token migration:** If your clusters use a single `token` field instead of separate `viewer_token`/`editor_token` fields, the launcher will fall back to using `token` as `viewer_token` with a warning. Update your YAML to add the new token fields to remove the warning.
+**Not supported:** `editor_token` (there is no write access through MCP) and the legacy single `token` field (rename it to `viewer_token`).
 
 ## CloudWatch Configuration
 
@@ -144,7 +141,7 @@ gcloud auth application-default login
 gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 ```
 
-When "GCP Observability" is selected, the launcher runs `gcloud projects list` to fetch accessible projects and checks for valid ADC credentials (checking `GOOGLE_APPLICATION_CREDENTIALS` first, then `~/.config/gcloud/application_default_credentials.json`). If both steps succeed, the launcher shows a `select()` prompt with the available project IDs; the previously used project is pre-selected when it is still present in the list. The selected project ID is stored in `~/.claude/.current-gcp-project` for the MCP wrapper and persisted for the next run. If `gcloud` is not installed, not authenticated, or returns no projects — or if ADC credentials are unavailable — the launcher logs a warning, skips the GCP Observability MCP, and continues launching Claude with the remaining selected MCPs. Run `gcloud auth application-default login` and re-launch to enable GCP. Failures in the Grafana, CloudWatch, or Kubernetes loaders are handled the same way: a warning is printed, that MCP is skipped, and the wizard continues with the remaining selections.
+When "GCP Observability" is selected, the launcher runs `gcloud projects list` to fetch accessible projects and checks for valid ADC credentials (checking `GOOGLE_APPLICATION_CREDENTIALS` first, then `~/.config/gcloud/application_default_credentials.json`). If both steps succeed, the launcher shows a `select()` prompt with the available project IDs; the previously used project is pre-selected when it is still present in the list. The selected project ID is stored in `~/.claude/.current-gcp-project` for the MCP wrapper and persisted for the next run. If `gcloud` is not installed, not authenticated, or returns no projects — or if ADC credentials are unavailable — the launcher logs a warning, skips the GCP Observability MCP, and continues launching Claude with the remaining selected MCPs. Run `gcloud auth application-default login` and re-launch to enable GCP. Failures in the CloudWatch or Kubernetes loaders are handled the same way: a warning is printed, that MCP is skipped, and the wizard continues with the remaining selections.
 
 **Note:** `GOOGLE_CLOUD_PROJECT` is used by the auth library for project ID resolution only — it does not auto-populate tool call parameters. Specify `resourceNames`, `parent`, `name`, or `projectId` explicitly in each tool call. The wrapper prints the active project to stderr as a context hint for Claude.
 
@@ -170,21 +167,6 @@ Each key is a cluster name and must match `^[a-zA-Z0-9_.-]+$`. **Set the file mo
 When "ArgoCD" is selected, the launcher reads this file and prompts you to select a cluster. The selected cluster name is stored in `~/.claude/.current-argocd-cluster` for the MCP wrapper and persisted for the next run. If the file is missing, empty, or unreadable, the launcher logs a warning, skips the ArgoCD MCP, and continues launching Claude with the remaining selections.
 
 ## Environment Variables Set by tpk
-
-When you select Grafana with Viewer role, the launcher sets:
-
-```
-GRAFANA_URL={cluster_url}
-GRAFANA_SERVICE_ACCOUNT_TOKEN={viewer_token}
-GRAFANA_DISABLE_WRITE=true
-```
-
-When you select Grafana with Editor role:
-
-```
-GRAFANA_URL={cluster_url}
-GRAFANA_SERVICE_ACCOUNT_TOKEN={editor_token}
-```
 
 When you select CloudWatch:
 

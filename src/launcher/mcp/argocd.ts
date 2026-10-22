@@ -160,11 +160,7 @@ export const argoCdCommand: McpCommand = {
     };
   },
 
-  resolveFromSaved(
-    config: LauncherConfig,
-    // _grafanaClustersPath satisfies the McpCommand interface contract; unused here (ArgoCD has its own configPath override in loadArgoCdAccounts).
-    _grafanaClustersPath?: string,
-  ): Partial<ResolvedConfig> | null {
+  resolveFromSaved(config: LauncherConfig): Partial<ResolvedConfig> | null {
     if (config.argocd === undefined) {
       return null;
     }

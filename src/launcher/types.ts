@@ -1,20 +1,5 @@
-export type GrafanaRole = 'viewer' | 'editor';
-
 // 'default' launches plain `claude` with no `--agent` flag.
 export type LauncherAgent = 'dungeonmaster' | 'default';
-
-export interface GrafanaCluster {
-  id: string;
-  name: string;
-  url: string;
-  viewer_token: string;
-  editor_token: string;
-}
-
-export interface GrafanaConfig {
-  cluster: GrafanaCluster;
-  role: GrafanaRole;
-}
 
 export interface CloudWatchConfig {
   profile: string;
@@ -39,7 +24,6 @@ export interface ArgoCdConfig {
 }
 
 export interface ResolvedConfig {
-  grafana?: GrafanaConfig;
   cloudwatch?: CloudWatchConfig;
   gcpObservability?: GcpObservabilityConfig;
   kubernetes?: KubernetesConfig;
@@ -47,7 +31,6 @@ export interface ResolvedConfig {
 }
 
 export type SkippedMap = {
-  grafana?: false | 'loader-failed';
   cloudwatch?: false | 'loader-failed';
   gcp?: false | 'loader-failed';
   kubernetes?: false | 'loader-failed' | 'switch-failed';
@@ -57,10 +40,6 @@ export type SkippedMap = {
 export interface LauncherConfig {
   selectedMcps: string[];
   agent?: LauncherAgent;
-  grafana?: {
-    clusterId: string;
-    role: GrafanaRole;
-  };
   cloudwatch?: {
     profile: string;
   };

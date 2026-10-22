@@ -1,61 +1,40 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import { buildResolvedFromSaved } from './resolve.js';
+import { buildResolvedFromSaved, withKnownMcpsOnly } from './resolve.js';
 import type { LauncherConfig } from './types.js';
 
 // ---------------------------------------------------------------------------
-// Temp directory for fixture YAML files
+// withKnownMcpsOnly
 // ---------------------------------------------------------------------------
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tpk-resolve-test-'));
-
-before(() => {
-  // tmpDir already created above via mkdtempSync
-});
-
-after(() => {
-  fs.rmSync(tmpDir, { recursive: true });
-});
-
-// ---------------------------------------------------------------------------
-// YAML fixture helpers
-// ---------------------------------------------------------------------------
-
-function writeGrafanaFixture(
-  clusters: Array<{
-    id: string;
-    name: string;
-    url: string;
-    viewer_token: string;
-    editor_token: string;
-  }>,
-): string {
-  const lines = ['clusters:'];
-  for (const c of clusters) {
-    lines.push(`  - id: "${c.id}"`);
-    lines.push(`    name: "${c.name}"`);
-    lines.push(`    url: "${c.url}"`);
-    lines.push(`    viewer_token: "${c.viewer_token}"`);
-    lines.push(`    editor_token: "${c.editor_token}"`);
-  }
-  const filePath = path.join(tmpDir, `grafana-${Date.now()}.yaml`);
-  fs.writeFileSync(filePath, lines.join('\n'), {
-    mode: 0o600,
-    encoding: 'utf8',
+describe('withKnownMcpsOnly', () => {
+  it('drops a saved grafana selection, which tpk no longer manages', () => {
+    const config: LauncherConfig = {
+      selectedMcps: ['grafana', 'cloudwatch', 'kubernetes'],
+      cloudwatch: { profile: 'prod' },
+    };
+    assert.deepStrictEqual(withKnownMcpsOnly(config).selectedMcps, [
+      'cloudwatch',
+      'kubernetes',
+    ]);
   });
-  return filePath;
-}
 
-const fakeCluster = {
-  id: 'prod-eu',
-  name: 'Production EU',
-  url: 'https://grafana.prod-eu.example.com',
-  viewer_token: 'viewer-tok-abc',
-  editor_token: 'editor-tok-xyz',
-};
+  it('keeps every other field and does not mutate its input', () => {
+    const config: LauncherConfig = {
+      selectedMcps: ['grafana', 'argocd'],
+      agent: 'default',
+      argocd: { clusterId: 'prod' },
+    };
+    const copy = JSON.parse(JSON.stringify(config));
+    const result = withKnownMcpsOnly(config);
+    assert.deepStrictEqual(result, {
+      selectedMcps: ['argocd'],
+      agent: 'default',
+      argocd: { clusterId: 'prod' },
+    });
+    assert.deepStrictEqual(config, copy);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // buildResolvedFromSaved
@@ -110,44 +89,13 @@ describe('buildResolvedFromSaved', () => {
     assert.deepStrictEqual(result, { kubernetes: { context: 'dev-cluster' } });
   });
 
-  it('returns correct ResolvedConfig with grafana cluster when cluster is found in fixture', () => {
-    const fixturePath = writeGrafanaFixture([fakeCluster]);
+  it('ignores a saved grafana selection instead of failing to resolve', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana'],
-      grafana: { clusterId: 'prod-eu', role: 'viewer' },
+      selectedMcps: ['grafana', 'kubernetes'],
+      kubernetes: { context: 'dev-cluster' },
     };
-    const result = buildResolvedFromSaved(config, fixturePath);
-    assert.ok(result !== null, 'expected non-null result');
-    assert.deepStrictEqual(result!.grafana, {
-      cluster: {
-        id: fakeCluster.id,
-        name: fakeCluster.name,
-        url: fakeCluster.url,
-        viewer_token: fakeCluster.viewer_token,
-        editor_token: fakeCluster.editor_token,
-      },
-      role: 'viewer',
-    });
-  });
-
-  it('returns null when grafana cluster ID is not in fixture (stale ID)', () => {
-    const fixturePath = writeGrafanaFixture([fakeCluster]);
-    const config: LauncherConfig = {
-      selectedMcps: ['grafana'],
-      grafana: { clusterId: 'stale-cluster-id', role: 'viewer' },
-    };
-    const result = buildResolvedFromSaved(config, fixturePath);
-    assert.strictEqual(result, null);
-  });
-
-  it('returns null when grafana YAML fixture file does not exist', () => {
-    const missingPath = path.join(tmpDir, 'nonexistent-grafana.yaml');
-    const config: LauncherConfig = {
-      selectedMcps: ['grafana'],
-      grafana: { clusterId: 'prod-eu', role: 'editor' },
-    };
-    const result = buildResolvedFromSaved(config, missingPath);
-    assert.strictEqual(result, null);
+    const result = buildResolvedFromSaved(config);
+    assert.deepStrictEqual(result, { kubernetes: { context: 'dev-cluster' } });
   });
 
   it('combines multiple MCPs in a single resolved config', () => {

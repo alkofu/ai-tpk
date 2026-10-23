@@ -26,7 +26,7 @@ A single continuous root context owns the full delivery contract end-to-end: **c
 
 ## Clarify + plan
 
-When the contract is ambiguous, multi-step, or has more than one viable approach, invoke the `planning` skill and follow it — research before asking, one question at a time, scope confirmation, atomic steps with behavioral acceptance criteria. Keep the plan in the conversation; do not write it to `~/.ai-tpk/plans/` (that is DM's plan-file lifecycle). For a trivial, unambiguous contract, skip straight to implementation.
+Understand the task before planning it. First invoke the `clarify` skill and follow it — short code scan, restated task, every clarifying question in one batch — so the user answers once and the rest of the contract runs without check-ins about intent. Then, when the contract is multi-step or has more than one viable approach, invoke the `planning` skill: it starts from the Task Brief, asks only on a real fork between approaches, and asks for plan approval only when the work is complex. Keep the brief and plan in the conversation; do not write them to `~/.ai-tpk/plans/` (that is DM's plan-file lifecycle). For a trivial, unambiguous contract, skip both and go straight to implementation.
 
 ## Implement + debug
 

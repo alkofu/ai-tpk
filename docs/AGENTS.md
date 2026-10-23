@@ -5,11 +5,11 @@
 | Agent | Purpose | Primary Use Cases | Model | Review Type |
 |-------|---------|-------------------|-------|-------------|
 | **Dungeon Master** | Orchestrator for multi-step development | Coordinating complex tasks, delegating work, tracking progress | sonnet | N/A |
-| **Askmaw** | Intake and elaboration clerk | Clarifying ambiguous requests through structured interview loops | sonnet | N/A |
+| **Askmaw** | Task intake clerk | Front-loaded intake for every planned constructive task: one batch of clarifying questions, then a Task Brief | sonnet | N/A |
 | **Tracebloom** | Read-only investigative tracker | Open-ended "why is this broken?" diagnosis, pre-plan root cause analysis | sonnet | N/A |
 | **Quill** | Documentation specialist | READMEs, API specs, architecture guides, user manuals | sonnet | N/A |
 | **Riskmancer** | Security reviewer | Vulnerability detection, secrets scanning, OWASP analysis | opus | Specialist (opt-in) |
-| **Pathfinder** | Planning consultant | Work plans, requirement gathering, implementation strategy | opus | N/A |
+| **Pathfinder** | Planning consultant | Work plans from a Task Brief, implementation strategy, real-fork option questions | opus | N/A |
 | **Knotcutter** | Complexity elimination specialist | Simplifying bloated code, removing over-engineering, reducing abstractions | opus | Specialist (opt-in) |
 | **Ruinor** | Quality gate reviewer | Plan/code review, multi-perspective analysis, go/no-go verdicts | opus | Mandatory baseline |
 | **Windwarden** | Performance & scalability reviewer | Performance bottleneck detection, algorithmic complexity analysis, scalability validation | sonnet | Specialist (opt-in) |
@@ -22,7 +22,7 @@
 ## When to Use Which Agent
 
 ```
-Ambiguous or underspecified request → Askmaw
+Task intake (clarifying questions, Task Brief) → Askmaw
 Open-ended investigative diagnosis → Tracebloom
 Multi-step coordination → Dungeon Master
 Documentation needs → Quill
@@ -44,7 +44,7 @@ Agentic design advisory (pre-deployment) → Reisannin
 
 The system supports two distinct entry points for tasks:
 - **Investigative tasks** ("Why is X broken?") → Tracebloom produces a Diagnostic Report → feeds to Pathfinder or Bitsmith
-- **Constructive tasks** ("Add/fix/refactor X") → Askmaw (if ambiguous) or direct to Pathfinder
+- **Constructive tasks** ("Add/fix/refactor X") → Askmaw (one batch of clarifying questions, or a Task Brief directly when nothing is open) → Pathfinder
 
 See sections below for per-agent operational specs, [docs/WORKFLOW_ENTRY_POINTS.md](/docs/WORKFLOW_ENTRY_POINTS.md) for task routing guidance, and [docs/adrs/REVIEW_WORKFLOW.md](/docs/adrs/REVIEW_WORKFLOW.md) for the review workflow guide.
 
@@ -62,13 +62,13 @@ The Dungeon Master is not a character at the table — he is the table itself. H
 
 ---
 
-### Askmaw - Intake and Elaboration Clerk
+### Askmaw - Task Intake Clerk
 
 <img src="avatars/askmaw.png" alt="Askmaw Avatar" width="300">
 
-A half-orc clerk. Competent, direct, not verbose. Gets to the point and asks purposeful questions without padding.
+A half-orc clerk. Competent, direct, not verbose. Gets to the point, asks every purposeful question in one go, and does not come back for more.
 
-**Core Mission:** Stateless intake clerk that resolves ambiguous user requests through a structured interview loop managed by Dungeon Master.
+**Core Mission:** Make a task clear before planning starts. Askmaw applies the `clarify` skill (short read-only code scan, restated task) and returns either one batch of clarifying questions for Dungeon Master to ask the user, or a Task Brief for Pathfinder. The Intake Gate runs it for every constructive task that will be planned, at most twice (questions, then brief).
 
 **Configuration File:** `/claude/agents/askmaw.md`
 
@@ -130,11 +130,11 @@ He does not panic. He catalogues. He has read the same scroll of cursed items so
 
 A human ranger in a weather-stained hood, with an unstrung bow across his back and a folded map worn soft at the creases from being opened a thousand times. Pathfinder does not march into the dungeon — he walks its edges first, climbs the ridge above it, and asks the locals what the wind has been doing. He believes a quest survives or dies in the hour before the first sword is drawn, and he spends that hour gladly.
 
-He listens more than he speaks. When he speaks, it is to ask one question at a time, and to wait for the answer before asking the next. His maps are not decorative; they are arguments, drawn in ink, about which paths are real and which are wishful thinking.
+He listens more than he speaks. By the time the brief reaches him, the questions have been asked; he speaks up only when the ground forks and the party must choose a road, and then he names the road he would take. His maps are not decorative; they are arguments, drawn in ink, about which paths are real and which are wishful thinking.
 
 > *"The party that knows the ground will outlive the party that knows the spell."*
 
-**Core Mission:** Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `~/.ai-tpk/plans/{repo-slug}/`.
+**Core Mission:** Turn a Task Brief (or another clear requirements input) into an actionable work plan saved to `~/.ai-tpk/plans/{repo-slug}/`, applying the `planning` skill: research the codebase, ask the user only on a real fork between implementation approaches, and classify the plan as simple or complex so Dungeon Master knows whether to ask for plan approval.
 
 **Configuration File:** `/claude/agents/pathfinder.md`
 

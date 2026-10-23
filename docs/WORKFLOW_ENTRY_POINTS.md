@@ -43,15 +43,17 @@ The Dungeon Master now supports two distinct entry points for development tasks,
 
 **Flow:**
 1. Dungeon Master evaluates the request
-2. If ambiguous → Routes to **Askmaw** for intake interview, collecting an **Intake Brief**
-3. If already clear → Proceeds directly to **Pathfinder**
-4. Pathfinder conducts a requirements interview (Section 3) and scope confirmation (Section 4), then produces a **Plan**
-5. Plan review → Ruinor baseline + conditional specialist reviews → revision loop if needed
+2. **Intake Gate** → **Askmaw** (the `clarify` skill) scans the code and returns either one batch of clarifying questions, which DM asks you in a single round, or a **Task Brief** directly when nothing is open. Answering "just do it" skips the questions; the assumptions are carried into the PR.
+3. **Pathfinder** plans from the Task Brief. It asks you again only if research finds a real fork between implementation approaches (one question, with a recommendation), then produces a **Plan** classified as simple or complex
+4. Plan review → Ruinor baseline + conditional specialist reviews → revision loop if needed
+5. Plan approval → complex plans are shown to you for approve / change; simple plans go straight to implementation
 6. Implementation → Bitsmith executes the approved plan
 7. Implementation review → Ruinor baseline + conditional specialist reviews
 8. Completion → Quill updates documentation
 
-**`--docs` shortcut:** For self-evidently documentation-only tasks (typo fixes, README updates, doc examples), pass `--docs` anywhere in your `/feature` message. DM detects the flag and emits `DOCS_HINT: true` in the Pathfinder delegation, causing Pathfinder to skip steps 3 (interview) and 4 (scope confirmation) and proceed directly to plan generation. The Section 5 plan-confirmation step still applies, and Phase 2/4 review gates are unchanged. Use only for unambiguous documentation tasks — omit for anything else.
+The intent: you answer every clarifying question once, up front, and the next thing you see is usually the PR. See `claude/agents/dungeonmaster.md` (Intake Gate, Phase 2 step 5) and the `clarify` and `planning` skills for the full rules.
+
+**`--docs` shortcut:** For self-evidently documentation-only tasks (typo fixes, README updates, doc examples), pass `--docs` anywhere in your `/feature` message. DM detects the flag, skips the Intake Gate, and emits `DOCS_HINT: true` in the Pathfinder delegation, so Pathfinder plans directly from your request (asking only if research finds a real fork). The complex-plan approval and the Phase 2/4 review gates are unchanged. Use only for unambiguous documentation tasks — omit for anything else.
 
 **Key property:** Structured planning before execution. Plans are saved to disk, reviewed, and form the blueprint for implementation.
 
@@ -99,34 +101,28 @@ User request received
     │  │
     │  └─ NO → Continue to Planning Path
     │
-    ├─ Is the request ambiguous/underspecified?
+    ├─ Is the task self-evidently documentation-only? (typo fix, README update, doc example)
     │  │
-    │  ├─ YES → Askmaw interview → Intake Brief
-    │  │           │
-    │  │           └─ Pathfinder (uses brief as context)
+    │  ├─ YES (pass --docs flag) → skip Intake Gate → Pathfinder plans from the request
     │  │
-    │  └─ NO → Continue
+    │  └─ NO → Intake Gate: Askmaw (every planned constructive task)
+    │              │
+    │              ├─ Questions → DM asks them all in one round → Askmaw → Task Brief
+    │              └─ Nothing open → Task Brief directly
     │
     ├─ Does request require explicit scope/options review before planning?
     │  │
-    │  ├─ YES → DM invokes with --explore-options flag → Scope Confirmation → Options → User selects
+    │  ├─ YES → DM invokes with --explore-options flag → Option Question → User selects
     │  │
     │  └─ NO → Continue
     │
-    ├─ Is the task self-evidently documentation-only? (typo fix, README update, doc example)
-    │  │
-    │  ├─ YES (pass --docs flag) → Pathfinder skips interview + scope confirmation → plan generation
-    │  │                              │
-    │  │                              └─ Section 5 plan-confirmation still runs
-    │  │
-    │  └─ NO → Continue
-    │
-    └─ Pathfinder (direct planning, includes automatic Scope Confirmation)
+    └─ Pathfinder (plans from the Task Brief; asks only on a real fork)
          │
          └─ Ruinor review + specialist reviews
               │
               ├─ REJECT / REVISE → Revision loop
-              └─ ACCEPT → Bitsmith implementation
+              └─ ACCEPT → complex plan? → YES: user approves / requests changes
+                                        → NO: Bitsmith implementation
 ```
 
 ---

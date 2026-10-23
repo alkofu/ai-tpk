@@ -1,5 +1,7 @@
 # Review Workflow Guide
 
+> **Note (2026-10-23):** The Intake Gate now runs Askmaw (the `clarify` skill) for every constructive task that will be planned, with one batched round of clarifying questions instead of the former one-question interview loop. Pathfinder no longer runs a scope-confirmation step; it asks only on a real fork between implementation approaches. After Phase 2 reviewers accept, complex plans go to the user for approval and simple plans proceed straight to implementation. The Planning Phase diagram below reflects this flow; see `claude/agents/dungeonmaster.md` for the authoritative rules.
+
 ## Overview
 
 The AI TPK agent orchestration system uses an intelligent review workflow that replaces the old "4-mandatory-reviewers-on-every-change" model with a smart "Ruinor-first with opt-in specialists" approach. This dramatically reduces review overhead (60-70% fewer reviews on average) while maintaining the same quality rigor for complex changes.
@@ -27,7 +29,7 @@ Result: 3 out of 4 reviews provided no value, wasting time and tokens.
 
 #### High-Level Overview
 
-This diagram shows the full DM orchestration pipeline at phase granularity — from session setup through completion — including the two top-level pipeline branches. Intra-phase gates (Investigative Gate, Intake Gate, Scope Confirmation, intermediate review gates, Phase 5 sub-steps) are intentionally omitted here and appear in the Planning Phase and Implementation Phase detail diagrams below. Note: the Investigative Gate inside Phase 1 has four possible terminal outcomes (route to Pathfinder, route to Bitsmith directly, Inconclusive, No-bug-found); two of these bypass Phase 2 Planning entirely and are detailed in the Planning Phase diagram.
+This diagram shows the full DM orchestration pipeline at phase granularity — from session setup through completion — including the two top-level pipeline branches. Intra-phase gates (Investigative Gate, Intake Gate, option questions, complex-plan approval, intermediate review gates, Phase 5 sub-steps) are intentionally omitted here and appear in the Planning Phase and Implementation Phase detail diagrams below. Note: the Investigative Gate inside Phase 1 has four possible terminal outcomes (route to Pathfinder, route to Bitsmith directly, Inconclusive, No-bug-found); two of these bypass Phase 2 Planning entirely and are detailed in the Planning Phase diagram.
 
 ```mermaid
 flowchart LR
@@ -64,7 +66,7 @@ flowchart TD
     Start([DM: Need Planning?]) --> InvGate{Investigative<br/>Gate}
 
     InvGate -->|"investigative task"| Tracebloom[Tracebloom<br/>Diagnostic Report]
-    InvGate -->|"constructive task"| IntakeGate{Intake Gate<br/>ambiguous?}
+    InvGate -->|"constructive task"| IntakeGate{Intake Gate<br/>skip signal?}
 
     Tracebloom -->|"routes per<br/>Recommended next action"| TBDecision{Tracebloom<br/>Outcome}
     TBDecision -->|"Route to Pathfinder<br/>for planning a fix"| IntakeGate
@@ -72,21 +74,23 @@ flowchart TD
     TBDecision -->|"Inconclusive"| UserChoice([Present to user<br/>for direction])
     TBDecision -->|"No bug found"| NoBug([Session ends or<br/>user re-states request])
 
-    IntakeGate -->|"ambiguous / underspecified"| Askmaw["Askmaw<br/>interview loop<br/>(max 5 rounds)<br/>→ Intake Brief"]
-    IntakeGate -->|"clear request"| ExploreGate{Explore-Options<br/>Gate}
-    Askmaw --> ExploreGate
+    IntakeGate -->|"no — every planned<br/>constructive task"| Askmaw["Askmaw<br/>clarify: code scan<br/>→ question batch<br/>or Task Brief"]
+    IntakeGate -->|"yes — --docs,<br/>Tracebloom report,<br/>or revision"| ExploreGate{Explore-Options<br/>Gate}
+    Askmaw -->|"questions"| UserAnswers[User answers<br/>all questions<br/>in one round]
+    UserAnswers -->|"re-invoke with<br/>Intake Answers"| Askmaw
+    Askmaw -->|"Task Brief"| ExploreGate
 
-    ExploreGate -->|"--explore-options flag"| PFExplore["Pathfinder<br/>STOP_AFTER_SCOPE: true<br/>→ scope + options<br/>→ user selects"]
+    ExploreGate -->|"--explore-options flag"| PFExplore["Pathfinder<br/>STOP_AFTER_SCOPE: true<br/>→ Option Question<br/>→ user selects"]
     ExploreGate -->|"no flag"| PF[Pathfinder<br/>first invocation]
     PFExplore -->|"user selects option<br/>and asks to proceed"| PF
 
-    PF --> ScopeConf{Scope<br/>Confirmation<br/>skip conditions met?}
-    ScopeConf -->|"yes — Askmaw brief,<br/>Tracebloom report,<br/>or revision mode"| Checklist
-    ScopeConf -->|"no — surface scope<br/>to user, wait"| UserConfirm[User confirms scope]
-    UserConfirm -->|"re-invoke Pathfinder<br/>with Confirmed Scope"| PF2[Pathfinder<br/>second invocation]
+    PF --> ForkQ{Real fork between<br/>approaches?}
+    ForkQ -->|"no — decide and<br/>record in plan"| Checklist
+    ForkQ -->|"yes — Option Question<br/>to user, once"| UserPick[User picks option]
+    UserPick -->|"re-invoke Pathfinder<br/>with Confirmed Scope"| PF2[Pathfinder<br/>second invocation]
     PF2 --> Checklist
 
-    Checklist[Pre-Submission<br/>Checklist ×9] --> SavePlan[Save to<br/>~/.ai-tpk/plans]
+    Checklist[Pre-Submission<br/>Checklist ×10] --> SavePlan[Save to<br/>~/.ai-tpk/plans<br/>+ PLAN_COMPLEXITY]
     SavePlan --> MandatoryR[DM → Ruinor<br/>Mandatory Baseline Review]
 
     MandatoryR --> Decision{Ruinor Flags<br/>Specialists?}
@@ -106,8 +110,12 @@ flowchart TD
     Assess1 -->|REJECT/REVISE| Feedback[DM Sends<br/>Consolidated Feedback]
     Assess2 -->|REJECT/REVISE| Feedback
     Feedback --> PF
-    Assess1 -->|ACCEPT| Next([To Implementation<br/>Phase])
-    Assess2 -->|ACCEPT| Next
+    Assess1 -->|ACCEPT| Approval{Complex<br/>plan?}
+    Assess2 -->|ACCEPT| Approval
+    Approval -->|"no — simple"| Next([To Implementation<br/>Phase])
+    Approval -->|"yes — show plan"| UserApproval{User<br/>approves?}
+    UserApproval -->|approve| Next
+    UserApproval -->|"requests changes"| PF
 
     style MandatoryR fill:#ffebcc
     style Specialists fill:#e6f3ff

@@ -682,14 +682,14 @@ This branch supersedes steps 1-4 below when `--self-review` is active AND the tr
 
     **Advisory sessions** (which skip Phase 5 entirely) are naturally exempt — the gate never runs for those sessions.
 
-    **Operational note:** This gate is expected to fire routinely after Phase 5b Quill output (not just exceptionally). Quill writes documentation to the worktree but does not commit or push, and it does not have the Phase 7 commit+push checklist. Quill's documentation writes therefore intentionally flow through this gate for commit/push remediation. Similarly, Phase 5c Resolution Gate auto-fixes may leave uncommitted state that flows through this gate.
+    **Operational note:** This gate is expected to fire routinely after Phase 5b Quill output (not just exceptionally). Quill writes documentation to the worktree but does not commit or push, and it does not have Bitsmith's commit-and-push completion checks. Quill's documentation writes therefore intentionally flow through this gate for commit/push remediation. Similarly, Phase 5c Resolution Gate auto-fixes may leave uncommitted state that flows through this gate.
 
     Handle the script's stdout token as follows:
     - `pushed` → proceed to step 5e (Completion Summary).
     - `needs-push` → delegate a brief remediation task to Bitsmith. The remediation delegation prompt MUST explicitly identify the likely source of the uncommitted/unpushed changes based on which sub-phase of Phase 5 just completed:
       - If Phase 5b (Quill documentation update) ran in this session, the prompt MUST state "changes produced by Quill in Phase 5b" so Bitsmith authors a documentation-scoped commit message (e.g., `docs: update ...`).
       - If Phase 5c (Resolution Gate auto-fix) produced changes, the prompt MUST state "changes produced by the Phase 5c Resolution Gate auto-fix."
-      - Otherwise (rare — indicates Bitsmith's own Phase 7 push step was missed), the prompt MUST state "uncommitted or unpushed changes left after Bitsmith's Phase 7 completion."
+      - Otherwise (rare — indicates Bitsmith's own commit-and-push completion check was missed), the prompt MUST state "uncommitted or unpushed changes left after Bitsmith's completion."
       - In all cases, Bitsmith must commit via the `commit-message-guide` skill and push via `git push --force-with-lease --set-upstream origin HEAD`, then DM re-runs the gate.
     - `error` → halt, surface the stderr diagnostic to the user, and do not proceed to step 5e (Completion Summary).
 

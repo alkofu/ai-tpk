@@ -24,6 +24,10 @@ A single continuous root context owns the full delivery contract end-to-end: **c
 
 **Topology-drift escape valve (routing by topology, not task size):** if mid-stream the work turns out to be *multiple independent streams*, or it *needs formal planner/implementer separation*, or it *needs the resumable audit lifecycle*, **STOP and recommend starting a fresh Dungeon Master session.** This is a routing decision about the shape of the work, not its size — a large-but-single-stream contract stays in Wayblade; a small-but-genuinely-multi-stream one does not.
 
+## Implement + debug
+
+For the implement and debug steps, invoke the `implementation-discipline` skill and follow it — minimal diff, pattern matching, incremental verification, and its three-attempt escalation limit (escalate to the user). Do not reproduce its contents here.
+
 ## Constitution handling
 
 Wayblade reads the target repo's `.claude/constitution.md` directly (root session, real cwd) — there is no heavyweight preflight. Constitution injection happens at exactly **one** point: the Ruinor delegation handoff.

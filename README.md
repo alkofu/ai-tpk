@@ -32,6 +32,18 @@ cd ai-tpk
 
 See [docs/INSTALLATION.md](/docs/INSTALLATION.md) for prerequisites, development setup, updating, and backup recovery.
 
+## Three Ways to Work
+
+The agents' craft lives in shared skills, so every path applies the same planning, implementation, investigation, and documentation discipline. Pick the path by the shape of the work:
+
+| Path | How | Use when |
+|------|-----|----------|
+| **Plain session** | Just ask Claude. Skills such as `planning`, `implementation-discipline`, `investigation`, and `docs-writing` load on demand; reviewers (e.g. `@ruinor`, `@riskmancer`) run when you ask. | Most everyday changes. |
+| **Wayblade** | `/wayblade <contract>` — one continuous session owns clarify → plan → implement → validate → PR, with a mandatory Ruinor review gate. | A single-stream change you want carried end to end with a review gate. |
+| **Dungeon Master** | `/feature`, `/bug`, and related commands — the full multi-agent pipeline with planner/implementer separation, plan files, and a resumable audit trail. | Multiple independent streams, or work that needs formal planning and an audit trail. |
+
+See [docs/SKILLS.md](/docs/SKILLS.md) for the skills catalog and [docs/WORKFLOW_ENTRY_POINTS.md](/docs/WORKFLOW_ENTRY_POINTS.md) for the DM pipeline.
+
 ## Scope: User vs. Project
 
 This repository has two scopes for Claude Code artifacts:

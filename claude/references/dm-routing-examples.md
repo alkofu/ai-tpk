@@ -69,9 +69,10 @@ Action:
 Example 5:
 User asks: "We need a background job system for sending emails --explore-options"
 Action:
+- **Intake Gate:** Askmaw scans the code and returns a Task Brief directly (objective and scope are clear; the open choice is an implementation approach, which is planning's job)
 - **Explore-Options Gate triggers** (explicit `--explore-options` flag)
-- DM invokes Pathfinder with `STOP_AFTER_SCOPE: true`
-- Pathfinder researches codebase, produces Scope Confirmation:
+- DM invokes Pathfinder with `STOP_AFTER_SCOPE: true` and the Task Brief
+- Pathfinder researches codebase, produces an `## Option Question`:
   - Objective: Add an async email delivery system decoupled from the request cycle
   - Key Assumptions: no existing job infrastructure, Postgres is already present, email volume is moderate
   - Affected Subsystems: `src/mailer/`, `src/jobs/`, `config/`
@@ -81,8 +82,9 @@ Action:
 - DM presents scope + options to user, user selects Option B (Redis + BullMQ)
 - DM re-invokes Pathfinder with `## Confirmed Scope` block (using the Pathfinder re-invocation template defined in pathfinder.md Section 4)
 - Pathfinder sees `## Confirmed Scope` block, skips Section 4, proceeds directly to plan generation
-- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-background-jobs.md`
-- Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
+- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-background-jobs.md` and reports `PLAN_COMPLEXITY: complex` (a real-fork question was needed)
+- Phase 2 (Plan Review Gate) → both reviewers accept → DM shows the plan for approval (complex) → user approves
+- Continue with Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
 
 Example 6:
 User asks: "Add OAuth login" (while another DM session is already working on an unrelated issue)
@@ -100,18 +102,15 @@ Action:
 Example 7:
 User asks: "Improve the auth system"
 Action:
-- **Intake Gate triggers** (ambiguous request: "improve" is vague, no scope boundary, multiple plausible interpretations)
-- DM invokes Askmaw (round 1) with raw request and empty history
-- Askmaw returns question: "What specific aspect of auth needs improvement — login speed, security hardening, adding new providers, or something else?"
-- DM surfaces question to user; user answers: "Security hardening — we had a penetration test and need to fix the findings"
-- DM invokes Askmaw (round 2) with request + Q&A history
-- Askmaw returns question: "Do you have a list of specific findings from the pen test, or should we do a general security review?"
-- DM surfaces question to user; user answers: "Yes, there are 3 findings: weak password policy, missing rate limiting on login, and session tokens don't expire"
-- DM invokes Askmaw (round 3) with full context
-- Askmaw returns structured brief (objective clear: fix 3 specific pen test findings; scope bounded)
-- DM exits intake loop, passes brief to Pathfinder
-- Pathfinder saves plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-auth-security-hardening.md`
-- Continue with Phase 2 (Plan Review Gate) as normal
+- **Intake Gate:** DM invokes Askmaw with the raw request. Askmaw scans `src/auth/`, finds password, login, and session code, and cannot restate the objective without "or" ("improve" is vague)
+- Askmaw returns one batch of `## Intake Questions`:
+  1. **Focus** — Which aspect? Security hardening (Recommended — the scan found no rate limiting) / login speed / new providers
+  2. **Source** — Fix specific findings, or a general review? Specific findings (Recommended) / general review
+  3. **Done** — When is it done? All listed findings fixed with tests (Recommended) / findings fixed plus a review report
+- DM asks all three in one `AskUserQuestion` call; user answers: security hardening; three pen-test findings (weak password policy, missing rate limiting on login, session tokens that never expire); fixed with tests
+- DM re-invokes Askmaw with `## Intake Answers`; Askmaw returns the Task Brief (objective: fix the 3 pen-test findings; scope bounded; code pointers to the three areas)
+- DM passes the brief to Pathfinder; Pathfinder researches, finds one clear approach per finding, asks nothing, and saves the plan to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-auth-security-hardening.md` with `PLAN_COMPLEXITY: complex` (security behaviour changes)
+- Phase 2 (Plan Review Gate) → reviewers accept → DM shows the plan for approval → user approves → Phase 3 onward as normal
 
 Example 8:
 User asks: "Why is the background job queue dropping tasks silently?"
@@ -134,9 +133,9 @@ Example 9:
 User asks: "Add webhook support for payment events"
 Action:
 - **Phase 1 Worktree Creation Subroutine:** DM invokes the subroutine, which delegates to Bitsmith to create the worktree (constructive intent)
-- **Phase 1:** Task is clear and well-specified — no Tracebloom, no Askmaw
-- DM invokes Pathfinder (first invocation)
-- Pathfinder researches codebase, reaches Section 4 (Scope Confirmation), returns scope output to DM:
+- **Phase 1:** Task is constructive — no Tracebloom. **Intake Gate:** Askmaw scans the code and returns a Task Brief directly (no questions: one reading, bounded scope)
+- DM invokes Pathfinder (first invocation) with the brief
+- Pathfinder researches codebase, finds a real fork between two approaches, and returns an `## Option Question` to DM:
   - Objective: Add inbound webhook handling for payment provider events (payment.completed, payment.failed)
   - Key Assumptions: Payment provider is Stripe; no existing webhook infrastructure
   - Affected Subsystems: src/webhooks/ (new), src/payments/, config/
@@ -144,10 +143,10 @@ Action:
   - Option A: Synchronous webhook handler (simple, no queue)
   - Option B: Queue-backed webhook handler (reliable, retryable)
   - Recommendation: Option B — payment events should be idempotent and retryable
-- DM surfaces scope + options to user; user confirms scope and selects Option B
-- DM re-invokes Pathfinder with `## Confirmed Scope` block (Option B selected, Option A rejected because payment events require retry guarantees)
-- Pathfinder skips Section 4, generates full plan, saves to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-webhook-support.md`
-- Continue with Phase 2 (Plan Review Gate), Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
+- DM asks the option question once; user selects Option B
+- DM re-invokes Pathfinder with `## Confirmed Scope` block (Option B selected, Option A rejected because payment events require retry guarantees, plus the original brief)
+- Pathfinder skips Section 4, generates full plan, saves to `~/.ai-tpk/plans/{REPO_SLUG}/20260401-143022-webhook-support.md`, reports `PLAN_COMPLEXITY: complex` (a real-fork question was needed)
+- Phase 2 (Plan Review Gate) → DM shows the plan for approval → Phase 3 (Execution), Phase 4 (Implementation Review), Phase 5 (Completion) as normal
 
 Example 10:
 User asks (via /ask): "How does the session isolation work with worktrees?"

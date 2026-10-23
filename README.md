@@ -34,11 +34,11 @@ See [docs/INSTALLATION.md](/docs/INSTALLATION.md) for prerequisites, development
 
 ## Three Ways to Work
 
-The agents' craft lives in shared skills, so every path applies the same planning, implementation, investigation, and documentation discipline. Pick the path by the shape of the work:
+The agents' craft lives in shared skills, so every path applies the same intake, planning, implementation, investigation, and documentation discipline: clarifying questions are asked once, up front, and you are asked again only for a real choice between approaches or to approve a complex plan. Pick the path by the shape of the work:
 
 | Path | How | Use when |
 |------|-----|----------|
-| **Plain session** | Just ask Claude. Skills such as `planning`, `implementation-discipline`, `investigation`, and `docs-writing` load on demand; reviewers (e.g. `@ruinor`, `@riskmancer`) run when you ask. | Most everyday changes. |
+| **Plain session** | Just ask Claude. Skills such as `clarify`, `planning`, `implementation-discipline`, `investigation`, and `docs-writing` load on demand; reviewers (e.g. `@ruinor`, `@riskmancer`) run when you ask. | Most everyday changes. |
 | **Wayblade** | `/wayblade <contract>` — one continuous session owns clarify → plan → implement → validate → PR, with a mandatory Ruinor review gate. | A single-stream change you want carried end to end with a review gate. |
 | **Dungeon Master** | `/feature`, `/bug`, and related commands — the full multi-agent pipeline with planner/implementer separation, plan files, and a resumable audit trail. | Multiple independent streams, or work that needs formal planning and an audit trail. |
 

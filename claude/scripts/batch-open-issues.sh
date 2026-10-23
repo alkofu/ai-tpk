@@ -37,18 +37,14 @@ set -euo pipefail
 #   updating this script in lockstep.
 #
 # tpk contract dependency (documented, NOT probed at runtime):
-#   This script depends on tpk accepting an initial-message argument, added in
-#   the feat/forward-initial-command-to-claude-from-myclaude-cli PR (historical
-#   PR slug retained verbatim — this is the merged branch name in git history).
-#   tpk accepts an initial-message positional argument alongside --skip.
-#   Runtime probing (e.g. tpk --help) was deliberately removed: the
-#   post-merge tpk has no --help handler — parseArgs rejects unknown flags
-#   by exiting non-zero — so any probe pipeline would always fail under
-#   set -euo pipefail, breaking the script on every invocation including
-#   correctly-installed environments. If running against a stale tpk (one
-#   that predates the merged PR), the user will see N broken Claude sessions
-#   rather than one fail-fast error. Fix: re-run install.sh with an updated
-#   ai-tpk checkout.
+#   This script depends on tpk accepting an initial-message positional
+#   argument alongside --skip. The contract is not probed at runtime: tpk has
+#   no --help handler — parseArgs rejects unknown flags by exiting non-zero —
+#   so any probe pipeline would always fail under set -euo pipefail, breaking
+#   the script on every invocation including correctly-installed environments.
+#   Against a tpk build without initial-message support, the user will see N
+#   broken Claude sessions rather than one fail-fast error. Fix: re-run
+#   install.sh with an updated ai-tpk checkout.
 #
 # Spawn-vs-success caveat:
 #   Successful tab spawn does NOT guarantee tpk started successfully inside

@@ -3,19 +3,12 @@ import assert from 'node:assert/strict';
 import { buildOutroLines } from './outro.js';
 import type { ResolvedConfig, SkippedMap } from './types.js';
 
-const fakeArgoCdCluster = {
-  id: 'prod-argo',
-  url: 'https://argocd.prod.example.com',
-  token: 'argocd-token',
-};
-
 describe('buildOutroLines', () => {
-  it('(a) returns four success lines in canonical order when all MCPs are configured and none are skipped', () => {
+  it('(a) returns three success lines in canonical order when all MCPs are configured and none are skipped', () => {
     const resolved: ResolvedConfig = {
       cloudwatch: { profile: 'my-aws-profile' },
       gcpObservability: { project: 'my-gcp-project' },
       kubernetes: { context: 'prod-us-east' },
-      argocd: { cluster: fakeArgoCdCluster },
     };
     const effectiveSkipped: SkippedMap = {};
 
@@ -25,17 +18,15 @@ describe('buildOutroLines', () => {
       'CloudWatch: my-aws-profile',
       'GCP Observability: my-gcp-project',
       'Kubernetes: prod-us-east',
-      'ArgoCD: prod-argo',
     ]);
   });
 
-  it('(b) returns four skip lines in canonical order when all MCPs are skipped via loader failure', () => {
+  it('(b) returns three skip lines in canonical order when all MCPs are skipped via loader failure', () => {
     const resolved: ResolvedConfig = {};
     const effectiveSkipped: SkippedMap = {
       cloudwatch: 'loader-failed',
       gcp: 'loader-failed',
       kubernetes: 'loader-failed',
-      argocd: 'loader-failed',
     };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
@@ -44,7 +35,6 @@ describe('buildOutroLines', () => {
       'CloudWatch: skipped (profiles unavailable)',
       'GCP Observability: skipped (auth unavailable)',
       'Kubernetes: skipped (contexts unavailable)',
-      'ArgoCD: skipped (accounts unavailable)',
     ]);
   });
 
@@ -80,11 +70,10 @@ describe('buildOutroLines', () => {
   it('(e) emits all success lines first then all skip lines, both in canonical MCP order', () => {
     // buildOutroLines emits all success lines first (canonical order), then all
     // skip lines (same canonical order). CloudWatch has no resolved value here
-    // so it only appears as a skip line — after the three success lines.
+    // so it only appears as a skip line — after the two success lines.
     const resolved: ResolvedConfig = {
       gcpObservability: { project: 'my-gcp-project' },
       kubernetes: { context: 'prod-us-east' },
-      argocd: { cluster: fakeArgoCdCluster },
     };
     const effectiveSkipped: SkippedMap = { cloudwatch: 'loader-failed' };
 
@@ -93,7 +82,6 @@ describe('buildOutroLines', () => {
     assert.deepStrictEqual(lines, [
       'GCP Observability: my-gcp-project',
       'Kubernetes: prod-us-east',
-      'ArgoCD: prod-argo',
       'CloudWatch: skipped (profiles unavailable)',
     ]);
   });
@@ -128,15 +116,15 @@ describe('buildOutroLines', () => {
   });
 
   it('(g) renders success line when effectiveSkipped.<mcp> is false', () => {
-    // effectiveSkipped.argocd === false must NOT suppress the success line.
+    // effectiveSkipped.cloudwatch === false must NOT suppress the success line.
     // Only truthy discriminants suppress the success line.
     const resolved: ResolvedConfig = {
-      argocd: { cluster: fakeArgoCdCluster },
+      cloudwatch: { profile: 'my-aws-profile' },
     };
-    const effectiveSkipped: SkippedMap = { argocd: false };
+    const effectiveSkipped: SkippedMap = { cloudwatch: false };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
-    assert.deepStrictEqual(lines, ['ArgoCD: prod-argo']);
+    assert.deepStrictEqual(lines, ['CloudWatch: my-aws-profile']);
   });
 });

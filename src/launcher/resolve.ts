@@ -3,8 +3,8 @@ import { registry, StaleResourceError } from './mcp-command.js';
 
 /**
  * Returns `config` with `selectedMcps` limited to ids in the registry. Saved
- * configs can name MCPs that tpk no longer manages (e.g. `grafana`, now
- * registered per cluster by the installer); without this they would show as
+ * configs can name MCPs that tpk no longer manages (`grafana` and `argocd`,
+ * now registered per cluster by the installer); without this they would show as
  * "(unknown MCP)" on the summary screen and be passed to the multiselect as
  * initial values that match no option. Does not mutate `config`.
  */

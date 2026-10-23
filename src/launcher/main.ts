@@ -68,7 +68,7 @@ function runSkipLaunch(
   const resolved = buildResolvedFromSaved(savedConfig);
   if (resolved === null) {
     console.error(
-      'Saved config could not be resolved (e.g. ArgoCD cluster is no longer valid) — re-run tpk without --skip to reconfigure.',
+      'Saved config could not be resolved (a saved resource is no longer valid) — re-run tpk without --skip to reconfigure.',
     );
     process.exit(1);
   }
@@ -118,7 +118,7 @@ async function main(): Promise<void> {
       const resolved = buildResolvedFromSaved(savedConfig);
       if (resolved === null) {
         // Fall through to configure flow.
-        // Warning already logged by buildResolvedFromSaved (e.g., stale ArgoCD cluster).
+        // Warning already logged by the command that threw StaleResourceError.
       } else {
         // Direct launch: MCP config is not modified on this path. The only
         // possible change is the agent choice, so saveConfig is called here

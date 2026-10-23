@@ -3,7 +3,7 @@
  *
  * This file is intentionally kept separate from mcp-command.ts to break the
  * circular dependency that would arise if the command implementations (e.g.,
- * argocd.ts) imported StaleResourceError directly from mcp-command.ts, which
+ * kubernetes.ts) imported StaleResourceError directly from mcp-command.ts, which
  * in turn imports the command instances from those same files.
  *
  * Consumers of the public API import from mcp-command.ts, which re-exports
@@ -15,9 +15,10 @@ import type { ResolvedConfig, LauncherConfig, SkippedMap } from './types.js';
 
 /**
  * Thrown by an McpCommand's resolveFromSaved when a saved resource is no
- * longer available (e.g., ArgoCD cluster id no longer in the accounts file).
+ * longer available (e.g., a saved cluster id no longer in its config file).
  * buildResolvedFromSaved catches this and returns null so main.ts falls
- * through to the configure flow. Only ArgoCD throws this today.
+ * through to the configure flow. No command throws this today; it is kept as
+ * the extension point for one that resolves a saved reference.
  */
 export class StaleResourceError extends Error {
   constructor(message: string) {
@@ -46,7 +47,7 @@ export interface McpCommand {
    *   - null if the MCP was selected but its sub-object is missing (silent skip)
    * May throw StaleResourceError if a saved reference no longer exists; caller
    * (buildResolvedFromSaved) catches this and returns null to trigger configure flow.
-   * Only ArgoCD throws StaleResourceError today; the other commands never throw.
+   * No command throws StaleResourceError today.
    */
   resolveFromSaved(config: LauncherConfig): Partial<ResolvedConfig> | null;
 

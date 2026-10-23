@@ -22,6 +22,11 @@ import {
   updateGrafanaAllowList,
   expandGrafanaAgentTools,
   updateGrafanaAgentTools,
+  removeLegacyArgoCdRegistration,
+  loadArgoCdClusters,
+  registerArgoCdClusters,
+  removeStaleArgoCdRegistrations,
+  updateArgoCdAllowList,
 } from './mcp.js';
 
 // ---------------------------------------------------------------------------
@@ -1576,5 +1581,238 @@ describe('updateGrafanaAgentTools', () => {
     assert.doesNotThrow(() =>
       updateGrafanaAgentTools(new Set(['a']), fakeHome),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ArgoCD per-cluster support
+// ---------------------------------------------------------------------------
+
+/** Writes argocd-accounts.json under the fake home with the given mode. */
+function writeArgoCdAccounts(
+  fakeHome: string,
+  jsonText: string,
+  mode: number = 0o600,
+): string {
+  const accountsPath = path.join(
+    fakeHome,
+    '.config',
+    'tpk',
+    'argocd-accounts.json',
+  );
+  fs.writeFileSync(accountsPath, jsonText, 'utf8');
+  fs.chmodSync(accountsPath, mode);
+  return accountsPath;
+}
+
+const SAMPLE_ARGOCD_ACCOUNTS_JSON = JSON.stringify({
+  'aws-prd-use1': { url: 'https://argo-prd.example.com', token: 'tok-prd' },
+  'aws-npr-use1': { url: 'https://argo-npr.example.com', token: 'tok-npr' },
+  'no-token': { url: 'https://argo-nt.example.com', token: '' },
+  'bad-url': { url: 'argo.example.com', token: 'tok-bad-url' },
+  'has.dot': { url: 'https://argo-dot.example.com', token: 'tok-dot' },
+  'not-object': 'tok-not-object',
+});
+
+const SAMPLE_ARGOCD_TOKENS = [
+  'tok-prd',
+  'tok-npr',
+  'tok-bad-url',
+  'tok-dot',
+  'tok-not-object',
+];
+
+describe('removeLegacyArgoCdRegistration', () => {
+  it('invokes claude mcp remove -s user argocd exactly once', () => {
+    const calls: SpawnCall[] = [];
+    removeLegacyArgoCdRegistration((cmd, args) => calls.push({ cmd, args }));
+    assert.deepStrictEqual(calls, [
+      { cmd: 'claude', args: ['mcp', 'remove', '-s', 'user', 'argocd'] },
+    ]);
+  });
+
+  it('does not throw when the command fails (legacy registration absent)', () => {
+    assert.doesNotThrow(() => removeLegacyArgoCdRegistration(alwaysThrowStub));
+  });
+});
+
+describe('loadArgoCdClusters', () => {
+  it('returns sorted ids of clusters with a valid id, http(s) url and token', () => {
+    const fakeHome = makeFakeHome();
+    writeArgoCdAccounts(fakeHome, SAMPLE_ARGOCD_ACCOUNTS_JSON);
+    assert.deepStrictEqual(
+      loadArgoCdClusters(fakeHome, () => {}),
+      ['aws-npr-use1', 'aws-prd-use1'],
+    );
+  });
+
+  it('warns once per skipped cluster, naming ids but never tokens', () => {
+    const fakeHome = makeFakeHome();
+    writeArgoCdAccounts(fakeHome, SAMPLE_ARGOCD_ACCOUNTS_JSON);
+    const warnings: string[] = [];
+    loadArgoCdClusters(fakeHome, (m) => warnings.push(m));
+
+    assert.strictEqual(warnings.length, 4, warnings.join('\n'));
+    for (const id of ['no-token', 'bad-url', 'has.dot', 'not-object']) {
+      assert.ok(
+        warnings.some((w) => w.includes(`'${id}'`)),
+        `expected a warning for '${id}'`,
+      );
+    }
+    for (const w of warnings) {
+      for (const token of SAMPLE_ARGOCD_TOKENS) {
+        assert.ok(!w.includes(token), `token leaked into warning: ${w}`);
+      }
+    }
+  });
+
+  it('returns [] with a warning when the file is absent', () => {
+    const fakeHome = makeFakeHome();
+    const warnings: string[] = [];
+    assert.deepStrictEqual(
+      loadArgoCdClusters(fakeHome, (m) => warnings.push(m)),
+      [],
+    );
+    assert.ok(warnings.some((w) => w.includes('not found')));
+  });
+
+  it('warns about a non-0600 file mode but still returns the clusters', () => {
+    const fakeHome = makeFakeHome();
+    writeArgoCdAccounts(fakeHome, SAMPLE_ARGOCD_ACCOUNTS_JSON, 0o644);
+    const warnings: string[] = [];
+    const ids = loadArgoCdClusters(fakeHome, (m) => warnings.push(m));
+    assert.deepStrictEqual(ids, ['aws-npr-use1', 'aws-prd-use1']);
+    assert.ok(warnings.some((w) => w.includes('recommended mode is 0600')));
+  });
+
+  it('throws on malformed JSON without echoing file contents', () => {
+    const fakeHome = makeFakeHome();
+    writeArgoCdAccounts(fakeHome, '{"x": {"token": "tok-secret-unterminated');
+    assert.throws(
+      () => loadArgoCdClusters(fakeHome, () => {}),
+      (err: unknown) =>
+        err instanceof Error &&
+        err.message.includes('invalid JSON') &&
+        !err.message.includes('tok-secret'),
+    );
+  });
+
+  it('throws when the top level is not a JSON object', () => {
+    const fakeHome = makeFakeHome();
+    writeArgoCdAccounts(fakeHome, '[]');
+    assert.throws(
+      () => loadArgoCdClusters(fakeHome, () => {}),
+      /must be a flat JSON object/,
+    );
+  });
+});
+
+describe('registerArgoCdClusters', () => {
+  it('registers argocd-<id> per cluster with only ARGOCD_CLUSTER env', () => {
+    const fakeHome = makeFakeHome();
+    const calls: SpawnCall[] = [];
+    const result = registerArgoCdClusters(
+      ['aws-npr-use1', 'aws-prd-use1'],
+      fakeHome,
+      (cmd, args) => calls.push({ cmd, args }),
+    );
+
+    const wrapperPath = path.join(
+      fakeHome,
+      '.claude',
+      'wrappers',
+      'mcp-argocd.sh',
+    );
+    assert.deepStrictEqual(
+      calls.filter((c) => c.args[1] === 'add').map((c) => c.args),
+      ['aws-npr-use1', 'aws-prd-use1'].map((id) => [
+        'mcp',
+        'add',
+        '-s',
+        'user',
+        '-t',
+        'stdio',
+        '-e',
+        `ARGOCD_CLUSTER=${id}`,
+        '--',
+        `argocd-${id}`,
+        wrapperPath,
+      ]),
+    );
+    // Each add is preceded by a best-effort remove of the same server.
+    assert.deepStrictEqual(
+      calls.filter((c) => c.args[1] === 'remove').map((c) => c.args[4]),
+      ['argocd-aws-npr-use1', 'argocd-aws-prd-use1'],
+    );
+    assert.deepStrictEqual(result, new Set(['aws-npr-use1', 'aws-prd-use1']));
+  });
+
+  it('omits clusters whose mcp add fails from the returned set', () => {
+    const fakeHome = makeFakeHome();
+    const result = registerArgoCdClusters(
+      ['ok', 'broken'],
+      fakeHome,
+      (_cmd, args) => {
+        if (args[1] === 'add' && args.includes('argocd-broken')) {
+          throw new Error('add failed');
+        }
+      },
+    );
+    assert.deepStrictEqual(result, new Set(['ok']));
+  });
+});
+
+describe('removeStaleArgoCdRegistrations', () => {
+  it('removes only argocd-<id> servers whose id is no longer desired', () => {
+    const fakeHome = makeFakeHome();
+    fs.writeFileSync(
+      path.join(fakeHome, '.claude.json'),
+      JSON.stringify({
+        mcpServers: {
+          argocd: { type: 'stdio' },
+          'argocd-keep': { type: 'stdio' },
+          'argocd-old': { type: 'stdio' },
+          'grafana-old': { type: 'stdio' },
+        },
+      }),
+      'utf8',
+    );
+    const calls: SpawnCall[] = [];
+    removeStaleArgoCdRegistrations(
+      new Set(['keep']),
+      fakeHome,
+      (cmd, args) => calls.push({ cmd, args }),
+      () => {},
+    );
+    assert.deepStrictEqual(calls, [
+      { cmd: 'claude', args: ['mcp', 'remove', '-s', 'user', 'argocd-old'] },
+    ]);
+  });
+});
+
+describe('updateArgoCdAllowList', () => {
+  it('sets per-cluster wildcards and drops legacy and stale ArgoCD entries only', () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, [
+      'Read',
+      'mcp__argocd__list_applications',
+      'mcp__argocd-old__*',
+      'mcp__argocd-keep__*',
+      'mcp__grafana-keep__*',
+    ]);
+    updateArgoCdAllowList(new Set(['keep', 'new']), fakeHome, () => {});
+    assert.deepStrictEqual(readSettings(fakeHome)['allowedTools'], [
+      'Read',
+      'mcp__argocd-keep__*',
+      'mcp__grafana-keep__*',
+      'mcp__argocd-new__*',
+    ]);
+  });
+
+  it('removes every ArgoCD entry when no clusters are registered', () => {
+    const fakeHome = makeFakeHome();
+    writeSettings(fakeHome, ['Read', 'mcp__argocd-old__*']);
+    updateArgoCdAllowList(new Set(), fakeHome, () => {});
+    assert.deepStrictEqual(readSettings(fakeHome)['allowedTools'], ['Read']);
   });
 });

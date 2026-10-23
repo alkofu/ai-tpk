@@ -34,7 +34,7 @@ Currently configured servers:
   The wrapper invokes **`pnpx`** (pnpm's equivalent of the npm runner) because this repository uses pnpm. Users without pnpm installed must install it (<https://pnpm.io/installation>) before GitHub MCP servers can spawn. The wrapper pins `@modelcontextprotocol/server-github@2025.4.8` to protect against any future "latest" publish on the abandoned package name (archived 2025-05-29; the Docker-based successor `ghcr.io/github/github-mcp-server` is not used here to avoid a Docker dependency).
 
   If `~/.config/tpk/github-pats.json` is missing or empty (`{}`) at install time, GitHub MCP setup is skipped with a yellow warning and installation continues. On each run, the installer also removes the legacy `github` (no suffix) registration, removes stale `github-<key>` registrations, and removes stale `mcp__github-<key>__*` allow-list entries for keys no longer present in the PATs file.
-- **ArgoCD MCP Server** (`argocd-mcp@0.9.0`) — Multi-cluster ArgoCD access via `~/.config/tpk/argocd-accounts.json`. Define your clusters as a JSON object mapping cluster names to `{ url, token }` pairs:
+- **ArgoCD MCP Servers** (`argocd-mcp@0.9.0`) — Read-only ArgoCD application, resource, event, and log access, with **one always-on server per ArgoCD cluster**. Define your clusters in `~/.config/tpk/argocd-accounts.json` as a JSON object mapping cluster ids to `{ url, token }` pairs:
 
   ```json
   { "prod": { "url": "https://argocd.prod.example.com", "token": "..." }, "staging": { "url": "https://argocd.staging.example.com", "token": "..." } }
@@ -42,9 +42,11 @@ Currently configured servers:
 
   **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/tpk/argocd-accounts.json`.** ArgoCD tokens are equivalent in sensitivity to GitHub PATs; the wrapper refuses to read the file if the mode is broader than `0600`.
 
-  Cluster names (keys) must match `^[a-zA-Z0-9_.-]+$`. The selected cluster is written to `~/.claude/.current-argocd-cluster` by the launcher and read at wrapper boot time. Rotating a token in `~/.config/tpk/argocd-accounts.json` takes effect on the next MCP server boot without re-running `install.sh`.
+  Every cluster with an `http(s)` `url` and a non-empty `token` becomes a registered MCP server (`argocd-prod`, …) and a tool namespace (`mcp__argocd-prod__*`). Clusters failing either check are skipped with a warning. Cluster ids must match `^[a-zA-Z0-9-]+$` — letters, digits, and hyphens only, for the same tool-name reason as Grafana cluster ids.
 
-  The wrapper requires **`python3`** (available by default on macOS and Linux) to parse the accounts file.
+  The wrapper at `~/.claude/wrappers/mcp-argocd.sh` resolves the cluster's `url` and `token` at runtime via the `ARGOCD_CLUSTER` env var injected by the installer, and always sets `MCP_READ_ONLY=true`, which removes the write tools (`create_application`, `update_application`, `delete_application`, `sync_application`, `run_resource_action`). **No token is stored in `~/.claude.json`**; rotating a token takes effect on the next MCP server boot without re-running `install.sh`, but adding or removing a cluster requires re-running `install.sh`. The wrapper requires **`python3`** (available by default on macOS and Linux) to parse the accounts file.
+
+  On each run, the installer also removes the legacy single `argocd` registration (previously pointed at the cluster selected in `tpk`), removes stale `argocd-<id>` registrations and their `mcp__argocd-<id>__*` allow-list entries, drops any legacy `mcp__argocd__<tool>` allow-list entries, and auto-approves each registered server with one `mcp__argocd-<id>__*` entry (safe because every server is read-only). Like the Grafana servers, each is a separate process started with every session.
 - **GCP Observability MCP Server** (`@google-cloud/observability-mcp@0.2.3`) — Read-only access to GCP Cloud Logging, Monitoring, Trace, and Error Reporting. Requires Node.js 20+ and the gcloud CLI. Authenticate before running `install.sh`: `gcloud auth application-default login` then `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`.
 
 MCP servers are available in all repositories once configured.

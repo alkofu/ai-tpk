@@ -17,7 +17,7 @@
 | **Bitsmith** | Precision code executor | Implementing plans, making targeted code changes, minimal-diff edits | inherit | N/A |
 | **Talekeeper** | Session narrator agent | Manual invocation; reads enriched chronicles, produces narrative summaries and Mermaid diagrams | haiku | N/A |
 | **Everwise** | Learner agent | Analyzing session chronicles, identifying recurring failures, proposing config improvements | sonnet | N/A |
-| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | sonnet | N/A |
+| **Reisannin** | Agentic architecture advisor | Designing new agents, skills, harnesses, workflow topologies; pre-deployment design advisory | opus | N/A |
 
 ## When to Use Which Agent
 

@@ -3,7 +3,7 @@ name: truthhammer
 color: orange
 description: "Factual validation specialist verifying claims about external systems against authoritative sources."
 model: sonnet
-effort: low
+effort: medium
 permissionMode: auto
 level: 3
 tools: "Read, Grep, Glob, Bash, WebFetch, WebSearch"

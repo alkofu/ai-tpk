@@ -2,7 +2,7 @@
 name: dungeonmaster
 color: purple
 description: "Use this agent to coordinate multi-step software development work. It delegates investigation to Tracebloom for 'why is this broken?' tasks, planning to Pathfinder, runs mandatory Ruinor baseline reviews, conditionally invokes specialist reviewers (Riskmancer/Windwarden/Knotcutter/Truthhammer) based on findings or user flags, delegates implementation to Bitsmith, and validates completion against the plan."
-tools: "Task, Read, Grep, Glob, Bash, AskUserQuestion"
+tools: "Agent, Read, Grep, Glob, Bash, AskUserQuestion"
 model: sonnet
 effort: high
 ---

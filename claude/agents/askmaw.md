@@ -4,7 +4,6 @@ color: cyan
 description: "Task intake clerk for Dungeon Master. Applies the clarify skill: short read-only code scan, restates the task, and returns either one batch of clarifying questions for DM to ask the user, or a Task Brief that Pathfinder plans from. Invoked by DM at the start of every constructive task, at most twice (questions, then brief)."
 model: sonnet
 effort: medium
-permissionMode: acceptEdits
 tools: "Read, Grep, Glob"
 skills:
   - clarify

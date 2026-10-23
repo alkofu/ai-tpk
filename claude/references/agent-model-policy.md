@@ -27,21 +27,21 @@ No other agent has this breadth of task scope, so `model: inherit` is not a defa
 
 ## 3. Why Other Agents Remain Pinned
 
-Agents whose role has a stable tier expectation keep a hardcoded `model:` value. Their work does not benefit from per-invocation tier flexibility because their task type is uniform: planning always warrants deep reasoning (Opus), narration is lightweight (Haiku), and advisory/intake/review tasks fit a consistent Sonnet baseline.
+Agents whose role has a stable tier expectation keep a hardcoded `model:` value. Their work does not benefit from per-invocation tier flexibility because their task type is uniform: planning and agentic architecture advisory always warrant deep reasoning (Opus), narration is lightweight (Haiku), and advisory/intake/review tasks fit a consistent Sonnet baseline.
 
 Propagating `model: inherit` to additional agents requires a deliberate decision. Do not add it as a default.
 
 Current pinning across all 14 agents (post-change):
 
-**Opus (4):** Pathfinder, Ruinor, Riskmancer, Knotcutter.
+**Opus (5):** Pathfinder, Ruinor, Riskmancer, Knotcutter, Reisannin.
 
-**Sonnet (8):** Dungeon Master, Tracebloom, Askmaw, Quill, Reisannin, Truthhammer, Windwarden, Everwise.
+**Sonnet (7):** Dungeon Master, Tracebloom, Askmaw, Quill, Truthhammer, Windwarden, Everwise.
 
 **Haiku (1):** Talekeeper.
 
 **Inherit (1):** Bitsmith.
 
-Total: 4 + 8 + 1 + 1 = 14 agents.
+Total: 5 + 7 + 1 + 1 = 14 agents.
 
 All 14 agents now use short aliases (`sonnet`, `opus`, `haiku`, `inherit`) in their frontmatter `model:` fields. Full model IDs (e.g., `claude-sonnet-4-6`) are no longer used in agent definitions — aliases resolve automatically to the current model in each tier.
 

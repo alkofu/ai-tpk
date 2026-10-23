@@ -1,9 +1,9 @@
 ---
 name: tracebloom
-color: brown
+color: cyan
 description: "Read-only investigative agent for open-ended 'why is this broken?' tasks. Produces a structured Diagnostic Report with observations, tests performed, root cause (or inconclusive), and recommended next action. Invoked before any plan or fix exists."
 model: sonnet
-effort: low
+effort: high
 permissionMode: auto
 level: 2
 tools: "Read, Grep, Glob, Bash, mcp__grafana__*, mcp__kubernetes__*, mcp__cloudwatch__*, mcp__gcp-observability__*"

@@ -87,7 +87,7 @@ Every PR must:
 7. **Push**: `git push -u origin <branch>` (or your remote/branch convention) to upstream. If you **amended or rebased** commits that were **already pushed**, use `git push --force-with-lease` instead of a plain push. The PR compares the default branch to this branch, so **all commits you pushed** are what the PR contains.
 
 8. **Open PR (always draft, assign to the user)**:
-   - **GitHub**: `gh pr create --draft --assignee @me --title "..." --body "..."`
+   - **GitHub**: `gh pr create --draft --assignee @me --title "..." --body-file -` (body on stdin via heredoc)
      Use `@me` so the PR is **assigned to the person opening it** (the user’s GitHub account). Adjust only if the repo uses a different assignee rule.
    - **GitLab**: `glab mr create --draft --assignee @me` (or your login) with the same title/body rules; use the web UI only if you mirror draft + assignee there.
 
@@ -171,7 +171,26 @@ Optional **team prefix** (only if the repository already uses it): `username/fea
 
 ## PR description
 
-Keep it short (2–5 sentences), **impact-first**: problem solved, user or system benefit, notable risks or rollout notes. Do not mirror the file list; that is visible in the PR UI. Match the tone of `commit-message-guide` bodies: explain *why* when the title is not enough; omit noise (test pass claims, AI attribution, line counts).
+Short Markdown that is quick to scan: a one- or two-sentence lead, then bullets. Use this shape:
+
+```markdown
+<1–2 sentences: the problem solved and why it matters>
+
+## Changes
+- <one line per logical change, imperative mood>
+
+## Notes
+- <risks, rollout steps, follow-ups, or manual verification still needed>
+
+Closes #N
+```
+
+- **Lead**: impact-first — the problem and the user or system benefit. No heading above it.
+- **Changes**: 3–5 bullets, one line each. Describe changes, not files; the file list is visible in the PR UI. Use backticks for code identifiers and paths.
+- **Notes**: include only when there is something to say; never write an empty or "N/A" section.
+- No other headings, no checklists, no tables, no emoji. A trivial PR may be the lead sentence alone.
+- Omit noise: test pass claims, AI attribution, line counts.
+- Pass the body with `--body-file -` and a heredoc rather than inline `--body "..."`, so newlines, backticks, and quotes survive shell quoting.
 
 **Closing keywords:** If the task description, session context, or commit messages on this branch contain any GitHub issue-closing keyword (`Closes #N`, `Fixes #N`, `Resolves #N`, including the `Close`/`Closed`/`Fix`/`Fixed`/`Resolve`/`Resolved` variants), append the matching line(s) verbatim to the end of the PR body so GitHub auto-closes the linked issue(s) on merge. Do not invent a closing keyword; only propagate what the upstream context supplied. If the same `Closes #N` keyword appears in multiple sources, emit it only once in the PR body.
 
@@ -185,7 +204,7 @@ Keep it short (2–5 sentences), **impact-first**: problem solved, user or syste
 
 ## Examples (end-to-end)
 
-After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @me --title "feat(reports): add csv export for quarterly view" --body "..."`.
+After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @me --title "feat(reports): add csv export for quarterly view" --body-file -` with the body in a heredoc.
 
 **Feature**
 
@@ -211,7 +230,7 @@ After push, open with draft + assignee, e.g. `gh pr create --draft --assignee @m
 - [ ] History is **compact**: prefer `--amend` / `--fixup` + autosquash; new commits only when scope or topic differs
 - [ ] Branch matches `<prefix>/<description>` and Conventional Branch character rules
 - [ ] PR title is a conventional commit subject line (and matches the main commit when single-commit)
-- [ ] PR body adds context, not a file inventory
+- [ ] PR body follows the lead + `## Changes` (+ optional `## Notes`) shape and adds context, not a file inventory
 - [ ] If the task description or commit history contains a closing keyword (`Closes #N` / `Fixes #N` / `Resolves #N` etc.), the PR body includes the matching line at the end (deduplicated if the same keyword appears in multiple sources)
 - [ ] If no upstream closing keyword was found, the optional "file & link an issue" prompt was offered after the push step and before opening the PR; if accepted and the inline protocol completed, the resulting `Closes #N` was injected into the PR body; if declined or the inline protocol aborted/cancelled/failed, the PR was opened unlinked
 - [ ] PR is opened as a **draft** and **assigned to the user** (`@me` or equivalent)

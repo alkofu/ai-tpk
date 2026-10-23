@@ -17,7 +17,7 @@ If you have used a previous version of this tool (before the rename to `tpk`), t
 
 ## Overview
 
-The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (AWS profile, GCP project, kube context, ArgoCD cluster), then launch a pre-configured Claude session. Grafana is not part of the wizard: the installer registers one always-on, read-only MCP server per Grafana cluster (see [Grafana Configuration](#grafana-configuration)).
+The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (AWS profile, GCP project, kube context), then launch a pre-configured Claude session. Grafana and ArgoCD are not part of the wizard: the installer registers one always-on, read-only MCP server per Grafana cluster and per ArgoCD cluster (see [Grafana Configuration](#grafana-configuration) and [ArgoCD Configuration](#argocd-configuration)).
 
 **Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/tpk`.
 
@@ -29,14 +29,14 @@ tpk
 
 The wizard will present a multi-step flow:
 
-1. **MCP Selection** — Choose which MCPs to configure for this session (CloudWatch, GCP Observability, Kubernetes, and/or ArgoCD)
-2. **Per-MCP Configuration** — For each selected MCP, choose its settings (AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes; cluster for ArgoCD)
+1. **MCP Selection** — Choose which MCPs to configure for this session (CloudWatch, GCP Observability, and/or Kubernetes)
+2. **Per-MCP Configuration** — For each selected MCP, choose its settings (AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
 3. **Agent Selection** — Choose **Dungeon Master** (`claude --agent dungeonmaster`) or **Default Claude** (`claude` with no `--agent` flag)
 4. **Launch** — Claude opens with the chosen agent and the correct environment variables set
 
 The agent prompt is also shown after choosing **Launch** on the summary screen, so you can switch agents on every run without reconfiguring MCPs. Your last choice is preselected; if none is saved, Dungeon Master is preselected.
 
-**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them. A `grafana` selection saved by an older `tpk` is ignored.
+**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them. A `grafana` or `argocd` selection saved by an older `tpk` is ignored.
 
 ### `--skip`: launch immediately with saved config
 
@@ -60,10 +60,10 @@ This is useful for scripts, hot-key launches, and users who never want to see th
   No saved config found — run tpk without --skip first to configure.
   ```
 
-- **Stale saved config:** If the saved config cannot be resolved (e.g. the saved ArgoCD cluster no longer exists in `~/.config/tpk/argocd-accounts.json`), the launcher prints to stderr and exits with code 1:
+- **Stale saved config:** If the saved config cannot be resolved (a saved resource is no longer valid), the launcher prints to stderr and exits with code 1. No current MCP triggers this; it is reserved for MCPs that persist a reference to an external resource:
 
   ```
-  Saved config could not be resolved (e.g. ArgoCD cluster is no longer valid) — re-run tpk without --skip to reconfigure.
+  Saved config could not be resolved (a saved resource is no longer valid) — re-run tpk without --skip to reconfigure.
   ```
 
 In both cases, run `tpk` without `--skip` to (re)configure.
@@ -153,7 +153,7 @@ When "Kubernetes" is selected, the launcher runs `kubectx` to list available con
 
 ## ArgoCD Configuration
 
-Create `~/.config/tpk/argocd-accounts.json` with your cluster definitions. The file must use this JSON schema:
+ArgoCD is configured by the installer, not by the `tpk` wizard. Create `~/.config/tpk/argocd-accounts.json` with your cluster definitions, then run `chmod 600 ~/.config/tpk/argocd-accounts.json` and `./install.sh`. The file must use this JSON schema:
 
 ```json
 {
@@ -162,9 +162,9 @@ Create `~/.config/tpk/argocd-accounts.json` with your cluster definitions. The f
 }
 ```
 
-Each key is a cluster name and must match `^[a-zA-Z0-9_.-]+$`. **Set the file mode to `0600` immediately after creation: `chmod 600 ~/.config/tpk/argocd-accounts.json`.** The wrapper refuses to read the file if the mode is broader than `0600`.
+Each key is a cluster id; letters, digits, and hyphens only. It names the MCP server (`argocd-<id>`) and its tools (`mcp__argocd-<id>__*`). Ids with `_` or `.`, which older versions accepted, are skipped with a warning — rename them. **Set the file mode to `0600` immediately after creation.** The wrapper refuses to read the file if the mode is broader than `0600`.
 
-When "ArgoCD" is selected, the launcher reads this file and prompts you to select a cluster. The selected cluster name is stored in `~/.claude/.current-argocd-cluster` for the MCP wrapper and persisted for the next run. If the file is missing, empty, or unreadable, the launcher logs a warning, skips the ArgoCD MCP, and continues launching Claude with the remaining selections.
+Every cluster with an `http(s)` `url` and a `token` gets its own read-only MCP server (`MCP_READ_ONLY=true`), always on in every session. Re-run `install.sh` after adding, removing, or renaming a cluster; token changes take effect on the next session without reinstalling. See [docs/MCP.md § Server Roster](/docs/MCP.md#server-roster) for how registration and allow-listing work.
 
 ## Environment Variables Set by tpk
 
@@ -186,6 +186,4 @@ When you select Kubernetes:
 K8S_CONTEXT={context_name}
 ```
 
-ArgoCD does not set environment variables. The selected cluster name is written to `~/.claude/.current-argocd-cluster` and read by the wrapper at MCP server boot time.
-
-These variables (and the dotfiles written by ArgoCD and Kubernetes) are passed to the `claude` process (with `--agent dungeonmaster` when the Dungeon Master is selected), and they flow through to all MCP server subprocesses.
+These variables (and the dotfile written by Kubernetes) are passed to the `claude` process (with `--agent dungeonmaster` when the Dungeon Master is selected), and they flow through to all MCP server subprocesses.

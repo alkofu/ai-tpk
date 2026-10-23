@@ -117,8 +117,8 @@ describe('saveConfig', () => {
 
   it('round-trip: saveConfig then loadConfig returns the same data', () => {
     const config = {
-      selectedMcps: ['argocd', 'cloudwatch'],
-      argocd: { clusterId: 'prod' },
+      selectedMcps: ['kubernetes', 'cloudwatch'],
+      kubernetes: { context: 'prod' },
       cloudwatch: { profile: 'default' },
     };
     saveConfig(config);

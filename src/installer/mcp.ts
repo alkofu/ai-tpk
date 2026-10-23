@@ -1122,6 +1122,245 @@ export function updateGrafanaAgentTools(
   }
 }
 
+// ---------------------------------------------------------------------------
+// ArgoCD per-cluster support
+// ---------------------------------------------------------------------------
+
+/**
+ * Cluster ids become part of the server name `argocd-<id>` and of tool names
+ * `mcp__argocd-<id>__<tool>`, so they are limited to letters, digits, and
+ * hyphens for the same reason as GRAFANA_CLUSTER_ID_RE. mcp-argocd.sh applies
+ * the same check.
+ */
+const ARGOCD_CLUSTER_ID_RE = /^[a-zA-Z0-9-]+$/;
+
+/**
+ * Removes the legacy single-cluster 'argocd' MCP server registration, which
+ * was registered from mcp-servers.json and pointed at the cluster tpk selected
+ * per session. Runs unconditionally on every install as an upgrade migration;
+ * ignores failure (absent on fresh installs).
+ *
+ * @param spawnFn - Injectable for testing; defaults to execFileSync.
+ */
+export function removeLegacyArgoCdRegistration(
+  spawnFn: SpawnFn = defaultSpawn,
+): void {
+  try {
+    spawnFn('claude', ['mcp', 'remove', '-s', 'user', 'argocd']);
+    console.log(c.green("Removed legacy 'argocd' MCP registration"));
+  } catch {
+    // Registration was not present — that is fine
+  }
+}
+
+/**
+ * Reads ~/.config/tpk/argocd-accounts.json (a flat object mapping cluster ids
+ * to `{ url, token }`) and returns the sorted ids of the clusters that get a
+ * read-only MCP server: those with a valid id, an http(s) `url`, and a
+ * non-empty `token`. Clusters failing any check are skipped with a warning
+ * that names the cluster, never a token. Returns [] (with a warning) when the
+ * file is absent.
+ *
+ * Throws on malformed JSON or a top level that is not a JSON object, matching
+ * loadGrafanaViewerClusters. Error messages never include file contents.
+ *
+ * @param homedir - Injectable for testing; defaults to os.homedir().
+ * @param warnFn - Injectable for testing; defaults to console.log yellow.
+ */
+export function loadArgoCdClusters(
+  homedir: string = os.homedir(),
+  warnFn: WarnFn = defaultWarn,
+): string[] {
+  const accountsPath = path.join(
+    homedir,
+    '.config',
+    'tpk',
+    'argocd-accounts.json',
+  );
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(accountsPath, 'utf8');
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      (err as NodeJS.ErrnoException).code === 'ENOENT'
+    ) {
+      warnFn(
+        'Warning: ~/.config/tpk/argocd-accounts.json not found -- skipping ArgoCD MCP setup',
+      );
+      return [];
+    }
+    throw err;
+  }
+
+  const modeStr = readFileModeOctal(accountsPath);
+  if (modeStr !== null && (modeStr.replace(/^0+/, '') || '0') !== '600') {
+    warnFn(
+      `Warning: ~/.config/tpk/argocd-accounts.json mode is ${modeStr}; recommended mode is 0600.\n` +
+        `Run: chmod 600 ~/.config/tpk/argocd-accounts.json\n` +
+        `The wrapper will refuse to read this file at MCP server boot until the mode is fixed.`,
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err: unknown) {
+    // SECURITY: report the error type only — JSON errors can quote the
+    // offending text, which may contain a token.
+    const kind = err instanceof Error ? err.constructor.name : typeof err;
+    throw new Error(
+      `argocd-accounts.json: invalid JSON in ${accountsPath} (${kind})`,
+      { cause: err },
+    );
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(
+      `argocd-accounts.json: ${accountsPath} must be a flat JSON object mapping cluster ids to {url, token}`,
+    );
+  }
+
+  const ids: string[] = [];
+  for (const [id, value] of Object.entries(parsed as Record<string, unknown>)) {
+    if (!ARGOCD_CLUSTER_ID_RE.test(id)) {
+      warnFn(
+        `Warning: ArgoCD cluster id '${id}' contains characters outside [a-zA-Z0-9-] -- skipping its MCP server`,
+      );
+      continue;
+    }
+    const entry =
+      typeof value === 'object' && value !== null && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+    const url = entry['url'];
+    const token = entry['token'];
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url.trim())) {
+      warnFn(
+        `Warning: ArgoCD cluster '${id}' has no http(s) url -- skipping its MCP server`,
+      );
+      continue;
+    }
+    if (typeof token !== 'string' || token.trim() === '') {
+      // SECURITY: identify the offending entry by id only, never by value.
+      warnFn(
+        `Warning: ArgoCD cluster '${id}' has no token -- skipping its MCP server`,
+      );
+      continue;
+    }
+    ids.push(id);
+  }
+
+  return ids.toSorted();
+}
+
+/**
+ * Registers one read-only `argocd-<id>` MCP server per cluster id. Only
+ * ARGOCD_CLUSTER is passed as env; the wrapper resolves the url and token from
+ * argocd-accounts.json at boot, so no token reaches ~/.claude.json. Each
+ * registration is removed first so re-runs are idempotent.
+ *
+ * @param clusterIds - Validated ids from loadArgoCdClusters.
+ * @param homedir - Injectable for testing; defaults to os.homedir().
+ * @param spawnFn - Injectable for testing; defaults to execFileSync.
+ * @returns Set of successfully registered cluster ids.
+ */
+export function registerArgoCdClusters(
+  clusterIds: string[],
+  homedir: string = os.homedir(),
+  spawnFn: SpawnFn = defaultSpawn,
+): Set<string> {
+  const wrapperPath = path.join(
+    homedir,
+    '.claude',
+    'wrappers',
+    'mcp-argocd.sh',
+  );
+  const registered = new Set<string>();
+
+  for (const id of clusterIds) {
+    try {
+      spawnFn('claude', ['mcp', 'remove', '-s', 'user', `argocd-${id}`]);
+    } catch {
+      // Not previously registered — fine
+    }
+
+    try {
+      spawnFn('claude', [
+        'mcp',
+        'add',
+        '-s',
+        'user',
+        '-t',
+        'stdio',
+        '-e',
+        `ARGOCD_CLUSTER=${id}`,
+        '--',
+        `argocd-${id}`,
+        wrapperPath,
+      ]);
+      console.log(c.green(`MCP server 'argocd-${id}' added`));
+      registered.add(id);
+    } catch {
+      console.log(c.red(`Failed to add MCP server 'argocd-${id}'`));
+    }
+  }
+
+  return registered;
+}
+
+/**
+ * Removes `argocd-<id>` registrations whose id is not in desiredIds.
+ *
+ * @param desiredIds - The set of cluster ids currently registered.
+ * @param homedir - Injectable for testing; defaults to os.homedir().
+ * @param spawnFn - Injectable for testing; defaults to execFileSync.
+ * @param warnFn - Injectable for testing; defaults to console.log yellow.
+ */
+export function removeStaleArgoCdRegistrations(
+  desiredIds: Set<string>,
+  homedir: string = os.homedir(),
+  spawnFn: SpawnFn = defaultSpawn,
+  warnFn: WarnFn = defaultWarn,
+): void {
+  removeStalePrefixedRegistrations(
+    'argocd',
+    'ArgoCD',
+    desiredIds,
+    homedir,
+    spawnFn,
+    warnFn,
+  );
+}
+
+/**
+ * Sets the installed ~/.claude/settings.json allow-list to exactly one
+ * `mcp__argocd-<id>__*` entry per registered cluster. Whole-server approval
+ * is safe because every server runs with MCP_READ_ONLY=true, which drops all
+ * of argocd-mcp's write tools. Also drops any `mcp__argocd__<tool>` entries
+ * left over from the single-cluster server.
+ *
+ * @param clusterIds - The set of successfully registered cluster ids.
+ * @param homedir - Injectable for testing; defaults to os.homedir().
+ * @param warnFn - Injectable for testing; defaults to console.log yellow.
+ */
+export function updateArgoCdAllowList(
+  clusterIds: Set<string>,
+  homedir: string = os.homedir(),
+  warnFn: WarnFn = defaultWarn,
+): void {
+  const ARGOCD_CLUSTER_PATTERN_RE = /^mcp__argocd-[a-zA-Z0-9-]+__\*$/;
+  rewriteManagedAllowList(
+    'ArgoCD',
+    (tool) =>
+      tool.startsWith('mcp__argocd__') || ARGOCD_CLUSTER_PATTERN_RE.test(tool),
+    new Set([...clusterIds].map((id) => `mcp__argocd-${id}__*`)),
+    homedir,
+    warnFn,
+  );
+}
+
 export function installMcpServers(repoRoot: string): void {
   // Check claude CLI availability
   try {
@@ -1284,4 +1523,12 @@ export function installMcpServers(repoRoot: string): void {
   removeStaleGrafanaRegistrations(grafanaIds); // clean even when empty
   updateGrafanaAllowList(grafanaIds); // clean even when empty
   updateGrafanaAgentTools(grafanaIds); // expand placeholder even when empty
+
+  // ArgoCD per-cluster registration sequence (read-only, one server per
+  // cluster in argocd-accounts.json). Same shape as the Grafana sequence; no
+  // agent restricts its tools to ArgoCD, so there is no `tools:` expansion.
+  removeLegacyArgoCdRegistration(); // unconditional upgrade migration
+  const argoCdIds = registerArgoCdClusters(loadArgoCdClusters());
+  removeStaleArgoCdRegistrations(argoCdIds); // clean even when empty
+  updateArgoCdAllowList(argoCdIds); // clean even when empty
 }

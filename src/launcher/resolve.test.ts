@@ -8,9 +8,9 @@ import type { LauncherConfig } from './types.js';
 // ---------------------------------------------------------------------------
 
 describe('withKnownMcpsOnly', () => {
-  it('drops a saved grafana selection, which tpk no longer manages', () => {
+  it('drops saved grafana and argocd selections, which tpk no longer manages', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana', 'cloudwatch', 'kubernetes'],
+      selectedMcps: ['grafana', 'cloudwatch', 'argocd', 'kubernetes'],
       cloudwatch: { profile: 'prod' },
     };
     assert.deepStrictEqual(withKnownMcpsOnly(config).selectedMcps, [
@@ -21,16 +21,16 @@ describe('withKnownMcpsOnly', () => {
 
   it('keeps every other field and does not mutate its input', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana', 'argocd'],
+      selectedMcps: ['grafana', 'kubernetes'],
       agent: 'default',
-      argocd: { clusterId: 'prod' },
+      kubernetes: { context: 'prod' },
     };
     const copy = JSON.parse(JSON.stringify(config));
     const result = withKnownMcpsOnly(config);
     assert.deepStrictEqual(result, {
-      selectedMcps: ['argocd'],
+      selectedMcps: ['kubernetes'],
       agent: 'default',
-      argocd: { clusterId: 'prod' },
+      kubernetes: { context: 'prod' },
     });
     assert.deepStrictEqual(config, copy);
   });
@@ -89,9 +89,9 @@ describe('buildResolvedFromSaved', () => {
     assert.deepStrictEqual(result, { kubernetes: { context: 'dev-cluster' } });
   });
 
-  it('ignores a saved grafana selection instead of failing to resolve', () => {
+  it('ignores saved grafana and argocd selections instead of failing to resolve', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana', 'kubernetes'],
+      selectedMcps: ['grafana', 'argocd', 'kubernetes'],
       kubernetes: { context: 'dev-cluster' },
     };
     const result = buildResolvedFromSaved(config);

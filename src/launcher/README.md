@@ -48,7 +48,7 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 ◆  Current Configuration
 │  Agent: Dungeon Master
 │  CloudWatch: profile my-aws-profile
-│  ArgoCD: cluster prod
+│  Kubernetes: context prod-cluster
 └
 ◆  What would you like to do?
 │  ● Launch  (start Claude with current config)
@@ -63,9 +63,9 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 
 **Agent selection:** every interactive launch asks `Which agent?` — **Dungeon Master** (`claude --agent dungeonmaster`) or **Default Claude** (`claude` with no `--agent` flag). The last choice is preselected and persisted as `agent` (`"dungeonmaster"` or `"default"`) in `~/.config/tpk/config.json`. A missing or unrecognised value falls back to Dungeon Master. `--skip` never prompts; it launches the saved agent.
 
-If the saved ArgoCD cluster no longer exists in `~/.config/tpk/argocd-accounts.json`, the launch path is skipped and the configure flow starts automatically with a warning.
+If a command's `resolveFromSaved` throws `StaleResourceError`, the launch path is skipped and the configure flow starts automatically with a warning. No current command throws it.
 
-**Grafana is not managed by the launcher.** The installer registers one always-on, read-only `grafana-<cluster>` MCP server per cluster in `~/.config/tpk/grafana-clusters.yaml` (see [docs/MCP.md](/docs/MCP.md) and [docs/TPK.md § Grafana Configuration](/docs/TPK.md#grafana-configuration)). A `grafana` entry in a saved `selectedMcps` from an older `tpk` is dropped on load by `withKnownMcpsOnly` (`resolve.ts`).
+**Grafana and ArgoCD are not managed by the launcher.** The installer registers one always-on, read-only `grafana-<cluster>` MCP server per cluster in `~/.config/tpk/grafana-clusters.yaml` and one `argocd-<cluster>` server per cluster in `~/.config/tpk/argocd-accounts.json` (see [docs/MCP.md](/docs/MCP.md), [docs/TPK.md § Grafana Configuration](/docs/TPK.md#grafana-configuration), and [docs/TPK.md § ArgoCD Configuration](/docs/TPK.md#argocd-configuration)). A `grafana` or `argocd` entry in a saved `selectedMcps` from an older `tpk` is dropped on load by `withKnownMcpsOnly` (`resolve.ts`).
 
 **`--skip` flag:** Pass `--skip` on the command line to bypass the summary screen entirely and launch Claude immediately with the saved config. The flag is parsed by `argv.ts` before `loadConfig` is called. If the saved config is unusable, the launcher exits non-zero with one of two stderr messages (no saved config, or stale/unresolvable config) — it never falls back to the interactive flow. Any unknown flag causes exit code 2. Example: `pnpm exec tsx src/launcher/main.ts --skip`. The short alias `-S` (uppercase) is accepted as a synonym for `--skip` everywhere `--skip` appears.
 
@@ -86,7 +86,7 @@ tpk --skip <initial-message>
 
 ## Testing
 
-Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`agent.test.ts`, `argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`, `argocd.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`agent.test.ts`, `argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -110,22 +110,22 @@ The launcher uses the GoF Command pattern to eliminate per-MCP branching. Each M
 
 ### McpCommand pattern
 
-`mcp-command-types.ts` defines the `McpCommand` interface and the `StaleResourceError` class. Each MCP module under `mcp/` exports a command instance implementing that interface. `mcp-command.ts` imports those four instances and exports the `registry: McpCommand[]` array in canonical order (CloudWatch → GCP Observability → Kubernetes → ArgoCD). It re-exports `McpCommand` and `StaleResourceError` as the public entry point for consumers; command implementations import from `mcp-command-types.ts` directly to avoid a circular dependency.
+`mcp-command-types.ts` defines the `McpCommand` interface and the `StaleResourceError` class. Each MCP module under `mcp/` exports a command instance implementing that interface. `mcp-command.ts` imports those three instances and exports the `registry: McpCommand[]` array in canonical order (CloudWatch → GCP Observability → Kubernetes). It re-exports `McpCommand` and `StaleResourceError` as the public entry point for consumers; command implementations import from `mcp-command-types.ts` directly to avoid a circular dependency.
 
 The `McpCommand` interface captures every per-MCP responsibility:
 
-| Member                                         | Responsibility                                                                                                                                                                                                 |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                                           | Multiselect ID; also persisted in `LauncherConfig.selectedMcps`                                                                                                                                                |
-| `skippedKey`                                   | Key in `SkippedMap` (differs from `id` only for `gcp-observability`, which uses `"gcp"`)                                                                                                                       |
-| `multiselectOption`                            | The `{ value, label, hint }` entry shown in the MCP selection prompt                                                                                                                                           |
-| `configureInteractive`                         | Loads resources (clusters, profiles, contexts), prompts the user, returns resolved + persistable fragments, or `null` on loader failure                                                                        |
-| `resolveFromSaved`                             | Reconstructs the resolved fragment from a persisted config without prompting. Returns `null` if the sub-object is absent; may throw `StaleResourceError` (ArgoCD only) when a saved reference no longer exists |
-| `emitEnvVars`                                  | Writes env vars and any dotfiles for this MCP into the shared env map                                                                                                                                          |
-| `buildOutroSuccessLine` / `buildOutroSkipLine` | Produces the text shown in the `Launching: …` outro                                                                                                                                                            |
-| `buildSummaryLine`                             | Produces the line shown in the saved-config summary screen                                                                                                                                                     |
+| Member                                         | Responsibility                                                                                                                                                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                           | Multiselect ID; also persisted in `LauncherConfig.selectedMcps`                                                                                                                                                  |
+| `skippedKey`                                   | Key in `SkippedMap` (differs from `id` only for `gcp-observability`, which uses `"gcp"`)                                                                                                                         |
+| `multiselectOption`                            | The `{ value, label, hint }` entry shown in the MCP selection prompt                                                                                                                                             |
+| `configureInteractive`                         | Loads resources (clusters, profiles, contexts), prompts the user, returns resolved + persistable fragments, or `null` on loader failure                                                                          |
+| `resolveFromSaved`                             | Reconstructs the resolved fragment from a persisted config without prompting. Returns `null` if the sub-object is absent; may throw `StaleResourceError` when a saved reference no longer exists (none do today) |
+| `emitEnvVars`                                  | Writes env vars and any dotfiles for this MCP into the shared env map                                                                                                                                            |
+| `buildOutroSuccessLine` / `buildOutroSkipLine` | Produces the text shown in the `Launching: …` outro                                                                                                                                                              |
+| `buildSummaryLine`                             | Produces the line shown in the saved-config summary screen                                                                                                                                                       |
 
-`StaleResourceError` is the signal for ArgoCD's stale-cluster fall-through. `resolve.ts` catches it and returns `null`, which triggers the configure flow in `main.ts`. No other command throws this error.
+`StaleResourceError` is the signal for a stale-reference fall-through. `resolve.ts` catches it and returns `null`, which triggers the configure flow in `main.ts`. No command throws it today; it is kept for MCPs that persist a reference to an external resource.
 
 ### Orchestration files
 
@@ -197,7 +197,7 @@ If neither source provides a valid credential file, the launcher logs a warning,
 
 When 'GCP Observability' is selected in the MCP multiselect, the launcher first runs `gcloud projects list --format=value(projectId) --sort-by=projectId` to fetch the set of accessible projects, then performs an informational ADC credential check. If both succeed, the launcher presents a `select()` prompt listing the available project IDs. If either step fails, the launcher logs a warning, skips the GCP MCP, and continues with the remaining selected MCPs (no project prompt is shown). When the prompt does run and the previously used project is still in the list it is pre-selected; otherwise the first project in the list is selected.
 
-If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, the launcher logs a warning, skips the GCP MCP, and continues with the rest of the session. Failures in any other MCP loader (CloudWatch, Kubernetes, ArgoCD) are also non-fatal: the launcher logs a warning, skips that MCP, and continues with the remaining selected MCPs.
+If `gcloud` is not on `PATH`, exits non-zero, or returns no projects, the launcher logs a warning, skips the GCP MCP, and continues with the rest of the session. Failures in any other MCP loader (CloudWatch, Kubernetes) are also non-fatal: the launcher logs a warning, skips that MCP, and continues with the remaining selected MCPs.
 
 The selected project ID is written to `~/.claude/.current-gcp-project` (mode 0600) and persisted to `~/.config/tpk/config.json` for use as the default on the next run. `GOOGLE_CLOUD_PROJECT` is also set in the child process environment for `google-auth-library` project resolution.
 
@@ -248,6 +248,5 @@ The selected context is saved under `kubernetes.context` in `~/.config/tpk/confi
 - **`src/launcher/mcp-command-types.ts`** — `McpCommand` interface and `StaleResourceError` class
 - **`src/launcher/mcp-command.ts`** — Registry, re-exports of core types, and the "how to add a new MCP" comment block
 - **`src/launcher/mcp/kubernetes.ts`** — `kubectx` context listing, selection prompt, context switching, and `applyKubernetesContextSwitch`
-- **`src/launcher/mcp/argocd.ts`** — ArgoCD cluster listing from `~/.config/tpk/argocd-accounts.json`, cluster selection prompt, and dotfile write to `~/.claude/.current-argocd-cluster`
-- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper that reads `~/.claude/.current-argocd-cluster`, extracts the matching `url` and `token` from `~/.config/tpk/argocd-accounts.json` via `python3`, and launches `argocd-mcp@0.9.0`
+- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper for the installer-registered `argocd-<cluster>` servers; resolves the cluster's url and token from `ARGOCD_CLUSTER` via `python3` and always runs `argocd-mcp@0.9.0` read-only
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

@@ -1,103 +1,114 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
-DOTFILE="$HOME/.claude/.current-argocd-cluster"
-export ACCOUNTS_FILE="$HOME/.config/tpk/argocd-accounts.json"
+# Launches one read-only ArgoCD MCP server for the cluster named by
+# ARGOCD_CLUSTER. The installer registers one `argocd-<id>` server per cluster
+# in ~/.config/tpk/argocd-accounts.json, passing only ARGOCD_CLUSTER; the url
+# and token are resolved here at boot, so no token is stored in
+# ~/.claude.json. The server always runs with MCP_READ_ONLY=true, which drops
+# argocd-mcp's write tools (create/update/delete/sync application, run
+# resource action).
+#
+# SECURITY: Do not add 'set -x' (or otherwise enable bash xtrace) to this script.
+# The token passes through $resolved below and would be exposed in stderr by
+# xtrace. Never print the loaded JSON or any token value when debugging.
 
-# --- Require dotfile ---
-if [[ ! -f "$DOTFILE" ]] || [[ ! -s "$DOTFILE" ]]; then
-  printf 'Error: no ArgoCD cluster selected.\n' >&2
-  printf 'Run: tpk (and select ArgoCD)\n' >&2
-  printf 'Or: echo "my-cluster" > %s\n' "$DOTFILE" >&2
+trap 'echo "mcp-argocd wrapper: error on line $LINENO" >&2' ERR
+
+ACCOUNTS_PATH="$HOME/.config/tpk/argocd-accounts.json"
+
+# Validate ARGOCD_CLUSTER is set and non-empty
+if [[ -z "${ARGOCD_CLUSTER:-}" ]]; then
+  echo "Error: ARGOCD_CLUSTER env var is not set -- this wrapper must be invoked by an installer-registered argocd-<cluster> MCP server" >&2
   exit 1
 fi
 
-# --- Read and trim cluster id ---
-IFS= read -r ARGOCD_CLUSTER_ID <"$DOTFILE"
-ARGOCD_CLUSTER_ID="${ARGOCD_CLUSTER_ID#"${ARGOCD_CLUSTER_ID%%[! $'\t']*}"}"
-ARGOCD_CLUSTER_ID="${ARGOCD_CLUSTER_ID%"${ARGOCD_CLUSTER_ID##*[! $'\t']}"}"
-export ARGOCD_CLUSTER_ID
-
-# --- Validate cluster id ---
-if [[ ! "$ARGOCD_CLUSTER_ID" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
-  printf 'Error: invalid ArgoCD cluster id "%s" -- must match [a-zA-Z0-9_.-]+\n' "$ARGOCD_CLUSTER_ID" >&2
+# Same character class as the installer's ARGOCD_CLUSTER_ID_RE: the id is part
+# of the server and tool names, where Claude Code rewrites '.' and treats '__'
+# as a separator.
+if [[ ! "$ARGOCD_CLUSTER" =~ ^[a-zA-Z0-9-]+$ ]]; then
+  echo "Error: ARGOCD_CLUSTER='$ARGOCD_CLUSTER' contains characters outside [a-zA-Z0-9-]" >&2
   exit 1
 fi
 
-# --- Require accounts file ---
-if [[ ! -f "$ACCOUNTS_FILE" ]]; then
-  printf 'Error: ArgoCD accounts file not found at %s.\n' "$ACCOUNTS_FILE" >&2
-  printf 'Create it: echo '"'"'{}'"'"' > %s && chmod 600 %s\n' "$ACCOUNTS_FILE" "$ACCOUNTS_FILE" >&2
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: python3 not found on PATH -- the ArgoCD MCP wrapper requires python3 to read $ACCOUNTS_PATH" >&2
   exit 1
 fi
 
-# --- Enforce mode 0600 on accounts file (mirrors mcp-github.sh:39-53) ---
-# ArgoCD tokens are equivalent in sensitivity to GitHub PATs; we adopt the strict
-# GitHub posture rather than the legacy Grafana advisory-only posture.
-mode=$(stat -f '%Lp' "$ACCOUNTS_FILE" 2>/dev/null || stat -c '%a' "$ACCOUNTS_FILE" 2>/dev/null || echo "")
+if [[ ! -r "$ACCOUNTS_PATH" ]]; then
+  echo "Error: $ACCOUNTS_PATH not found or not readable. Create it (see docs/MCP.md) and run: chmod 600 $ACCOUNTS_PATH" >&2
+  exit 1
+fi
+
+# Enforce mode 0600 on the accounts file (mirrors mcp-github.sh)
+mode=$(stat -f '%Lp' "$ACCOUNTS_PATH" 2>/dev/null || stat -c '%a' "$ACCOUNTS_PATH" 2>/dev/null || echo "")
 if [[ -z "$mode" ]]; then
-  echo "Error: could not stat $ACCOUNTS_FILE to check file mode" >&2
+  echo "Error: could not stat $ACCOUNTS_PATH to check file mode" >&2
   exit 1
 fi
 while [[ "$mode" == 0?* ]]; do mode="${mode#0}"; done
 mode="${mode:-0}"
 if [[ "$mode" != "600" ]]; then
-  echo "Error: $ACCOUNTS_FILE mode is $mode; must be 0600 (run: chmod 600 $ACCOUNTS_FILE)" >&2
+  echo "Error: $ACCOUNTS_PATH mode is $mode; must be 0600 (run: chmod 600 $ACCOUNTS_PATH)" >&2
   exit 1
 fi
 
-# --- Require python3 ---
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "Error: python3 not found on PATH -- the ArgoCD MCP wrapper requires python3 to read $ACCOUNTS_FILE" >&2
-  exit 1
-fi
+# Resolve url (line 1) and token (line 2) for the cluster. The explicit
+# if!-guarded form propagates the python exit status under set -e.
+if ! resolved="$(
+  ACCOUNTS_PATH="$ACCOUNTS_PATH" python3 - <<'PY'
+import json
+import os
+import sys
 
-# --- Extract URL and token with python3 ---
-# Use `if !` form to bypass set -e cleanly (no set +e/set -e toggle dance).
-# The python heredoc reads the accounts file, looks up the cluster by id,
-# and extracts url and token. It exits non-zero on any missing or null/empty value.
-if ! read -r ARGOCD_BASE_URL ARGOCD_API_TOKEN < <(
-  python3 - <<'PY'
-import json, os, sys
-accounts_file = os.environ["ACCOUNTS_FILE"]
-cluster_id = os.environ["ARGOCD_CLUSTER_ID"]
+path = os.environ["ACCOUNTS_PATH"]
+cluster_id = os.environ["ARGOCD_CLUSTER"]
+
 try:
-    with open(accounts_file) as f:
-        d = json.load(f)
+    with open(path) as fh:
+        data = json.load(fh)
 except Exception as e:
-    sys.stderr.write(f'Error: failed to read {accounts_file} ({type(e).__name__})\n')
-    sys.exit(1)
-if not isinstance(d, dict) or cluster_id not in d:
-    sys.stderr.write(f'Error: ArgoCD cluster "{cluster_id}" not found in {accounts_file}, or its url/token is missing.\n')
-    sys.exit(1)
-entry = d[cluster_id]
+    # SECURITY: print only the exception type -- JSON errors can quote the
+    # offending text, which may contain a token.
+    sys.exit(f"Error: failed to read {path} ({type(e).__name__})")
+
+if not isinstance(data, dict):
+    sys.exit(f"Error: {path} must be a flat JSON object mapping cluster ids to {{url, token}}")
+
+entry = data.get(cluster_id)
+if entry is None:
+    sys.exit(f"Error: ArgoCD cluster '{cluster_id}' not found in {path} -- re-run install.sh after editing the file")
 if not isinstance(entry, dict):
-    sys.stderr.write(f'Error: ArgoCD cluster "{cluster_id}" not found in {accounts_file}, or its url/token is missing.\n')
-    sys.exit(1)
+    sys.exit(f"Error: ArgoCD cluster '{cluster_id}' in {path} must be an object with url and token")
+
 url = entry.get("url")
 token = entry.get("token")
-if not url or not token:
-    sys.stderr.write(f'Error: ArgoCD cluster "{cluster_id}" not found in {accounts_file}, or its url/token is missing.\n')
-    sys.exit(1)
-print(url, token)
+if not isinstance(url, str) or "\n" in url.strip() or not url.strip().lower().startswith(("http://", "https://")):
+    sys.exit(f"Error: ArgoCD cluster '{cluster_id}' has no valid http(s) url in {path}")
+# SECURITY: identify the offending entry by id only, never by value.
+if not isinstance(token, str) or not token.strip() or "\n" in token.strip():
+    sys.exit(f"Error: ArgoCD cluster '{cluster_id}' has no valid token in {path}")
+print(url.strip())
+print(token.strip())
 PY
-); then
+)"; then
   exit 1
 fi
 
-# Belt-and-suspenders: catch null/empty values output by python (should not happen; python validates above)
+ARGOCD_BASE_URL="${resolved%%$'\n'*}"
+ARGOCD_API_TOKEN="${resolved#*$'\n'}"
+unset resolved
+
+# Belt-and-suspenders: the python lookup validates both, but never launch with
+# an empty credential.
 if [[ -z "$ARGOCD_BASE_URL" || -z "$ARGOCD_API_TOKEN" ]]; then
-  printf 'Error: ArgoCD cluster "%s" not found in %s, or its url/token is missing.\n' "$ARGOCD_CLUSTER_ID" "$ACCOUNTS_FILE" >&2
+  echo "Error: resolved ArgoCD url or token is empty (this should not happen)" >&2
   exit 1
 fi
 
-# --- Validate URL shape ---
-if [[ ! "$ARGOCD_BASE_URL" =~ ^https?:// ]]; then
-  printf 'Error: ArgoCD url for cluster "%s" must start with http:// or https://\n' "$ARGOCD_CLUSTER_ID" >&2
-  exit 1
-fi
+echo "ArgoCD MCP: cluster '$ARGOCD_CLUSTER' -> $ARGOCD_BASE_URL (read-only)" >&2
 
-# --- Export and exec ---
 export ARGOCD_BASE_URL ARGOCD_API_TOKEN
-echo "ArgoCD MCP: cluster '$ARGOCD_CLUSTER_ID' (${ARGOCD_BASE_URL})" >&2
+export MCP_READ_ONLY=true
 exec npx --yes argocd-mcp@0.9.0 stdio "$@"

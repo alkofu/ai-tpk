@@ -23,16 +23,6 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it('returns correct line for argocd with clusterId', () => {
-    const config: LauncherConfig = {
-      selectedMcps: ['argocd'],
-      argocd: { clusterId: 'prod-eu' },
-    };
-    assert.deepStrictEqual(formatSummaryLines(config), [
-      'ArgoCD: cluster prod-eu',
-    ]);
-  });
-
   it('returns correct line for gcp-observability with project', () => {
     const config: LauncherConfig = {
       selectedMcps: ['gcp-observability'],
@@ -65,13 +55,6 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it("returns '(not yet configured)' when argocd is in selectedMcps but sub-object is missing", () => {
-    const config: LauncherConfig = { selectedMcps: ['argocd'] };
-    assert.deepStrictEqual(formatSummaryLines(config), [
-      'ArgoCD: (not yet configured)',
-    ]);
-  });
-
   it("returns '(not yet configured)' when cloudwatch is in selectedMcps but sub-object is missing", () => {
     const config: LauncherConfig = { selectedMcps: ['cloudwatch'] };
     assert.deepStrictEqual(formatSummaryLines(config), [
@@ -93,19 +76,17 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it('returns four correct lines when all four MCPs are configured', () => {
+  it('returns three correct lines when all three MCPs are configured', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['cloudwatch', 'gcp-observability', 'kubernetes', 'argocd'],
+      selectedMcps: ['cloudwatch', 'gcp-observability', 'kubernetes'],
       cloudwatch: { profile: 'prod' },
       gcpObservability: { project: 'gcp-prod' },
       kubernetes: { context: 'prod-cluster' },
-      argocd: { clusterId: 'prod-us' },
     };
     assert.deepStrictEqual(formatSummaryLines(config), [
       'CloudWatch: profile prod',
       'GCP Observability: project gcp-prod',
       'Kubernetes: context prod-cluster',
-      'ArgoCD: cluster prod-us',
     ]);
   });
 

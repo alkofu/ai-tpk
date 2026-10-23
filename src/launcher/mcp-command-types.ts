@@ -3,7 +3,7 @@
  *
  * This file is intentionally kept separate from mcp-command.ts to break the
  * circular dependency that would arise if the command implementations (e.g.,
- * kubernetes.ts) imported StaleResourceError directly from mcp-command.ts, which
+ * cloudwatch.ts) imported StaleResourceError directly from mcp-command.ts, which
  * in turn imports the command instances from those same files.
  *
  * Consumers of the public API import from mcp-command.ts, which re-exports

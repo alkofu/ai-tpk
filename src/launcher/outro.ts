@@ -19,7 +19,7 @@ export function buildOutroLines(
     }
   }
 
-  // Skip lines, in the same canonical order: CloudWatch → GCP → Kubernetes.
+  // Skip lines, in the same canonical order: CloudWatch → GCP.
   for (const cmd of registry) {
     const line = cmd.buildOutroSkipLine(effectiveSkipped[cmd.skippedKey]);
     if (line !== null) lines.push(line);

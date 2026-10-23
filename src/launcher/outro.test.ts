@@ -4,11 +4,10 @@ import { buildOutroLines } from './outro.js';
 import type { ResolvedConfig, SkippedMap } from './types.js';
 
 describe('buildOutroLines', () => {
-  it('(a) returns three success lines in canonical order when all MCPs are configured and none are skipped', () => {
+  it('(a) returns two success lines in canonical order when all MCPs are configured and none are skipped', () => {
     const resolved: ResolvedConfig = {
       cloudwatch: { profile: 'my-aws-profile' },
       gcpObservability: { project: 'my-gcp-project' },
-      kubernetes: { context: 'prod-us-east' },
     };
     const effectiveSkipped: SkippedMap = {};
 
@@ -17,16 +16,14 @@ describe('buildOutroLines', () => {
     assert.deepStrictEqual(lines, [
       'CloudWatch: my-aws-profile',
       'GCP Observability: my-gcp-project',
-      'Kubernetes: prod-us-east',
     ]);
   });
 
-  it('(b) returns three skip lines in canonical order when all MCPs are skipped via loader failure', () => {
+  it('(b) returns two skip lines in canonical order when all MCPs are skipped via loader failure', () => {
     const resolved: ResolvedConfig = {};
     const effectiveSkipped: SkippedMap = {
       cloudwatch: 'loader-failed',
       gcp: 'loader-failed',
-      kubernetes: 'loader-failed',
     };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
@@ -34,55 +31,52 @@ describe('buildOutroLines', () => {
     assert.deepStrictEqual(lines, [
       'CloudWatch: skipped (profiles unavailable)',
       'GCP Observability: skipped (auth unavailable)',
-      'Kubernetes: skipped (contexts unavailable)',
     ]);
   });
 
-  it('(c) returns only the Kubernetes skip line when only Kubernetes is skipped via loader failure', () => {
+  it('(c) returns only the GCP Observability skip line when only GCP is skipped via loader failure', () => {
     const resolved: ResolvedConfig = {};
-    const effectiveSkipped: SkippedMap = { kubernetes: 'loader-failed' };
+    const effectiveSkipped: SkippedMap = { gcp: 'loader-failed' };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
     assert.deepStrictEqual(lines, [
-      'Kubernetes: skipped (contexts unavailable)',
+      'GCP Observability: skipped (auth unavailable)',
     ]);
   });
 
-  it('(d) emits only the switch-failed skip line even when resolved.kubernetes is set (regression test for F-1)', () => {
+  it('(d) emits only the skip line even when resolved.cloudwatch is set (regression test for F-1)', () => {
     const resolved: ResolvedConfig = {
-      kubernetes: { context: 'prod-us-east' },
-    };
-    const effectiveSkipped: SkippedMap = { kubernetes: 'switch-failed' };
-
-    const lines = buildOutroLines(resolved, effectiveSkipped);
-
-    assert.deepStrictEqual(lines, [
-      'Kubernetes: skipped (context switch failed)',
-    ]);
-    // Critically: no success line for the set kubernetes context must appear.
-    assert.ok(
-      !lines.some((l) => l.startsWith('Kubernetes: prod-us-east')),
-      'must not emit a success line alongside the skip line',
-    );
-  });
-
-  it('(e) emits all success lines first then all skip lines, both in canonical MCP order', () => {
-    // buildOutroLines emits all success lines first (canonical order), then all
-    // skip lines (same canonical order). CloudWatch has no resolved value here
-    // so it only appears as a skip line — after the two success lines.
-    const resolved: ResolvedConfig = {
-      gcpObservability: { project: 'my-gcp-project' },
-      kubernetes: { context: 'prod-us-east' },
+      cloudwatch: { profile: 'my-aws-profile' },
     };
     const effectiveSkipped: SkippedMap = { cloudwatch: 'loader-failed' };
 
     const lines = buildOutroLines(resolved, effectiveSkipped);
 
     assert.deepStrictEqual(lines, [
-      'GCP Observability: my-gcp-project',
-      'Kubernetes: prod-us-east',
       'CloudWatch: skipped (profiles unavailable)',
+    ]);
+    // Critically: no success line for the set cloudwatch profile must appear.
+    assert.ok(
+      !lines.some((l) => l.startsWith('CloudWatch: my-aws-profile')),
+      'must not emit a success line alongside the skip line',
+    );
+  });
+
+  it('(e) emits success lines first then skip lines, both in canonical MCP order', () => {
+    // buildOutroLines emits all success lines first (canonical order), then all
+    // skip lines (same canonical order). GCP has no resolved value here so it
+    // only appears as a skip line — after the CloudWatch success line.
+    const resolved: ResolvedConfig = {
+      cloudwatch: { profile: 'my-aws-profile' },
+    };
+    const effectiveSkipped: SkippedMap = { gcp: 'loader-failed' };
+
+    const lines = buildOutroLines(resolved, effectiveSkipped);
+
+    assert.deepStrictEqual(lines, [
+      'CloudWatch: my-aws-profile',
+      'GCP Observability: skipped (auth unavailable)',
     ]);
   });
 

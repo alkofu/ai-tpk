@@ -29,11 +29,9 @@ import type { ResolvedConfig, SkippedMap, LauncherConfig } from './types.js';
 const dotfileDir = path.join(os.homedir(), '.claude');
 const dotfilePath = path.join(dotfileDir, '.current-aws-profile');
 const gcpDotfilePath = path.join(dotfileDir, '.current-gcp-project');
-const kubeDotfilePath = path.join(dotfileDir, '.current-kube-context');
 
 let priorDotfileContent: string | null = null;
 let priorGcpDotfileContent: string | null = null;
-let priorKubeDotfileContent: string | null = null;
 
 before(() => {
   if (fs.existsSync(dotfilePath)) {
@@ -41,9 +39,6 @@ before(() => {
   }
   if (fs.existsSync(gcpDotfilePath)) {
     priorGcpDotfileContent = fs.readFileSync(gcpDotfilePath, 'utf8');
-  }
-  if (fs.existsSync(kubeDotfilePath)) {
-    priorKubeDotfileContent = fs.readFileSync(kubeDotfilePath, 'utf8');
   }
 });
 
@@ -67,16 +62,6 @@ after(() => {
   } else if (fs.existsSync(gcpDotfilePath)) {
     fs.rmSync(gcpDotfilePath);
   }
-
-  if (priorKubeDotfileContent !== null) {
-    fs.mkdirSync(dotfileDir, { recursive: true });
-    fs.writeFileSync(kubeDotfilePath, priorKubeDotfileContent, {
-      mode: 0o600,
-      encoding: 'utf8',
-    });
-  } else if (fs.existsSync(kubeDotfilePath)) {
-    fs.rmSync(kubeDotfilePath);
-  }
 });
 
 // ---------------------------------------------------------------------------
@@ -86,7 +71,6 @@ after(() => {
 const allMcpsResolved: ResolvedConfig = {
   cloudwatch: { profile: 'my-dev-profile' },
   gcpObservability: { project: 'my-gcp-project' },
-  kubernetes: { context: 'my-cluster' },
 };
 
 // ---------------------------------------------------------------------------
@@ -146,11 +130,11 @@ function formatSummaryLinesViaRegistry(config: LauncherConfig): string[] {
 // ---------------------------------------------------------------------------
 
 describe('registry', () => {
-  it('contains exactly three entries in canonical order (no grafana or argocd: installer-managed)', () => {
-    assert.strictEqual(registry.length, 3);
+  it('contains exactly two entries in canonical order (grafana, argocd and kubernetes are not launcher-managed)', () => {
+    assert.strictEqual(registry.length, 2);
     assert.deepStrictEqual(
       registry.map((c) => c.id),
-      ['cloudwatch', 'gcp-observability', 'kubernetes'],
+      ['cloudwatch', 'gcp-observability'],
     );
   });
 });
@@ -166,9 +150,9 @@ describe('registry emitEnvVars: behavioural equivalence with buildEnvVars', () =
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it('Kubernetes only: registry produces same env map as buildEnvVars', () => {
+  it('GCP Observability only: registry produces same env map as buildEnvVars', () => {
     const resolved: ResolvedConfig = {
-      kubernetes: { context: 'my-cluster' },
+      gcpObservability: { project: 'my-gcp-project' },
     };
     const oracle = buildEnvVars(resolved);
     const actual = buildEnvVarsViaRegistry(resolved);
@@ -213,7 +197,6 @@ describe('registry buildOutroLines: behavioural equivalence with buildOutroLines
     const effectiveSkipped: SkippedMap = {
       cloudwatch: 'loader-failed',
       gcp: 'loader-failed',
-      kubernetes: 'loader-failed',
     };
     const oracle = buildOutroLines(resolved, effectiveSkipped);
     const actual = buildOutroLinesViaRegistry(resolved, effectiveSkipped);
@@ -222,10 +205,9 @@ describe('registry buildOutroLines: behavioural equivalence with buildOutroLines
 
   it('(e) success lines before skip lines in canonical order: same as buildOutroLines', () => {
     const resolved: ResolvedConfig = {
-      gcpObservability: { project: 'my-gcp-project' },
-      kubernetes: { context: 'prod-us-east' },
+      cloudwatch: { profile: 'my-aws-profile' },
     };
-    const effectiveSkipped: SkippedMap = { cloudwatch: 'loader-failed' };
+    const effectiveSkipped: SkippedMap = { gcp: 'loader-failed' };
     const oracle = buildOutroLines(resolved, effectiveSkipped);
     const actual = buildOutroLinesViaRegistry(resolved, effectiveSkipped);
     assert.deepStrictEqual(actual, oracle);
@@ -243,9 +225,9 @@ describe('registry buildOutroLines: behavioural equivalence with buildOutroLines
 
   it('(g) effectiveSkipped=false does not suppress success line: same as buildOutroLines', () => {
     const resolved: ResolvedConfig = {
-      kubernetes: { context: 'prod-us-east' },
+      gcpObservability: { project: 'my-gcp-project' },
     };
-    const effectiveSkipped: SkippedMap = { kubernetes: false };
+    const effectiveSkipped: SkippedMap = { gcp: false };
     const oracle = buildOutroLines(resolved, effectiveSkipped);
     const actual = buildOutroLinesViaRegistry(resolved, effectiveSkipped);
     assert.deepStrictEqual(actual, oracle);
@@ -264,12 +246,11 @@ describe('registry buildSummaryLine: behavioural equivalence with formatSummaryL
     assert.deepStrictEqual(actual, oracle);
   });
 
-  it('all three MCPs configured: same lines as formatSummaryLines', () => {
+  it('both MCPs configured: same lines as formatSummaryLines', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['cloudwatch', 'gcp-observability', 'kubernetes'],
+      selectedMcps: ['cloudwatch', 'gcp-observability'],
       cloudwatch: { profile: 'prod' },
       gcpObservability: { project: 'gcp-prod' },
-      kubernetes: { context: 'prod-cluster' },
     };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
@@ -294,7 +275,7 @@ describe('registry buildSummaryLine: behavioural equivalence with formatSummaryL
   });
 
   it("MCP in selectedMcps with missing sub-object: same '(not yet configured)' line as formatSummaryLines", () => {
-    const config: LauncherConfig = { selectedMcps: ['kubernetes'] };
+    const config: LauncherConfig = { selectedMcps: ['gcp-observability'] };
     const oracle = formatSummaryLines(config);
     const actual = formatSummaryLinesViaRegistry(config);
     assert.deepStrictEqual(actual, oracle);

@@ -9,20 +9,14 @@ export interface GcpObservabilityConfig {
   project: string;
 }
 
-export interface KubernetesConfig {
-  context: string;
-}
-
 export interface ResolvedConfig {
   cloudwatch?: CloudWatchConfig;
   gcpObservability?: GcpObservabilityConfig;
-  kubernetes?: KubernetesConfig;
 }
 
 export type SkippedMap = {
   cloudwatch?: false | 'loader-failed';
   gcp?: false | 'loader-failed';
-  kubernetes?: false | 'loader-failed' | 'switch-failed';
 };
 
 export interface LauncherConfig {
@@ -33,8 +27,5 @@ export interface LauncherConfig {
   };
   gcpObservability?: {
     project: string;
-  };
-  kubernetes?: {
-    context: string;
   };
 }

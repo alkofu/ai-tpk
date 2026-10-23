@@ -8,29 +8,35 @@ import type { LauncherConfig } from './types.js';
 // ---------------------------------------------------------------------------
 
 describe('withKnownMcpsOnly', () => {
-  it('drops saved grafana and argocd selections, which tpk no longer manages', () => {
+  it('drops saved grafana, argocd and kubernetes selections, which tpk no longer manages', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana', 'cloudwatch', 'argocd', 'kubernetes'],
+      selectedMcps: [
+        'grafana',
+        'cloudwatch',
+        'argocd',
+        'kubernetes',
+        'gcp-observability',
+      ],
       cloudwatch: { profile: 'prod' },
     };
     assert.deepStrictEqual(withKnownMcpsOnly(config).selectedMcps, [
       'cloudwatch',
-      'kubernetes',
+      'gcp-observability',
     ]);
   });
 
   it('keeps every other field and does not mutate its input', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana', 'kubernetes'],
+      selectedMcps: ['grafana', 'kubernetes', 'cloudwatch'],
       agent: 'default',
-      kubernetes: { context: 'prod' },
+      cloudwatch: { profile: 'prod' },
     };
     const copy = JSON.parse(JSON.stringify(config));
     const result = withKnownMcpsOnly(config);
     assert.deepStrictEqual(result, {
-      selectedMcps: ['kubernetes'],
+      selectedMcps: ['cloudwatch'],
       agent: 'default',
-      kubernetes: { context: 'prod' },
+      cloudwatch: { profile: 'prod' },
     });
     assert.deepStrictEqual(config, copy);
   });
@@ -67,49 +73,38 @@ describe('buildResolvedFromSaved', () => {
     });
   });
 
-  it('returns { kubernetes: { context } } for kubernetes-only config', () => {
-    const config: LauncherConfig = {
-      selectedMcps: ['kubernetes'],
-      kubernetes: { context: 'staging-cluster' },
-    };
-    const result = buildResolvedFromSaved(config);
-    assert.deepStrictEqual(result, {
-      kubernetes: { context: 'staging-cluster' },
-    });
-  });
-
   it('skips MCPs whose config sub-object is missing', () => {
     const config: LauncherConfig = {
       // cloudwatch in selectedMcps but no cloudwatch sub-object
-      selectedMcps: ['cloudwatch', 'kubernetes'],
-      kubernetes: { context: 'dev-cluster' },
+      selectedMcps: ['cloudwatch', 'gcp-observability'],
+      gcpObservability: { project: 'gcp-dev' },
     };
     const result = buildResolvedFromSaved(config);
-    // cloudwatch skipped, kubernetes included
-    assert.deepStrictEqual(result, { kubernetes: { context: 'dev-cluster' } });
+    // cloudwatch skipped, gcp-observability included
+    assert.deepStrictEqual(result, {
+      gcpObservability: { project: 'gcp-dev' },
+    });
   });
 
-  it('ignores saved grafana and argocd selections instead of failing to resolve', () => {
+  it('ignores saved grafana, argocd and kubernetes selections instead of failing to resolve', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['grafana', 'argocd', 'kubernetes'],
-      kubernetes: { context: 'dev-cluster' },
+      selectedMcps: ['grafana', 'argocd', 'kubernetes', 'cloudwatch'],
+      cloudwatch: { profile: 'dev' },
     };
     const result = buildResolvedFromSaved(config);
-    assert.deepStrictEqual(result, { kubernetes: { context: 'dev-cluster' } });
+    assert.deepStrictEqual(result, { cloudwatch: { profile: 'dev' } });
   });
 
   it('combines multiple MCPs in a single resolved config', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['cloudwatch', 'gcp-observability', 'kubernetes'],
+      selectedMcps: ['cloudwatch', 'gcp-observability'],
       cloudwatch: { profile: 'prod' },
       gcpObservability: { project: 'gcp-prod' },
-      kubernetes: { context: 'prod-cluster' },
     };
     const result = buildResolvedFromSaved(config);
     assert.deepStrictEqual(result, {
       cloudwatch: { profile: 'prod' },
       gcpObservability: { project: 'gcp-prod' },
-      kubernetes: { context: 'prod-cluster' },
     });
   });
 });

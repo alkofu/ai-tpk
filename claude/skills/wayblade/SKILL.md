@@ -24,6 +24,10 @@ A single continuous root context owns the full delivery contract end-to-end: **c
 
 **Topology-drift escape valve (routing by topology, not task size):** if mid-stream the work turns out to be *multiple independent streams*, or it *needs formal planner/implementer separation*, or it *needs the resumable audit lifecycle*, **STOP and recommend starting a fresh Dungeon Master session.** This is a routing decision about the shape of the work, not its size — a large-but-single-stream contract stays in Wayblade; a small-but-genuinely-multi-stream one does not.
 
+## Clarify + plan
+
+When the contract is ambiguous, multi-step, or has more than one viable approach, invoke the `planning` skill and follow it — research before asking, one question at a time, scope confirmation, atomic steps with behavioral acceptance criteria. Keep the plan in the conversation; do not write it to `~/.ai-tpk/plans/` (that is DM's plan-file lifecycle). For a trivial, unambiguous contract, skip straight to implementation.
+
 ## Implement + debug
 
 For the implement and debug steps, invoke the `implementation-discipline` skill and follow it — minimal diff, pattern matching, incremental verification, and its three-attempt escalation limit (escalate to the user). Do not reproduce its contents here.

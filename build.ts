@@ -9,7 +9,12 @@ await Promise.all([
     target: 'node24',
     outfile: 'dist/installer.js',
     banner: {
-      js: '#!/usr/bin/env node',
+      // Bundled CJS deps (e.g. yaml) call require(), which ESM lacks.
+      js: [
+        '#!/usr/bin/env node',
+        "import { createRequire } from 'node:module';",
+        'const require = createRequire(import.meta.url);',
+      ].join('\n'),
     },
   }),
   esbuild.build({

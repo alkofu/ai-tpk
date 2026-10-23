@@ -32,6 +32,12 @@ When the contract is ambiguous, multi-step, or has more than one viable approach
 
 For the implement and debug steps, invoke the `implementation-discipline` skill and follow it — minimal diff, pattern matching, incremental verification, and its three-attempt escalation limit (escalate to the user). Do not reproduce its contents here.
 
+When a failure has no known cause (an open-ended "why is this broken?" rather than a failing test with an obvious fix), invoke the `investigation` skill first and agree on the root cause before changing code.
+
+## Docs
+
+For the docs step, invoke the `docs-writing` skill: update user-facing docs the change made stale or incomplete, in the same PR.
+
 ## Constitution handling
 
 Wayblade reads the target repo's `.claude/constitution.md` directly (root session, real cwd) — there is no heavyweight preflight. Constitution injection happens at exactly **one** point: the Ruinor delegation handoff.

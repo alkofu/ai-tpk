@@ -550,7 +550,7 @@ export function registerGithubAccounts(
  * If a future claude release moves user-scope MCP state to a different key, update
  * the path and re-record the verified version above. Do NOT add a sidecar fallback
  * (~/.claude/.mcp-github-keys.json) -- the direct-read path is the only supported
- * mechanism (per plan F-13).
+ * mechanism.
  *
  * @param desiredKeys - The set of account keys currently desired.
  * @param homedir - Injectable for testing; defaults to os.homedir().

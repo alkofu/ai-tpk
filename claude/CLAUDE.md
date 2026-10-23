@@ -29,6 +29,10 @@ All Bash tool usage is governed by `claude/references/bash-style.md`. The rules 
 - If a simpler approach exists than what was requested, say so before proceeding.
 - When you are confused or lack sufficient context, stop and ask. Do not guess.
 
+## Code Comments
+
+Comments describe the code as it is now, never the change that produced it. No "now uses X", "previously Y", "no longer", "changed from", or "added to fix #123" — that history belongs in the commit message and PR description. Full rule: `~/.claude/references/implementation-standards.md`.
+
 ## Drafting GitHub Issues
 
 The `/draft-issue` command runs an advisory-pipeline workflow that turns a short feature description into a filed GitHub issue, optionally clarifying scope through DM-direct Q&A and using `gh issue create` (delegated to Bitsmith) to file the issue.

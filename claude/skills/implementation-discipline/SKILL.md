@@ -8,7 +8,7 @@ description: >
 
 Use this skill when turning a task, issue, or plan into working code. It is caller-agnostic: the same discipline applies whether you are the main session, running inside `/wayblade`, or the Bitsmith agent executing a Dungeon Master plan. Where this skill says "the requester", read it as whoever assigned the work — the user in a direct session, or the delegating agent.
 
-The canonical statements of Minimal Diff, No Over-Engineering (YAGNI), and Test-First live in `claude/references/implementation-standards.md`. This skill applies them; it does not restate them.
+The canonical statements of Minimal Diff, No Over-Engineering (YAGNI), Test-First, and Code Comments Describe the Current State live in `claude/references/implementation-standards.md`. This skill applies them; it does not restate them.
 
 ## Scope
 
@@ -38,6 +38,7 @@ A change is done only when it meets every point:
 5. **No dead weight** — debug statements, temporary scaffolding, TODO stubs, and console noise removed.
 6. **No unnecessary abstractions** — if the codebase handles something directly, handle it directly.
 7. **Test failures fixed in production code** — fix the source, not the test, unless the test itself is demonstrably wrong.
+8. **Comments describe the current state** — no narration of what changed or what came before; that goes in the commit and PR.
 
 ## Protocol
 
@@ -99,6 +100,7 @@ Before declaring completion:
 - Run the full (or relevant) test suite fresh
 - Confirm zero diagnostics errors across all modified files
 - Confirm debug code and scaffolding are removed
+- Scan every comment added or edited in the diff and rewrite any that narrate the change ("now", "previously", "no longer", "changed to", "added for")
 - Confirm the diff is as small as it can be while remaining correct
 - Confirm every acceptance criterion of the task or plan is satisfied
 - Self-check against common review criteria: (1) error paths have explicit handling, (2) boundary conditions are addressed, (3) public interfaces validate their input

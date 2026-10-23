@@ -58,7 +58,7 @@ fi
 # if!-guarded form propagates the python exit status under set -e. PyYAML is
 # pinned so the lookup never pulls a new, unreviewed release.
 if ! resolved="$(
-  CLUSTERS_PATH="$CLUSTERS_PATH" uv run --quiet --no-project --with 'PyYAML==6.0.2' python3 - <<'PY'
+  CLUSTERS_PATH="$CLUSTERS_PATH" uv run --quiet --no-project --with 'PyYAML==6.0.3' python3 - <<'PY'
 import os
 import sys
 

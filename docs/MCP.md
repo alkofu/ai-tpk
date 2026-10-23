@@ -8,8 +8,8 @@ The installer automatically configures user-scoped MCP servers in `~/.claude.jso
 
 Currently configured servers:
 
-- **Kubernetes MCP Server** (`mcp-server-kubernetes@3.4.0`) — Read-only Kubernetes cluster access via `~/.kube/config`. Skips setup gracefully if that file does not exist.
-- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.0.19`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `src/mcp/wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist. The wrapper constrains the transitive `mcp` SDK to `<2.0` (`uvx --with 'mcp<2.0' ...`) because the pinned server version imports `mcp.server.fastmcp`, which was removed in `mcp>=2.0`; without the cap, `uv` resolves `mcp==2.0.0` and the server crashes at import.
+- **Kubernetes MCP Server** (`mcp-server-kubernetes@4.1.9`) — Read-only Kubernetes cluster access via `~/.kube/config`. Skips setup gracefully if that file does not exist.
+- **AWS CloudWatch MCP Server** (`awslabs.cloudwatch-mcp-server@0.3.1`) — CloudWatch Metrics, Alarms, and Logs access via `~/.aws` credentials. Uses `src/mcp/wrappers/mcp-cloudwatch.sh` for dynamic AWS profile selection (set with `/set-aws-profile`). Requires `uvx`. Skips setup gracefully if `~/.aws/credentials` does not exist.
 - **Grafana MCP Servers** (`mcp-grafana`) — Read-only Grafana dashboards, datasources, Prometheus, Loki, alerting, incident, and on-call access, with **one always-on server per Grafana cluster**. Define your clusters in `~/.config/tpk/grafana-clusters.yaml` (schema in [docs/TPK.md § Grafana Configuration](/docs/TPK.md#grafana-configuration)) and **set its mode to `0600`: `chmod 600 ~/.config/tpk/grafana-clusters.yaml`**. The wrapper refuses to read the file at MCP-server boot if the mode is broader than `0600`, and the installer prints a warning.
 
   Every cluster with a non-empty `url` and `viewer_token` becomes a registered MCP server (`grafana-aws-prd-use1`, …) and a tool namespace (`mcp__grafana-aws-prd-use1__*`). Clusters without a `viewer_token` are skipped with a warning. Cluster ids must match `^[a-zA-Z0-9-]+$` — letters, digits, and hyphens only, because the id becomes part of tool names, where Claude Code rewrites `.` and treats `__` as a separator. `editor_token` is not used: there is no write access through MCP.
@@ -34,7 +34,7 @@ Currently configured servers:
   The wrapper invokes **`pnpx`** (pnpm's equivalent of the npm runner) because this repository uses pnpm. Users without pnpm installed must install it (<https://pnpm.io/installation>) before GitHub MCP servers can spawn. The wrapper pins `@modelcontextprotocol/server-github@2025.4.8` to protect against any future "latest" publish on the abandoned package name (archived 2025-05-29; the Docker-based successor `ghcr.io/github/github-mcp-server` is not used here to avoid a Docker dependency).
 
   If `~/.config/tpk/github-pats.json` is missing or empty (`{}`) at install time, GitHub MCP setup is skipped with a yellow warning and installation continues. On each run, the installer also removes the legacy `github` (no suffix) registration, removes stale `github-<key>` registrations, and removes stale `mcp__github-<key>__*` allow-list entries for keys no longer present in the PATs file.
-- **ArgoCD MCP Server** (`argocd-mcp@0.5.0`) — Multi-cluster ArgoCD access via `~/.config/tpk/argocd-accounts.json`. Define your clusters as a JSON object mapping cluster names to `{ url, token }` pairs:
+- **ArgoCD MCP Server** (`argocd-mcp@0.9.0`) — Multi-cluster ArgoCD access via `~/.config/tpk/argocd-accounts.json`. Define your clusters as a JSON object mapping cluster names to `{ url, token }` pairs:
 
   ```json
   { "prod": { "url": "https://argocd.prod.example.com", "token": "..." }, "staging": { "url": "https://argocd.staging.example.com", "token": "..." } }

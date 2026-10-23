@@ -22,4 +22,4 @@ Applies to: Bitsmith (implementation), Pathfinder (annotates test-first steps in
 
 ## Applies To
 
-The `implementation-discipline` skill (applies these norms in any session; preloaded into Bitsmith), Bitsmith (implements these norms), Pathfinder (annotates test-first steps), Ruinor (reviews against these norms), Knotcutter (reviews against these norms with specialist depth).
+The `implementation-discipline` skill (applies these norms in any session; preloaded into Bitsmith), Bitsmith (implements these norms), the `planning` skill and Pathfinder (annotate test-first steps), Ruinor (reviews against these norms), Knotcutter (reviews against these norms with specialist depth).

@@ -12,13 +12,11 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -51,7 +49,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Install shfmt
-        run: curl -sSfL https://github.com/mvdan/sh/releases/download/v3.8.0/shfmt_v3.8.0_linux_amd64 -o /usr/local/bin/shfmt && chmod +x /usr/local/bin/shfmt
+        run: curl -sSfL https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64 -o /usr/local/bin/shfmt && chmod +x /usr/local/bin/shfmt
 
       - name: Lint shell
         run: pnpm run lint:sh
@@ -71,12 +69,12 @@ jobs:
       run:
         working-directory: dungeon
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
-          version: "0.11.7"
+          version: "0.13.5"
 
       - name: Set up Python
         run: uv python install 3.12

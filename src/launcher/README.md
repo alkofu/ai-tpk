@@ -48,7 +48,7 @@ Launches Claude with the given string as its first prompt. Requires `--skip` (th
 ◆  Current Configuration
 │  Agent: Dungeon Master
 │  CloudWatch: profile my-aws-profile
-│  Kubernetes: context prod-cluster
+│  GCP Observability: project my-gcp-project
 └
 ◆  What would you like to do?
 │  ● Launch  (start Claude with current config)
@@ -86,7 +86,7 @@ tpk --skip <initial-message>
 
 ## Testing
 
-Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`agent.test.ts`, `argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `gcp-observability.test.ts`, `kubernetes.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
+Tests are colocated with source as `*.test.ts` files. Non-MCP tests (`agent.test.ts`, `argv.test.ts`, `env.test.ts`, `resolve.test.ts`, `outro.test.ts`, `summary.test.ts`, `config.test.ts`, `utils.test.ts`, `mcp-command.test.ts`) live in `src/launcher/`. MCP-specific tests (`cloudwatch.test.ts`, `gcp-observability.test.ts`, `initialValue.test.ts`) live in `src/launcher/mcp/`. Run all tests (installer + launcher) with:
 
 ```bash
 pnpm test
@@ -98,7 +98,6 @@ The launcher constructs environment variables based on user selections:
 
 - **CloudWatch:** Writes the selected AWS profile to `~/.claude/.current-aws-profile` (shared with the CloudWatch MCP wrapper).
 - **GCP Observability:** Sets `GOOGLE_CLOUD_PROJECT` in the environment for `google-auth-library` project ID resolution, and writes the project ID to `~/.claude/.current-gcp-project` (shared with `src/mcp/wrappers/mcp-gcp-observability.sh`). Note: `GOOGLE_CLOUD_PROJECT` is read by the auth library's `getProjectId()` but does **not** auto-populate tool call parameters — users still need to specify `resourceNames`, `parent`, `name`, or `projectId` in each tool call.
-- **Kubernetes:** Sets `K8S_CONTEXT` to the selected context name, which takes priority over the active context in `~/.kube/config` when other kubeconfig env vars are present. Also writes `~/.claude/.current-kube-context`.
 
 ## Persistence Format
 
@@ -110,7 +109,7 @@ The launcher uses the GoF Command pattern to eliminate per-MCP branching. Each M
 
 ### McpCommand pattern
 
-`mcp-command-types.ts` defines the `McpCommand` interface and the `StaleResourceError` class. Each MCP module under `mcp/` exports a command instance implementing that interface. `mcp-command.ts` imports those three instances and exports the `registry: McpCommand[]` array in canonical order (CloudWatch → GCP Observability → Kubernetes). It re-exports `McpCommand` and `StaleResourceError` as the public entry point for consumers; command implementations import from `mcp-command-types.ts` directly to avoid a circular dependency.
+`mcp-command-types.ts` defines the `McpCommand` interface and the `StaleResourceError` class. Each MCP module under `mcp/` exports a command instance implementing that interface. `mcp-command.ts` imports those two instances and exports the `registry: McpCommand[]` array in canonical order (CloudWatch → GCP Observability). It re-exports `McpCommand` and `StaleResourceError` as the public entry point for consumers; command implementations import from `mcp-command-types.ts` directly to avoid a circular dependency.
 
 The `McpCommand` interface captures every per-MCP responsibility:
 
@@ -129,29 +128,29 @@ The `McpCommand` interface captures every per-MCP responsibility:
 
 ### Orchestration files
 
-| File             | Responsibility                                                                                                                                                                                                                                                                                     |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `main.ts`        | Entry point. Parses argv via `argv.ts` and short-circuits to a saved-config launch when `--skip` is present. Configure flow iterates `registry` to call `configureInteractive` for each selected MCP. Calls `applyKubernetesContextSwitch` explicitly after `saveConfig` and before `buildEnvVars` |
-| `argv.ts`        | `parseArgs(argv)` — pure lexical parser; returns `{ skip, initialMessage }`. Throws `UnknownFlagError` for unknown flags and `TooManyPositionalsError` for more than one positional.                                                                                                               |
-| `claude-args.ts` | `buildClaudeArgs(agent, initialMessage)` — pure helper that produces the `claude` spawn argv (`--agent dungeonmaster` only for the Dungeon Master). Single source of truth for the spawn-arg shape; called from `launchClaude` in `main.ts`.                                                       |
-| `agent.ts`       | Agent labels, `resolveSavedAgent` (falls back to Dungeon Master for missing/unknown values), and `formatAgentLine` for the summary screen                                                                                                                                                          |
-| `resolve.ts`     | `buildResolvedFromSaved` — iterates `config.selectedMcps`, calls `cmd.resolveFromSaved`, catches `StaleResourceError`; `withKnownMcpsOnly` — drops saved MCP ids no longer in the registry                                                                                                         |
-| `env.ts`         | `buildEnvVars` — iterates `registry`, calls `cmd.emitEnvVars`                                                                                                                                                                                                                                      |
-| `outro.ts`       | `buildOutroLines` — two registry passes: success lines first, then skip lines, both in registry order                                                                                                                                                                                              |
-| `summary.ts`     | `formatSummaryLines` + `promptSummaryAction` — looks up each selected MCP in the registry by id                                                                                                                                                                                                    |
-| `prompts.ts`     | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`; `selectAgent` — the agent `select` prompt                                                                                                                                                                |
-| `config.ts`      | Persistence: load/save `~/.config/tpk/config.json`                                                                                                                                                                                                                                                 |
-| `types.ts`       | All shared TypeScript types (`ResolvedConfig`, `LauncherConfig`, `SkippedMap`, per-MCP config interfaces)                                                                                                                                                                                          |
+| File             | Responsibility                                                                                                                                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main.ts`        | Entry point. Parses argv via `argv.ts` and short-circuits to a saved-config launch when `--skip` is present. Configure flow iterates `registry` to call `configureInteractive` for each selected MCP.                                        |
+| `argv.ts`        | `parseArgs(argv)` — pure lexical parser; returns `{ skip, initialMessage }`. Throws `UnknownFlagError` for unknown flags and `TooManyPositionalsError` for more than one positional.                                                         |
+| `claude-args.ts` | `buildClaudeArgs(agent, initialMessage)` — pure helper that produces the `claude` spawn argv (`--agent dungeonmaster` only for the Dungeon Master). Single source of truth for the spawn-arg shape; called from `launchClaude` in `main.ts`. |
+| `agent.ts`       | Agent labels, `resolveSavedAgent` (falls back to Dungeon Master for missing/unknown values), and `formatAgentLine` for the summary screen                                                                                                    |
+| `resolve.ts`     | `buildResolvedFromSaved` — iterates `config.selectedMcps`, calls `cmd.resolveFromSaved`, catches `StaleResourceError`; `withKnownMcpsOnly` — drops saved MCP ids no longer in the registry                                                   |
+| `env.ts`         | `buildEnvVars` — iterates `registry`, calls `cmd.emitEnvVars`                                                                                                                                                                                |
+| `outro.ts`       | `buildOutroLines` — two registry passes: success lines first, then skip lines, both in registry order                                                                                                                                        |
+| `summary.ts`     | `formatSummaryLines` + `promptSummaryAction` — looks up each selected MCP in the registry by id                                                                                                                                              |
+| `prompts.ts`     | `selectMcps` — derives multiselect options from `registry.map(c => c.multiselectOption)`; `selectAgent` — the agent `select` prompt                                                                                                          |
+| `config.ts`      | Persistence: load/save `~/.config/tpk/config.json`                                                                                                                                                                                           |
+| `types.ts`       | All shared TypeScript types (`ResolvedConfig`, `LauncherConfig`, `SkippedMap`, per-MCP config interfaces)                                                                                                                                    |
 
 ### Shared helpers
 
 - `utils.ts` — `tryLoad` (returns `null` and emits `log.warn` on failure) and `errorMessage`
-- `dotfile.ts` — `writeDotfile`: writes a named dotfile to `~/.claude/.<name>` with mode 0600; used by CloudWatch, GCP Observability, and Kubernetes command implementations
+- `dotfile.ts` — `writeDotfile`: writes a named dotfile to `~/.claude/.<name>` with mode 0600; used by the CloudWatch and GCP Observability command implementations
 - `cancel.ts` — `handleCancel`: exits the process if a prompt returns a cancel signal; extracted from `prompts.ts` to avoid a circular dep (`prompts.ts` → `mcp-command.ts` → `mcp/*.ts` → `prompts.ts`)
 
-### Kubernetes post-save side effect
+### Post-save side effects
 
-Kubernetes requires a context switch (`kubectx <ctx>`) after the user's choice is persisted but before env vars are built. This is handled by `applyKubernetesContextSwitch` exported from `mcp/kubernetes.ts` and called explicitly in `launchClaude`. It is a named function at a visible call site rather than a generic hook in the registry — intentionally, so the side effect is auditable without tracing an abstraction. A future MCP that needs post-save behavior follows the same pattern: add a named function in its module and an explicit call in `launchClaude`.
+No MCP currently needs work after the user's choice is persisted. One that does should add a named function in its module and an explicit call in `launchClaude`, rather than a generic hook in the registry, so the side effect stays auditable at a visible call site.
 
 ### Adding a new MCP
 
@@ -215,30 +214,6 @@ The selected project ID is written to `~/.claude/.current-gcp-project` (mode 060
 
 If the dotfile is absent or empty, and no project was set another way, the wrapper exits with a helpful error pointing the user back to the `tpk` launcher.
 
-## Kubernetes Configuration
-
-### Kubernetes Prerequisites
-
-`kubectx` must be installed and on `PATH`. A valid `~/.kube/config` with at least one context must exist. The launcher does not install `kubectx` — if it is absent, the launcher logs a warning, skips the Kubernetes MCP, and continues launching Claude with the remaining selections.
-
-### Context selection and switching
-
-When "Kubernetes" is selected in the MCP multiselect, the launcher runs `kubectx` (no arguments) to list available contexts and presents a `select` prompt. The previously saved context is offered as the default; if none is saved, the current active context from `kubectl config current-context` is used as the fallback, then the first context in the list.
-
-If the selected context differs from the saved previous context, the launcher runs `kubectx <selected>` to switch the active context in `~/.kube/config` before launching Claude. Re-selecting the same context skips the switch. The switch happens via `applyKubernetesContextSwitch` (exported from `mcp/kubernetes.ts`), called in `launchClaude` after `saveConfig` completes and before `buildEnvVars` is called. See `mcp/kubernetes.ts` for `switchContext` (the underlying kubectx call) and `applyKubernetesContextSwitch` (the post-save orchestration).
-
-### What env var and dotfile are written
-
-`buildEnvVars` in `env.ts` sets `K8S_CONTEXT` to the selected context name. The Kubernetes MCP server (`mcp-server-kubernetes`) reads this to determine which context to use, overriding whatever context is currently active in `~/.kube/config`. This override matters when `KUBECONFIG` or other kubeconfig env vars are present in the environment.
-
-`~/.claude/.current-kube-context` is also written (mode 0600) for symmetry with the CloudWatch and GCP patterns, and to support potential future wrapper scripts or slash commands that need the selected context at runtime.
-
-If the `kubectx` switch fails, `applyKubernetesContextSwitch` clears `kubernetes` from the resolved config and sets `effectiveSkipped.kubernetes = "switch-failed"`. As a result, `buildEnvVars` emits neither `K8S_CONTEXT` nor the dotfile, and the outro line reflects the skip — keeping display, env export, and dotfile consistent.
-
-### Persistence
-
-The selected context is saved under `kubernetes.context` in `~/.config/tpk/config.json` and offered as the default on the next run.
-
 ## See Also
 
 - **`src/launcher/argv.ts`** — Argv parser used by `main.ts`; exports `parseArgs`, `UnknownFlagError`, and `TooManyPositionalsError`
@@ -247,6 +222,5 @@ The selected context is saved under `kubernetes.context` in `~/.config/tpk/confi
 - **`src/mcp/wrappers/mcp-gcp-observability.sh`** — Bash wrapper that resolves the GCP project from the dotfile and launches the Observability MCP server
 - **`src/launcher/mcp-command-types.ts`** — `McpCommand` interface and `StaleResourceError` class
 - **`src/launcher/mcp-command.ts`** — Registry, re-exports of core types, and the "how to add a new MCP" comment block
-- **`src/launcher/mcp/kubernetes.ts`** — `kubectx` context listing, selection prompt, context switching, and `applyKubernetesContextSwitch`
 - **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper for the installer-registered `argocd-<cluster>` servers; resolves the cluster's url and token from `ARGOCD_CLUSTER` via `python3` and always runs `argocd-mcp@0.9.0` read-only
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

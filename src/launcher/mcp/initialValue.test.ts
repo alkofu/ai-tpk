@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 // Step 7: initialValue staleness guard logic (Finding 7)
 //
 // These tests verify the staleness guard expressions that will be used in
-// configureCloudWatch and configureKubernetes.
+// configureCloudWatch and configureGcpObservability.
 // They test the logic inline without extracting a shared helper, matching
 // the inline approach prescribed by the plan.
 // ---------------------------------------------------------------------------
@@ -16,17 +16,6 @@ function resolveStringDefault(
   previous?: string,
 ): string | undefined {
   return previous && list.includes(previous) ? previous : list[0];
-}
-
-// Kubernetes pattern: (previous && list.includes(previous)) ? previous : (currentContext || list[0])
-function resolveKubernetesDefault(
-  list: string[],
-  previous?: string,
-  currentContext: string = '',
-): string | undefined {
-  return previous && list.includes(previous)
-    ? previous
-    : currentContext || list[0];
 }
 
 describe('CloudWatch initialValue staleness guard', () => {
@@ -48,36 +37,6 @@ describe('CloudWatch initialValue staleness guard', () => {
     assert.strictEqual(
       resolveStringDefault(['default', 'dev'], undefined),
       'default',
-    );
-  });
-});
-
-describe('Kubernetes initialValue staleness guard', () => {
-  it('returns previousContext when it exists in the list', () => {
-    assert.strictEqual(
-      resolveKubernetesDefault(['prod', 'staging', 'dev'], 'staging', 'dev'),
-      'staging',
-    );
-  });
-
-  it('returns currentContext when previousContext is stale and currentContext is in the list', () => {
-    assert.strictEqual(
-      resolveKubernetesDefault(['prod', 'staging'], 'old-context', 'staging'),
-      'staging',
-    );
-  });
-
-  it('returns first context when both previousContext is stale and currentContext is empty', () => {
-    assert.strictEqual(
-      resolveKubernetesDefault(['prod', 'staging'], 'old-context', ''),
-      'prod',
-    );
-  });
-
-  it('returns first context when previousContext is undefined and currentContext is empty', () => {
-    assert.strictEqual(
-      resolveKubernetesDefault(['prod', 'staging'], undefined, ''),
-      'prod',
     );
   });
 });

@@ -8,7 +8,6 @@ import { buildOutroLines } from './outro.js';
 import { promptSummaryAction } from './summary.js';
 import { buildResolvedFromSaved, withKnownMcpsOnly } from './resolve.js';
 import { registry } from './mcp-command.js';
-import { applyKubernetesContextSwitch } from './mcp/kubernetes.js';
 import {
   parseArgs,
   UnknownFlagError,
@@ -23,16 +22,9 @@ function launchClaude(
   skipped: SkippedMap = {},
   initialMessage: string | undefined = undefined,
 ): never {
-  // Switch Kubernetes context AFTER config is persisted (avoids inconsistency if switchContext fails)
-  const { effectiveSkipped, outroResolved } = applyKubernetesContextSwitch(
-    resolved,
-    savedConfig,
-    skipped,
-  );
-
   // Build env vars summary for outro
-  const envVars = buildEnvVars(outroResolved);
-  const lines = buildOutroLines(outroResolved, effectiveSkipped);
+  const envVars = buildEnvVars(resolved);
+  const lines = buildOutroLines(resolved, skipped);
   if (lines.length === 0) {
     lines.push('No MCPs configured — launching Claude with current env.');
   }

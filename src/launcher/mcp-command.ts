@@ -46,13 +46,13 @@ export { StaleResourceError } from './mcp-command-types.js';
 import type { McpCommand } from './mcp-command-types.js';
 import { cloudwatchCommand } from './mcp/cloudwatch.js';
 import { gcpObservabilityCommand } from './mcp/gcp-observability.js';
-import { kubernetesCommand } from './mcp/kubernetes.js';
 
 // Grafana and ArgoCD are not here: the installer registers one always-on,
 // read-only grafana-<cluster> / argocd-<cluster> server per cluster, so there
-// is nothing to choose per session.
+// is nothing to choose per session. Kubernetes is not here either: its single
+// read-only server reaches every kubeconfig context through each tool call's
+// `context` argument, which kubernetes-context-guard.sh makes mandatory.
 export const registry: McpCommand[] = [
   cloudwatchCommand,
   gcpObservabilityCommand,
-  kubernetesCommand,
 ];

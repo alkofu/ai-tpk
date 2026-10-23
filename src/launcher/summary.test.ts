@@ -33,25 +33,15 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it('returns correct line for kubernetes with context', () => {
-    const config: LauncherConfig = {
-      selectedMcps: ['kubernetes'],
-      kubernetes: { context: 'staging-cluster' },
-    };
-    assert.deepStrictEqual(formatSummaryLines(config), [
-      'Kubernetes: context staging-cluster',
-    ]);
-  });
-
   it('returns one line per MCP in order when multiple MCPs are selected', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['cloudwatch', 'kubernetes'],
+      selectedMcps: ['gcp-observability', 'cloudwatch'],
       cloudwatch: { profile: 'dev' },
-      kubernetes: { context: 'dev-cluster' },
+      gcpObservability: { project: 'gcp-dev' },
     };
     assert.deepStrictEqual(formatSummaryLines(config), [
+      'GCP Observability: project gcp-dev',
       'CloudWatch: profile dev',
-      'Kubernetes: context dev-cluster',
     ]);
   });
 
@@ -69,24 +59,15 @@ describe('formatSummaryLines', () => {
     ]);
   });
 
-  it("returns '(not yet configured)' when kubernetes is in selectedMcps but sub-object is missing", () => {
-    const config: LauncherConfig = { selectedMcps: ['kubernetes'] };
-    assert.deepStrictEqual(formatSummaryLines(config), [
-      'Kubernetes: (not yet configured)',
-    ]);
-  });
-
-  it('returns three correct lines when all three MCPs are configured', () => {
+  it('returns two correct lines when both MCPs are configured', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['cloudwatch', 'gcp-observability', 'kubernetes'],
+      selectedMcps: ['cloudwatch', 'gcp-observability'],
       cloudwatch: { profile: 'prod' },
       gcpObservability: { project: 'gcp-prod' },
-      kubernetes: { context: 'prod-cluster' },
     };
     assert.deepStrictEqual(formatSummaryLines(config), [
       'CloudWatch: profile prod',
       'GCP Observability: project gcp-prod',
-      'Kubernetes: context prod-cluster',
     ]);
   });
 
@@ -99,14 +80,14 @@ describe('formatSummaryLines', () => {
 
   it('handles a mix of known and unknown MCP names correctly', () => {
     const config: LauncherConfig = {
-      selectedMcps: ['cloudwatch', 'future-mcp', 'kubernetes'],
+      selectedMcps: ['cloudwatch', 'future-mcp', 'gcp-observability'],
       cloudwatch: { profile: 'staging' },
-      kubernetes: { context: 'staging-cluster' },
+      gcpObservability: { project: 'gcp-staging' },
     };
     assert.deepStrictEqual(formatSummaryLines(config), [
       'CloudWatch: profile staging',
       'future-mcp: (unknown MCP)',
-      'Kubernetes: context staging-cluster',
+      'GCP Observability: project gcp-staging',
     ]);
   });
 });

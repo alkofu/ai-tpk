@@ -117,8 +117,8 @@ describe('saveConfig', () => {
 
   it('round-trip: saveConfig then loadConfig returns the same data', () => {
     const config = {
-      selectedMcps: ['kubernetes', 'cloudwatch'],
-      kubernetes: { context: 'prod' },
+      selectedMcps: ['gcp-observability', 'cloudwatch'],
+      gcpObservability: { project: 'prod' },
       cloudwatch: { profile: 'default' },
     };
     saveConfig(config);

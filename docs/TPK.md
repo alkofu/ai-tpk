@@ -17,7 +17,7 @@ If you have used a previous version of this tool (before the rename to `tpk`), t
 
 ## Overview
 
-The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (AWS profile, GCP project, kube context), then launch a pre-configured Claude session. Grafana and ArgoCD are not part of the wizard: the installer registers one always-on, read-only MCP server per Grafana cluster and per ArgoCD cluster (see [Grafana Configuration](#grafana-configuration) and [ArgoCD Configuration](#argocd-configuration)).
+The `tpk` command is an interactive wizard that configures MCP environment variables and launches Claude with your choice of agent — the Dungeon Master or the default Claude agent. Instead of manually exporting environment variables before each session, you run `tpk` from your shell to select your desired MCPs and their configuration (AWS profile, GCP project), then launch a pre-configured Claude session. Grafana, ArgoCD, and Kubernetes are not part of the wizard: the installer registers one always-on, read-only MCP server per Grafana cluster and per ArgoCD cluster (see [Grafana Configuration](#grafana-configuration) and [ArgoCD Configuration](#argocd-configuration)), and a single read-only Kubernetes server that takes the context on every call (see [Kubernetes Configuration](#kubernetes-configuration)).
 
 **Prerequisites:** Run `./install.sh` first to install the launcher to `~/bin/tpk`.
 
@@ -29,14 +29,14 @@ tpk
 
 The wizard will present a multi-step flow:
 
-1. **MCP Selection** — Choose which MCPs to configure for this session (CloudWatch, GCP Observability, and/or Kubernetes)
-2. **Per-MCP Configuration** — For each selected MCP, choose its settings (AWS profile for CloudWatch; GCP project ID for GCP Observability; kube context for Kubernetes)
+1. **MCP Selection** — Choose which MCPs to configure for this session (CloudWatch and/or GCP Observability)
+2. **Per-MCP Configuration** — For each selected MCP, choose its settings (AWS profile for CloudWatch; GCP project ID for GCP Observability)
 3. **Agent Selection** — Choose **Dungeon Master** (`claude --agent dungeonmaster`) or **Default Claude** (`claude` with no `--agent` flag)
 4. **Launch** — Claude opens with the chosen agent and the correct environment variables set
 
 The agent prompt is also shown after choosing **Launch** on the summary screen, so you can switch agents on every run without reconfiguring MCPs. Your last choice is preselected; if none is saved, Dungeon Master is preselected.
 
-**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them. A `grafana` or `argocd` selection saved by an older `tpk` is ignored.
+**Persistence:** Your last-used selections (including the agent) are saved to `~/.config/tpk/config.json` and pre-fill the wizard on your next run. You can accept them with Enter or change them. A `grafana`, `argocd`, or `kubernetes` selection saved by an older `tpk` is ignored.
 
 ### `--skip`: launch immediately with saved config
 
@@ -147,9 +147,7 @@ When "GCP Observability" is selected, the launcher runs `gcloud projects list` t
 
 ## Kubernetes Configuration
 
-**Prerequisite:** `kubectx` must be installed and on `PATH`; if it is absent, the launcher logs a warning, skips the Kubernetes MCP, and continues launching Claude with the remaining selections.
-
-When "Kubernetes" is selected, the launcher runs `kubectx` to list available contexts and prompts you to select one. The selected context name is stored in `~/.claude/.current-kube-context` and exported as `K8S_CONTEXT` for the Kubernetes MCP server. If the chosen context differs from the previously saved one, the launcher invokes `kubectx <context>` to switch the active context. If the switch fails, the launcher logs a warning, skips the Kubernetes MCP for this session, and neither `K8S_CONTEXT` nor `~/.claude/.current-kube-context` are written — your previously active context in `~/.kube/config` is used instead.
+Kubernetes is configured by the installer, not by the `tpk` wizard, and needs no per-session choice. One read-only server reaches every context in `~/.kube/config`; name the cluster in your request (e.g. "check pods in aws-prd-use1 and aws-prd-use2") and Claude passes it as each tool call's `context`. A `PreToolUse` hook rejects calls without a valid `context`, so a vague request is never silently sent to whichever context your terminal last selected. `tpk` no longer runs `kubectx`, so launching Claude never changes your shell's current context. See [docs/MCP.md § Server Roster](/docs/MCP.md#server-roster) for the read-only mode and the hook.
 
 ## ArgoCD Configuration
 
@@ -180,10 +178,4 @@ When you select GCP Observability:
 GOOGLE_CLOUD_PROJECT={project_id}
 ```
 
-When you select Kubernetes:
-
-```
-K8S_CONTEXT={context_name}
-```
-
-These variables (and the dotfile written by Kubernetes) are passed to the `claude` process (with `--agent dungeonmaster` when the Dungeon Master is selected), and they flow through to all MCP server subprocesses.
+These variables are passed to the `claude` process (with `--agent dungeonmaster` when the Dungeon Master is selected), and they flow through to all MCP server subprocesses.

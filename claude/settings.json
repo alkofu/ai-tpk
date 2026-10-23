@@ -70,6 +70,18 @@
     "mcp__gcp-observability__list_group_stats"
   ],
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__kubernetes__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/kubernetes-context-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PermissionRequest": [
       {
         "hooks": [

@@ -26,8 +26,8 @@ Start by understanding what the agent should do:
 1. **What is the agent's specialty?** (e.g., documentation, security, planning, refactoring)
 2. **When should this agent be invoked?** (what user requests or scenarios)
 3. **What should it produce?** (output format, deliverables)
-4. **What tools does it need?** (Read, Write, Edit, Bash, Grep, Glob, Task, etc.)
-5. **What model should power it?** (sonnet, opus, haiku)
+4. **What tools does it need?** (Read, Write, Edit, Bash, Grep, Glob, Agent, etc.)
+5. **What model and effort should power it?** (sonnet, opus, haiku, or inherit; effort low to max)
 
 ### 2. Research Existing Agents
 
@@ -50,17 +50,17 @@ Agents work best when they have a clear, focused mission AND a distinct personal
 **Pathfinder:**
 - Mission: Plans but never implements
 - Constraint: "You never implement code. You plan."
-- Style: Structured interviews, one question at a time
+- Style: Researches first, asks the user only on a real fork between approaches
 
 **Riskmancer:**
 - Mission: Read-only security reviews
-- Constraint: No code changes (disallowed Write/Edit)
+- Constraint: No code changes (Write and Edit are left out of its `tools`)
 - Style: Systematic OWASP evaluation
 
 **Knotcutter:**
 - Mission: Radical simplification, targets 50%+ reduction
 - Principles: "YAGNI First", "Working Beats Perfect"
-- Style: Ruthless questioning, treats removals as victories
+- Style: Ruthless about what stays vs. what goes
 
 **Real example of personality from Knotcutter:**
 ```markdown
@@ -71,14 +71,6 @@ Agents work best when they have a clear, focused mission AND a distinct personal
 - Questioning every abstraction
 - Exposing over-engineering
 - Challenging assumptions
-
-**Treat removals as:**
-- Learning opportunities about actual necessity
-- Victories over complexity
-- Gifts to future maintainers
-- Evidence of disciplined engineering
-
-Remember: The best code is code you don't have to write, test, or maintain.
 ```
 
 This gives the agent character and helps it maintain consistent behavior.
@@ -91,7 +83,9 @@ Create the agent file at `claude/agents/{agent-name}.md` following this pattern:
 ---
 name: agent-name
 description: "Brief role description. Include specific use cases and keywords. Use when [scenario 1], [scenario 2], or [scenario 3]."
+color: green
 model: sonnet
+effort: medium
 tools: "Read, Write, Edit, Bash, Grep, Glob"
 ---
 
@@ -169,32 +163,32 @@ The `description` field in the frontmatter is **critical** - it determines when 
 
 **Real examples from existing agents:**
 
-✅ **Knotcutter (excellent):**
+✅ **Pathfinder (inputs and behavior):**
 ```yaml
-description: "Radical simplification specialist. Cuts through complexity by questioning necessity, eliminating over-engineering, and reducing systems to their essential core. Use when codebases are bloated, abstractions proliferate, or solutions feel needlessly complex."
+description: "Strategic planning consultant: turns a clear task (Askmaw Task Brief, Tracebloom report, or clear request) into a reviewed work plan, asking the user only on a real fork between approaches"
 ```
-- Clear role: "Radical simplification specialist"
-- Keywords: complexity, over-engineering, bloated, abstractions
-- Scenarios: bloated codebases, proliferating abstractions, complex solutions
+- Clear role: "Strategic planning consultant"
+- Names its inputs: Task Brief, Tracebloom report, clear request
+- States its key behavior: asks only on a real fork
 
-✅ **Pathfinder (excellent):**
+✅ **Tracebloom (scenario in the user's words):**
 ```yaml
-description: "Strategic planning consultant with interview workflow"
+description: "Read-only investigative agent for open-ended 'why is this broken?' tasks. Produces a structured Diagnostic Report with observations, tests performed, root cause (or inconclusive), and recommended next action. Invoked before any plan or fix exists."
 ```
-- Concise but clear
-- Keywords: planning, consultant, interview, workflow
+- Quotes the phrase users actually say: "why is this broken?"
+- Deliverable listed: a Diagnostic Report and what it contains
+- Timing is explicit: before any plan or fix exists
 
-✅ **Quill (strong trigger):**
+✅ **Quill (deliverables and inputs):**
 ```yaml
-description: "MUST BE USED to craft or update project documentation. Use PROACTIVELY after major features, API changes, or when onboarding developers. Produces READMEs, API specs, architecture guides, and user manuals."
+description: "Documentation specialist. Produces or updates project docs (READMEs, API specs, architecture guides, user manuals) from a session plan and a list of changed files."
 ```
-- Emphatic: "MUST BE USED"
-- Clear scenarios: major features, API changes, onboarding
-- Deliverables listed: READMEs, API specs, architecture guides
+- Deliverables listed: READMEs, API specs, architecture guides, user manuals
+- Inputs listed: a session plan and changed files
 
 ✅ **Riskmancer (keyword-rich):**
 ```yaml
-description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
+description: "Security vulnerability detection specialist (OWASP, secrets, auth, crypto)."
 ```
 - Specific keywords: security, vulnerability, OWASP, secrets
 - Technical terms users would say
@@ -216,11 +210,14 @@ description: "Security vulnerability detection specialist (OWASP Top 10, secrets
 
 Select based on the agent's needs:
 
-- **opus**: Complex reasoning, planning, security analysis
-- **sonnet**: General-purpose work, orchestration, balanced tasks
+- **opus**: Complex reasoning, planning, security analysis, reviews
+- **sonnet**: General-purpose work, orchestration, intake, balanced tasks
 - **haiku**: Fast, simple, straightforward tasks
+- **inherit**: Use the invoking session's model; reserve for agents whose task spectrum is very broad (Bitsmith)
 
-Most agents use Sonnet. Use Opus for planning/security work requiring deeper reasoning.
+Most agents use Sonnet. Use Opus for planning, review, and security work requiring deeper reasoning. `claude/references/agent-model-policy.md` lists the current tier of every agent; update it when you add an agent or change a tier.
+
+Also set `effort` (`low`, `medium`, `high`, `xhigh`, `max`): `low` for lightweight work (Quill), `medium` for routine work (Bitsmith, Askmaw), `high` for reasoning-heavy work (Pathfinder, Ruinor, Tracebloom).
 
 ### 7. Define Tool Access
 
@@ -230,31 +227,36 @@ Specify tools in the frontmatter as a comma-separated string:
 tools: "Read, Write, Edit, Bash, Grep, Glob"
 ```
 
-For read-only agents, use `disallowedTools`:
+For read-only agents, leave Write and Edit out of `tools`. `disallowedTools` also exists, but an explicit `tools` list is the convention here.
 
-```yaml
-disallowedTools: Write, Edit
-```
+Use `Agent` (not its old name `Task`) for agents that delegate to other agents.
 
-Optional frontmatter fields:
+Other frontmatter fields used in this repo:
+- `color`: One of `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`. Other values are not supported.
+- `permissionMode`: `acceptEdits` for agents that write files, `auto` for agents that run read-only Bash (reviewers, Tracebloom). Omit it for agents with no write or Bash tools, and for the Dungeon Master, which runs as the main-thread orchestrator.
+- `skills`: Skills to preload into the agent's context (e.g., `implementation-discipline` for Bitsmith).
+- `memory`: Persistent memory scope (`user`, `project`, `local`); Everwise uses `user`.
+
+Repo-only metadata (Claude Code ignores these; only this repo's docs read them):
 - `level`: Priority/depth level (e.g., `level: 4` for Pathfinder)
+- `mandatory`, `invoke_when`: Reviewer metadata (e.g., `mandatory: true` for Ruinor)
 
 **Common tool patterns from existing agents:**
 
 | Agent Type | Tools | Notes |
 |------------|-------|-------|
 | **Research/Analysis** | Read, Grep, Glob, Bash | Read-only investigation |
-| **Implementation** | Read, Write, Edit, Bash, Grep, Glob | Full file manipulation |
-| **Orchestrator** | Task, Read, Grep, Glob, Bash | Delegation-focused |
-| **Security** | Read, Grep, Bash<br>`disallowedTools: Write, Edit` | Read-only with blocked writes |
+| **Implementation** | Read, Write, Edit, Bash, Grep, Glob, Agent | Full file manipulation |
+| **Orchestrator** | Agent, Read, Grep, Glob, Bash, AskUserQuestion | Delegation-focused |
+| **Security** | Read, Grep, Glob, Bash, WebFetch, WebSearch | Read-only, with web lookups for advisories |
 | **Planning** | Read, Write, Grep, Glob, Bash, Agent | Research + plan creation |
 
 **Examples from actual agents:**
 - Pathfinder: `"Read, Write, Grep, Glob, Bash, Agent"`
-- Riskmancer: `"Read, Grep, Bash"` + `disallowedTools: Write, Edit`
-- Knotcutter: `"Read, Grep, Glob, Bash, Write, Edit"`
-- Quill: `"LS, Read, Grep, Glob, Bash, Write, Edit"`
-- Dungeon Master: `"Task, Read, Grep, Glob, Bash"`
+- Riskmancer: `"Read, Grep, Glob, Bash, WebFetch, WebSearch"`
+- Knotcutter: `"Read, Grep, Glob, Bash"`
+- Quill: `"Read, Grep, Glob, Bash, Write, Edit"`
+- Dungeon Master: `"Agent, Read, Grep, Glob, Bash, AskUserQuestion"`
 
 ### 8. Add Agent to Documentation
 
@@ -276,21 +278,26 @@ For agents that analyze but never modify code:
 ```yaml
 ---
 name: riskmancer
-description: "Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)"
+color: orange
+description: "Security vulnerability detection specialist (OWASP, secrets, auth, crypto)."
 model: opus
+effort: high
+permissionMode: auto
 level: 3
-disallowedTools: Write, Edit
+tools: "Read, Grep, Glob, Bash, WebFetch, WebSearch"
+mandatory: false
+invoke_when: "security-sensitive features or when Ruinor flags security concerns"
 ---
 ```
 
 **Key characteristics:**
-- Explicitly blocks Write/Edit tools
-- States read-only nature in Core Mission
+- No Write/Edit in its tool list
+- States when to invoke it, and when not to, right after the frontmatter
 - Focuses on analysis and reporting
-- Uses Read, Grep, Bash for investigation
+- Uses Read, Grep, Glob, Bash for investigation, plus web tools for advisories
 
 **Real example from Riskmancer:**
-> "The Riskmancer agent identifies and prioritizes vulnerabilities before production deployment... It operates in read-only mode with blocked write/edit capabilities."
+> "The Riskmancer agent identifies and prioritizes security vulnerabilities before production deployment, focusing on OWASP Top 10 analysis, secrets detection, input validation, and authentication checks."
 
 ### Orchestrator Pattern (Dungeon Master)
 
@@ -300,21 +307,21 @@ For agents that coordinate other agents:
 ---
 name: dungeonmaster
 description: "Use this agent to coordinate multi-step software development work..."
-tools: "Task, Read, Grep, Glob, Bash"
+color: purple
+tools: "Agent, Read, Grep, Glob, Bash, AskUserQuestion"
 model: sonnet
+effort: high
 ---
 ```
 
 **Key characteristics:**
-- Task tool for delegation
+- Agent tool for delegation
 - Clear delegation policy section
-- States "coordinate work, not do all work yourself"
-- Minimal direct implementation tools
+- States that it coordinates and never implements
+- No Write/Edit tools
 
 **Real example from Dungeon Master:**
-> "Your job is to coordinate work, not to do all work yourself."
->
-> "Do not perform large implementation work directly if it should be delegated."
+> "Your job is to coordinate work exclusively. You must NEVER perform implementation work yourself — even for trivial tasks. Every unit of work must be delegated to the appropriate named agent."
 
 ### Specialist Pattern (Knotcutter, Quill)
 
@@ -323,20 +330,25 @@ For focused domain-specific work:
 ```yaml
 ---
 name: knotcutter
-description: "Radical simplification specialist. Cuts through complexity..."
-tools: "Read, Grep, Glob, Bash, Write, Edit"
+color: yellow
+description: "Radical simplification specialist for complexity elimination reviews."
+tools: "Read, Grep, Glob, Bash"
+model: opus
+effort: high
+permissionMode: auto
+level: 3
+mandatory: false
+invoke_when: "major refactors, new abstractions, or when Ruinor flags complexity concerns"
 ---
 ```
 
 **Key characteristics:**
-- Full file manipulation tools
+- Read-only review tools (it recommends cuts rather than making them)
 - Strong guiding principles
 - Specific success criteria (e.g., "50%+ reduction")
 - Clear collaboration style
 
-**Real example from Knotcutter:**
-> **Guiding Principles**
->
+**Real example from Knotcutter (excerpt from its `## Guiding Principles` section):**
 > **YAGNI First**: You Aren't Gonna Need It until proven otherwise
 >
 > **Concrete Over General**: Build for the specific problem at hand, not hypothetical future cases
@@ -348,48 +360,50 @@ For agents that research and plan but don't execute:
 ```yaml
 ---
 name: pathfinder
-description: "Strategic planning consultant with interview workflow"
+color: blue
+description: "Strategic planning consultant: turns a clear task (Askmaw Task Brief, Tracebloom report, or clear request) into a reviewed work plan, asking the user only on a real fork between approaches"
 model: opus
+effort: high
+permissionMode: acceptEdits
 level: 4
 tools: "Read, Write, Grep, Glob, Bash, Agent"
+skills:
+  - planning
 ---
 ```
 
 **Key characteristics:**
 - Agent tool for delegating research
 - Explicitly states "You never implement. You plan."
-- Structured interview workflow
-- Saves plans to specific location (`~/.ai-tpk/plans/{repo-slug}/*.md`)
+- Preloads the `planning` skill, which holds the methodology; the agent file adds only its DM-specific rules
+- Saves session-namespaced plans (`~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`)
 
 **Real example from Pathfinder:**
-> "Interview users to gather requirements, research codebases via agents, and produce actionable work plans saved to `~/.ai-tpk/plans/{repo-slug}/*.md`. You never implement code. You plan."
->
-> "When users request 'do X' or 'build X,' interpret this as 'create a work plan for X.'"
+> "Turn a clear task into an actionable work plan saved to `~/.ai-tpk/plans/{REPO_SLUG}/{SESSION_TS}-{feature-slug}.md`, researching the codebase via agents. You never implement code. You plan."
 
 ## Advanced Agent Features
 
 ### Special Modes
 
-Some agents have special modes that activate based on flags or context. Example from **Pathfinder**:
+Some agents have special modes that activate based on flags or context. Example from the `planning` skill that **Pathfinder** preloads:
 
 ```markdown
-## Consensus Mode (RALPLAN-DR)
+## Consensus mode (high-stakes decisions)
 
-When user includes `--consensus` in their message (e.g., "Create a plan for X --consensus"), provide enhanced decision-making structure.
+When the user asks for consensus or deliberate treatment (e.g. `--consensus`), or the decision is high-risk and hard to reverse, add:
 
-### Standard Consensus Output
-
-**Principles:** 3-5 key guidelines for the work
-**Decision Drivers:** Top 3 factors influencing approach
-**Viable Options:** At least 2 alternatives with pros/cons
-**ADR Fields:** Architecture Decision Record structure
+- **Principles** — 3-5 guidelines for the work
+- **Decision drivers** — the top 3 factors influencing the approach
+- **Viable options** — 2-4 alternatives with pros, cons, and reversibility
+- **Comparison matrix** — options against the decision drivers
+- **ADR fields** — Status, Context, Decision, Consequences
 ```
 
 This allows agents to have enhanced behavior for specific scenarios.
 
 ### Examples Section
 
-Include concrete examples to guide behavior. From **Pathfinder**:
+Include concrete examples to guide behavior. An illustrative example for a planning agent:
 
 ```markdown
 ## Examples
@@ -412,15 +426,19 @@ For orchestrator agents, define clear delegation rules. From **Dungeon Master**:
 ```markdown
 ## Delegation policy
 
-### When to call Pathfinder
+### Agent Registry
+
+#### When to call Pathfinder
+
 Delegate to Pathfinder when any of the following are true:
 - The request is ambiguous or underspecified
 - The work spans multiple files, systems, or steps
 - There are architectural or sequencing decisions to make
-
-### When to call Bitsmith
-After a plan exists, delegate implementation to Bitsmith...
+- There is risk of rework without an explicit plan
+- The user asks for design, scope, decomposition, or approach
 ```
+
+When you add an agent that DM should route to, append its `#### When to call {Agent}` subsection to DM's Agent Registry.
 
 ## Testing the Agent
 
@@ -467,58 +485,37 @@ When creating new agents, consider thematic names that are:
 
 ## Complete Example: Real Agent Structure
 
-Here's how **Quill** (documentation specialist) is structured - a real, complete example:
+Here's how **Quill** (documentation specialist) starts. Read `claude/agents/quill.md` for the full file:
 
 ```yaml
 ---
 name: quill
-description: "MUST BE USED to craft or update project documentation. Use PROACTIVELY after major features, API changes, or when onboarding developers. Produces READMEs, API specs, architecture guides, and user manuals."
-tools: "LS, Read, Grep, Glob, Bash, Write, Edit"
+color: pink
+description: "Documentation specialist. Produces or updates project docs (READMEs, API specs, architecture guides, user manuals) from a session plan and a list of changed files."
+tools: "Read, Grep, Glob, Bash, Write, Edit"
+model: sonnet
+effort: low
+permissionMode: acceptEdits
+skills:
+  - docs-writing
 ---
 
 # Quill - Documentation Specialist Agent
 
 ## Core Mission
+
 Transform intricate codebases and system designs into accessible documentation that expedites developer onboarding while decreasing support overhead.
 
-## Operational Workflow
+## Documentation Style and Workflow
 
-**1. Gap Analysis**
-- Audit existing documentation against current codebase
-- Compare against recent code changes
-- Flag absent sections (setup instructions, API reference, system design, learning materials)
-
-**2. Planning**
-- Outline document structure with hierarchical headings
-- Identify required visual aids, code samples, practical examples
-
-**3. Content Development**
-- Compose clear Markdown following established patterns
-- Incorporate functional code snippets and HTTP examples
-- Create OpenAPI YAML specifications for REST interfaces when applicable
-
-**4. Refinement & Validation**
-- Verify technical precision
-- Perform spell-checking and link validation
-- Confirm header hierarchy creates logical navigation
-
-## Documentation Standards
-
-**Best Practices:**
-- Match content complexity to intended audience (end-user vs. technical implementer)
-- Prioritize examples over lengthy explanations
-- Employ concise sections, lists, and tabular data
-- Synchronize documentation updates with each pull request; version bump for breaking changes
-
-**Output Deliverable:**
-Provide concise change log listing created/modified files with single-line summaries.
+The `docs-writing` skill, preloaded into your context, is the canonical style guide and workflow (gap analysis via `doc-review`, outline, write, validate, report). All documentation decisions defer to it. This file adds only the Dungeon Master invocation modes, worktree rules, and escalation protocol.
 ```
 
 **What makes this agent effective:**
-1. ✅ Strong triggering with "MUST BE USED" emphasis
-2. ✅ Concrete workflow with numbered steps
-3. ✅ Clear standards section
-4. ✅ Specific output format defined
+1. ✅ The description says what it produces and from which inputs
+2. ✅ The methodology lives in a preloaded skill, so the agent file holds only agent-specific rules
+3. ✅ Invocation modes and an escalation protocol define its boundaries
+4. ✅ The tool list is limited to what documentation work needs
 5. ✅ Focused mission in 1 sentence
 
 ## Example: Creating a New Agent
@@ -539,9 +536,11 @@ Let's create a hypothetical "CodeReviewer" agent:
 ---
 name: sentinel
 description: "Code quality and best practices reviewer. Use when reviewing pull requests, checking code quality, identifying anti-patterns, or ensuring adherence to project conventions."
+color: green
 model: sonnet
+effort: medium
+permissionMode: auto
 tools: "Read, Grep, Glob, Bash"
-disallowedTools: Write, Edit
 ---
 
 # Sentinel - Code Quality Reviewer
@@ -629,7 +628,9 @@ Reference in AGENTS.md:
 
 When creating an agent, ensure:
 
-- [ ] YAML frontmatter includes name, description, model, tools
+- [ ] YAML frontmatter includes name, description, model, effort, color, tools
+- [ ] `color` is one of the 8 allowed values, and delegating agents use `Agent`, not `Task`
+- [ ] `claude/references/agent-model-policy.md` lists the new agent's model tier
 - [ ] Core mission is one clear sentence
 - [ ] Operational workflow has concrete steps
 - [ ] Guiding principles shape behavior

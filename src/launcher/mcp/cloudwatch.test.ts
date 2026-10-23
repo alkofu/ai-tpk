@@ -294,12 +294,12 @@ output = json
 // are hermetic — no dependency on the real ~/.aws/* files.
 // ---------------------------------------------------------------------------
 
-describe('loadAwsProfiles (credentials fallback)', () => {
-  // Helper: create a fresh subdirectory for hermetic path isolation
-  function makeSubDir(label: string): string {
-    return fs.mkdtempSync(path.join(tmpDir, label + '-'));
-  }
+// Helper: create a fresh subdirectory for hermetic path isolation
+function makeSubDir(label: string): string {
+  return fs.mkdtempSync(path.join(tmpDir, label + '-'));
+}
 
+describe('loadAwsProfiles (credentials fallback)', () => {
   it('no config, credentials with [default] and [myprofile] → returns both profiles', () => {
     // This is the primary F-1 integration test. We need configPath to be absent
     // without triggering the explicit-path guard (which requires configPath===undefined).

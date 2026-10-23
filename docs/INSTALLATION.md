@@ -124,7 +124,7 @@ brew install shellcheck shfmt
 - `pnpm run format:sh` — Apply `shfmt -i 2 -ci -bn` formatting to all 28 `.sh` files
 - `pnpm run format:check:sh` — Check shfmt formatting without modifying files (used in CI and pre-push)
 
-**CI version pin:** CI pins `shfmt` to `v3.8.0`. Minor version drift between local and CI is generally acceptable, but if `pnpm run format:check:sh` produces different output locally vs CI, install the pinned version via `mise use shfmt@3.8.0` or download the v3.8.0 binary from `https://github.com/mvdan/sh/releases/tag/v3.8.0`. `shellcheck` is not pinned; the latest Homebrew or apt version is fine.
+**CI version pin:** CI pins `shfmt` to `v3.14.1`. Minor version drift between local and CI is generally acceptable, but if `pnpm run format:check:sh` produces different output locally vs CI, install the pinned version via `mise use shfmt@3.14.1` or download the v3.14.1 binary from `https://github.com/mvdan/sh/releases/tag/v3.14.1`. `shellcheck` is not pinned; the latest Homebrew or apt version is fine.
 
 **Pre-Commit Hook:** `pnpm run lint:sh` runs at pre-commit only. **Pre-Push Hook:** `pnpm run format:check:sh` runs at pre-push — shfmt format checking is intentionally deferred to push. Hook configuration lives in `lefthook.yml`.
 

@@ -249,5 +249,5 @@ The selected context is saved under `kubernetes.context` in `~/.config/tpk/confi
 - **`src/launcher/mcp-command.ts`** — Registry, re-exports of core types, and the "how to add a new MCP" comment block
 - **`src/launcher/mcp/kubernetes.ts`** — `kubectx` context listing, selection prompt, context switching, and `applyKubernetesContextSwitch`
 - **`src/launcher/mcp/argocd.ts`** — ArgoCD cluster listing from `~/.config/tpk/argocd-accounts.json`, cluster selection prompt, and dotfile write to `~/.claude/.current-argocd-cluster`
-- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper that reads `~/.claude/.current-argocd-cluster`, extracts the matching `url` and `token` from `~/.config/tpk/argocd-accounts.json` via `python3`, and launches `argocd-mcp@0.5.0`
+- **`src/mcp/wrappers/mcp-argocd.sh`** — Bash wrapper that reads `~/.claude/.current-argocd-cluster`, extracts the matching `url` and `token` from `~/.config/tpk/argocd-accounts.json` via `python3`, and launches `argocd-mcp@0.9.0`
 - **`src/installer/launcher-install.ts`** — Installation logic for the launcher

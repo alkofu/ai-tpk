@@ -100,4 +100,4 @@ fi
 # --- Export and exec ---
 export ARGOCD_BASE_URL ARGOCD_API_TOKEN
 echo "ArgoCD MCP: cluster '$ARGOCD_CLUSTER_ID' (${ARGOCD_BASE_URL})" >&2
-exec npx --yes argocd-mcp@0.5.0 stdio "$@"
+exec npx --yes argocd-mcp@0.9.0 stdio "$@"

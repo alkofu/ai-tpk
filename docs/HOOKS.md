@@ -132,15 +132,15 @@ On every SessionStart (before the title restore logic), the hook emits an OSC 68
 
 #### UserPromptSubmit Hook - Model Fit Advisor
 
-Runs on the first prompt of each session. A Haiku classifier rates the task as needing the `haiku`, `sonnet`, or `opus` tier, and the hook compares that with the configured model:
+Runs on the first prompt of each session. A single Haiku classifier call rates the task on two axes: the model tier (`haiku`, `sonnet`, or `opus`) and the effort tier (`low`, `medium`, `high`, `xhigh`, or `max`). The hook compares the model tier with the configured model:
 
-- **Same tier:** the prompt runs with no output.
-- **Different tier (either direction):** the prompt is blocked before it reaches the model, with a reason suggesting `/model <tier>`. Resending runs it normally, whether or not you switched, because the single-fire marker is already set.
-- **Configured model unknown** (unset, `default`, or a name containing no tier): the verdict is injected as `additionalContext` instead, and the main model opens its reply with a one-line `/model <tier>` suggestion only when it differs from the model it is running as.
+- **Same model tier:** the prompt runs, with the effort rating injected as `additionalContext`.
+- **Different model tier (either direction):** the prompt is blocked before it reaches the model, with a reason suggesting `/model <tier>`. The block reason also carries the effort rating, since the context is not injected again on resend. Resending runs it normally, whether or not you switched, because the single-fire marker is already set.
+- **Configured model unknown** (unset, `default`, or a name containing no tier): the model rating and the effort rating are both injected as `additionalContext`, and the main model opens its reply with a one-line suggestion only when it differs from what it is running as.
 
-The hook never switches the model itself.
+The effort rating is always advisory. The main model opens its reply with a one-line `/effort <tier>` suggestion only when it can tell its own effort level and the two differ by a step or more. The hook never switches the model or the effort itself.
 
-**Purpose:** Catches sessions that start on a model that is too expensive or too weak for the task, at the point where switching is cheapest (the cached context is still small). Script: `claude/hooks/model-fit-advisor.sh`.
+**Purpose:** Catches sessions that start on a model or an effort level that is ill-suited to the task, at the point where switching is cheapest (the cached context is still small). Script: `claude/hooks/model-fit-advisor.sh`.
 
 **Non-obvious behaviors:**
 - Single-fire guard: a marker at `~/.claude/model-fit-advised/{session_id}` is written *before* classifying, so a failed or slow call is not retried on later prompts. Resumed sessions are not reclassified.
@@ -152,8 +152,8 @@ The hook never switches the model itself.
   4. the `model` key of those settings files, in that order.
 - The status line input does carry the live model, but it is not used: installing a `statusLine` from the template would overwrite one set by another tool (e.g. a terminal integration).
 - The classifier is told to pick the higher tier when unsure, because a wrong downgrade costs rework while a wrong upgrade costs only tokens.
-- Fails open: missing `jq`/`claude`, a classifier error, or an output line that does not match `<tier>: <reason>` produces no output and exit 0.
-- Set `MODEL_FIT_ADVISOR_DISABLE=1` in the environment to switch it off without editing settings.
+- Fails open: missing `jq`/`claude`, a classifier error, or an output line that does not match `<model tier>:<effort tier>:<reason>` produces no output and exit 0. Whitespace around the colons and letter case are ignored, and the effort tier is optional: a model-only line (`<model tier>: <reason>`) still drives the model check, with the effort text left out.
+- Set `MODEL_FIT_ADVISOR_DISABLE=1` in the environment to switch it off without editing settings. This disables the effort rating too, since both come from the same hook.
 
 **Synchronous and timeout:** The hook must run synchronously to block or inject context, so it adds roughly 2-3 seconds to the first prompt of a session. Timeout is 30 seconds.
 

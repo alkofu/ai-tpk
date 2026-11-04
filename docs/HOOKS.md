@@ -1,6 +1,6 @@
 # Hooks and Settings
 
-This document covers Claude Code settings (including marketplaces) and the four hooks installed by this repository: PermissionRequest, SessionStart, SubagentStop, and Stop.
+This document covers Claude Code settings (including marketplaces) and the hooks installed by this repository: PermissionRequest, SessionStart, UserPromptSubmit, SubagentStop, and Stop.
 
 ## Settings (`claude/settings.json`)
 
@@ -129,6 +129,21 @@ On every SessionStart (before the title restore logic), the hook emits an OSC 68
 **Detection rationale:** tmux is checked before `$TERM_PROGRAM` because the tmux window name is the visible label regardless of the host terminal emulator (e.g., iTerm2 running in tmux integration mode shows the tmux window name, not the iTerm2 tab title).
 
 **Async and timeout:** The hook runs asynchronously with a 30-second timeout so that title restore does not block session startup.
+
+#### UserPromptSubmit Hook - Model Fit Advisor
+
+Runs on the first prompt of each session. A Haiku classifier rates the task as needing the `haiku`, `sonnet`, or `opus` tier, and the verdict is injected as `additionalContext`. The main model compares it with the model it is running as and, only when they differ, opens its reply with a one-line `/model <tier>` suggestion. The hook never switches the model itself.
+
+**Purpose:** Catches sessions that start on a model that is too expensive or too weak for the task, at the point where switching is cheapest (the cached context is still small). Script: `claude/hooks/model-fit-advisor.sh`.
+
+**Non-obvious behaviors:**
+- Single-fire guard: a marker at `~/.claude/model-fit-advised/{session_id}` is written *before* classifying, so a failed or slow call is not retried on later prompts. Resumed sessions are not reclassified.
+- Calls `claude -p --model haiku` without `--bare`, because `--bare` skips keychain/OAuth login and fails with "Not logged in" on subscription accounts. Hooks, tools, and MCP are disabled on the subprocess instead (`--settings '{"disableAllHooks":true}' --strict-mcp-config --tools ""`), and `MODEL_FIT_ADVISOR_CHILD=1` is a second recursion guard.
+- The classifier is told to pick the higher tier when unsure, because a wrong downgrade costs rework while a wrong upgrade costs only tokens.
+- Fails open: missing `jq`/`claude`, a classifier error, or an output line that does not match `<tier>: <reason>` produces no output and exit 0.
+- Set `MODEL_FIT_ADVISOR_DISABLE=1` in the environment to switch it off without editing settings.
+
+**Synchronous and timeout:** The hook must run synchronously to inject context, so it adds roughly 2-3 seconds to the first prompt of a session. Timeout is 30 seconds.
 
 #### SubagentStop Hook - Session Capture
 

@@ -7,11 +7,11 @@ First, invoke the `validate-before-pr` skill. Run its lint and format checks. On
 Follow the `open-pull-request` skill exactly — conventional branch naming, conventional PR title,
 draft mode, assigned to @me, pre-flight checklist. Do not use any shortcut or simplified workflow.
 
-## Optional issue-link prompt
+## Issue filing (opt-in)
 
-After the push step (workflow step 7) has succeeded and immediately before opening the PR (workflow step 8), perform the optional issue-link prompt defined in the `open-pull-request` skill's `## PR description` section ("Optional issue-link prompt") — firing it only when no upstream closing keyword was found. See that section for the full behavior.
+Open the PR without asking about issues. Only when the user explicitly requested an issue be opened, perform the flow defined in the `open-pull-request` skill's `## PR description` section ("Issue filing is opt-in") after the push step (workflow step 7) and before opening the PR (workflow step 8).
 
-If the inline `draft-issue-protocol.md` invocation aborts, is cancelled, the user rejects the issue confirmation, or the gh-auth pre-flight fails, proceed on the "no" path (open the PR unlinked) rather than terminating — the protocol's "end the session" branches do not abort the PR-opening flow when invoked from this command.
+If the inline `draft-issue-protocol.md` invocation aborts, is cancelled, the user rejects the issue confirmation, or the gh-auth pre-flight fails, open the PR unlinked rather than terminating — the protocol's "end the session" branches do not abort the PR-opening flow when invoked from this command.
 
 ## Completion Report
 

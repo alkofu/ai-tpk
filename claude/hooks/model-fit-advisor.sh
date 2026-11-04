@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # model-fit-advisor.sh -- Classifies the first prompt of a session with Haiku, rating both the model tier and the
 # effort tier the task needs. A model-tier mismatch blocks the prompt so the user can run /model and resend; a match
-# passes. The effort rating is advisory and is never compared with the session: it goes in the block reason on a
+# passes. A blocked prompt is saved and replayed as context on the session's next prompt, so the user only has to
+# send something like "go" after switching. The effort rating is advisory and is never compared with the session: it goes in the block reason on a
 # mismatch, and in the injected context on a match or when the configured model is unknown. A verdict without an
 # effort tier is handled as a model-only verdict.
 # Fires on: UserPromptSubmit (only acts once per session)
@@ -32,14 +33,32 @@ fi
 
 # Single-fire guard: one classification per session, including resumed sessions.
 # The marker is written before classifying so a failed or slow call is not retried on every prompt.
+# A blocked prompt is saved in the marker; the next prompt replays it as context and empties the marker, because a
+# blocked prompt never reaches the conversation and is gone once the user switches models.
 MARKER_DIR="$HOME/.claude/model-fit-advised"
 MARKER_FILE="$MARKER_DIR/$SESSION_ID"
 if [[ -e "$MARKER_FILE" ]]; then
+  if [[ -s "$MARKER_FILE" ]]; then
+    BLOCKED_PROMPT=$(cat "$MARKER_FILE" 2>/dev/null || true)
+    : >"$MARKER_FILE" 2>/dev/null || true
+    if [[ -n "$BLOCKED_PROMPT" ]]; then
+      REPLAY_CONTEXT="[model-fit-advisor] The user's previous prompt was held back before it reached you so they could \
+switch models; it is quoted verbatim between the markers below. If the current message asks to go ahead, continue, or \
+otherwise does not stand on its own, treat the held-back prompt as the task. If the current message repeats it, ignore \
+this note. Otherwise use it as background for the current message.
+<<<HELD_BACK_PROMPT
+${BLOCKED_PROMPT}
+HELD_BACK_PROMPT>>>"
+      jq -n --arg ctx "$REPLAY_CONTEXT" \
+        '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", additionalContext: $ctx}}'
+    fi
+  fi
   exit 0
 fi
 mkdir -p "$MARKER_DIR" 2>/dev/null || exit 0
 touch "$MARKER_FILE" 2>/dev/null || exit 0
 
+FULL_PROMPT="$PROMPT"
 PROMPT="${PROMPT:0:2000}"
 
 SYSTEM_PROMPT="You rate coding-assistant tasks on two axes. \
@@ -195,15 +214,20 @@ for candidate in haiku sonnet opus; do
 done
 
 # Known tier: let a match through, with the effort context when there is one, and block a mismatch so the user can
-# switch before the prompt runs. The single-fire marker is already written, so resending the prompt (switched or
-# not) goes through, and the effort rating is carried in the block reason because it is not injected again on resend.
+# switch before the prompt runs. The blocked prompt is saved in the marker, so any next message (switched or not)
+# goes through with the prompt replayed, and the effort rating is carried in the block reason because it is not
+# injected again on the next message.
 if [[ -n "$CURRENT_TIER" ]]; then
   if [[ "$CURRENT_TIER" == "$TIER" ]]; then
     [[ -n "$EFFORT_CONTEXT" ]] && emit_context "$EFFORT_CONTEXT"
     exit 0
   fi
+  if ! printf '%s' "$FULL_PROMPT" >"$MARKER_FILE" 2>/dev/null; then
+    exit 0
+  fi
   BLOCK_REASON="[model-fit-advisor] This task was rated '${TIER}' (${REASON}), but the session is on '${CURRENT_TIER}'. \
-Run '/model ${TIER}' and resend the prompt, or resend it as-is to keep '${CURRENT_TIER}'.${EFFORT_NOTE}"
+Your prompt is saved: run '/model ${TIER}', then send 'go' to run it. Send 'go' without switching to keep \
+'${CURRENT_TIER}'.${EFFORT_NOTE}"
   jq -n --arg reason "$BLOCK_REASON" '{decision: "block", reason: $reason}'
   exit 0
 fi

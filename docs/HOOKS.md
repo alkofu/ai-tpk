@@ -135,7 +135,7 @@ On every SessionStart (before the title restore logic), the hook emits an OSC 68
 Runs on the first prompt of each session. A single Haiku classifier call rates the task on two axes: the model tier (`haiku`, `sonnet`, or `opus`) and the effort tier (`low`, `medium`, `high`, `xhigh`, or `max`). The hook compares the model tier with the configured model:
 
 - **Same model tier:** the prompt runs, with the effort rating injected as `additionalContext`.
-- **Different model tier (either direction):** the prompt is blocked before it reaches the model, with a reason suggesting `/model <tier>`. The block reason also carries the effort rating, since the context is not injected again on resend. Resending runs it normally, whether or not you switched, because the single-fire marker is already set.
+- **Different model tier (either direction):** the prompt is blocked before it reaches the model, with a reason suggesting `/model <tier>`. The block reason also carries the effort rating, since the context is not injected again on the next message. The blocked prompt is saved, so after switching (or not) you send `go` and the hook replays the saved prompt as `additionalContext` for that message. You don't need to copy and paste it.
 - **Configured model unknown** (unset, `default`, or a name containing no tier): the model rating and the effort rating are both injected as `additionalContext`, and the main model opens its reply with a one-line suggestion only when it differs from what it is running as.
 
 The effort rating is always advisory. The main model opens its reply with a one-line `/effort <tier>` suggestion only when it can tell its own effort level and the two differ by a step or more. The hook never switches the model or the effort itself.
@@ -144,6 +144,7 @@ The effort rating is always advisory. The main model opens its reply with a one-
 
 **Non-obvious behaviors:**
 - Single-fire guard: a marker at `~/.claude/model-fit-advised/{session_id}` is written *before* classifying, so a failed or slow call is not retried on later prompts. Resumed sessions are not reclassified.
+- Replay: a blocked prompt is not added to the conversation, so the hook writes it into the marker file. The next prompt in the session finds a non-empty marker, injects the saved prompt verbatim with an instruction to treat it as the task when the new message is just "go"/"continue" (and to ignore it when the new message repeats it), then empties the marker. It replays once. If the prompt can't be saved, the hook doesn't block.
 - Calls `claude -p --model haiku` without `--bare`, because `--bare` skips keychain/OAuth login and fails with "Not logged in" on subscription accounts. Hooks, tools, and MCP are disabled on the subprocess instead (`--settings '{"disableAllHooks":true}' --strict-mcp-config --tools ""`), and `MODEL_FIT_ADVISOR_CHILD=1` is a second recursion guard.
 - Hook input has no model field, so the session model is resolved as:
   1. the `model` key of a settings file (`{cwd}/.claude/settings.local.json`, `{cwd}/.claude/settings.json`, `~/.claude/settings.json`) modified after the `claude` process started, because `/model` saves its choice there;

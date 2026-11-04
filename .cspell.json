@@ -192,7 +192,8 @@
     "defence",
     "normalisation",
     "shopt",
-    "nullglob"
+    "nullglob",
+    "xhigh"
   ],
   "ignoreWords": ["dontAsk"]
 }

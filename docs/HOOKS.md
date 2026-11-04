@@ -132,18 +132,30 @@ On every SessionStart (before the title restore logic), the hook emits an OSC 68
 
 #### UserPromptSubmit Hook - Model Fit Advisor
 
-Runs on the first prompt of each session. A Haiku classifier rates the task as needing the `haiku`, `sonnet`, or `opus` tier, and the verdict is injected as `additionalContext`. The main model compares it with the model it is running as and, only when they differ, opens its reply with a one-line `/model <tier>` suggestion. The hook never switches the model itself.
+Runs on the first prompt of each session. A Haiku classifier rates the task as needing the `haiku`, `sonnet`, or `opus` tier, and the hook compares that with the configured model:
+
+- **Same tier:** the prompt runs with no output.
+- **Different tier (either direction):** the prompt is blocked before it reaches the model, with a reason suggesting `/model <tier>`. Resending runs it normally, whether or not you switched, because the single-fire marker is already set.
+- **Configured model unknown** (unset, `default`, or a name containing no tier): the verdict is injected as `additionalContext` instead, and the main model opens its reply with a one-line `/model <tier>` suggestion only when it differs from the model it is running as.
+
+The hook never switches the model itself.
 
 **Purpose:** Catches sessions that start on a model that is too expensive or too weak for the task, at the point where switching is cheapest (the cached context is still small). Script: `claude/hooks/model-fit-advisor.sh`.
 
 **Non-obvious behaviors:**
 - Single-fire guard: a marker at `~/.claude/model-fit-advised/{session_id}` is written *before* classifying, so a failed or slow call is not retried on later prompts. Resumed sessions are not reclassified.
 - Calls `claude -p --model haiku` without `--bare`, because `--bare` skips keychain/OAuth login and fails with "Not logged in" on subscription accounts. Hooks, tools, and MCP are disabled on the subprocess instead (`--settings '{"disableAllHooks":true}' --strict-mcp-config --tools ""`), and `MODEL_FIT_ADVISOR_CHILD=1` is a second recursion guard.
+- Hook input has no model field, so the session model is resolved as:
+  1. the `model` key of a settings file (`{cwd}/.claude/settings.local.json`, `{cwd}/.claude/settings.json`, `~/.claude/settings.json`) modified after the `claude` process started, because `/model` saves its choice there;
+  2. the `--model` flag, read from the arguments of the nearest ancestor process named `claude` (`ps`);
+  3. `ANTHROPIC_MODEL`;
+  4. the `model` key of those settings files, in that order.
+- The status line input does carry the live model, but it is not used: installing a `statusLine` from the template would overwrite one set by another tool (e.g. a terminal integration).
 - The classifier is told to pick the higher tier when unsure, because a wrong downgrade costs rework while a wrong upgrade costs only tokens.
 - Fails open: missing `jq`/`claude`, a classifier error, or an output line that does not match `<tier>: <reason>` produces no output and exit 0.
 - Set `MODEL_FIT_ADVISOR_DISABLE=1` in the environment to switch it off without editing settings.
 
-**Synchronous and timeout:** The hook must run synchronously to inject context, so it adds roughly 2-3 seconds to the first prompt of a session. Timeout is 30 seconds.
+**Synchronous and timeout:** The hook must run synchronously to block or inject context, so it adds roughly 2-3 seconds to the first prompt of a session. Timeout is 30 seconds.
 
 #### SubagentStop Hook - Session Capture
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# model-fit-advisor.sh -- Classifies the first prompt of a session with Haiku and injects a model-tier
-# recommendation into context, so the main model can suggest /model when the session model is a poor fit.
+# model-fit-advisor.sh -- Classifies the first prompt of a session with Haiku and compares the recommended tier
+# with the configured model. A mismatch blocks the prompt so the user can run /model and resend; a match passes
+# silently. When the configured model is unknown, the recommendation is injected as context instead.
 # Fires on: UserPromptSubmit (only acts once per session)
 # Installed to: ~/.claude/hooks/model-fit-advisor.sh
 #
@@ -60,6 +61,118 @@ fi
 TIER="${BASH_REMATCH[1]}"
 REASON="${BASH_REMATCH[2]:0:200}"
 
+# PID of the nearest ancestor process whose command is `claude`, or nothing if none is found within 10 levels
+claude_pid() {
+  local pid=$PPID depth comm
+  for ((depth = 0; depth < 10 && pid > 1; depth++)); do
+    comm=$(ps -o comm= -p "$pid" 2>/dev/null || true)
+    if [[ "${comm##*/}" == "claude" ]]; then
+      printf '%s' "$pid"
+      return
+    fi
+    pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)
+    [[ "$pid" =~ ^[0-9]+$ ]] || return
+  done
+}
+
+# Value of --model / --model=X in the claude process arguments
+launch_model() {
+  local args prev="" word
+  args=$(ps -o args= -p "$1" 2>/dev/null || true)
+  for word in $args; do
+    if [[ "$prev" == "--model" ]]; then
+      printf '%s' "$word"
+      return
+    fi
+    if [[ "$word" == --model=* ]]; then
+      printf '%s' "${word#--model=}"
+      return
+    fi
+    prev="$word"
+  done
+}
+
+# Epoch seconds when the process started, from ps etime ([[dd-]hh:]mm:ss), which macOS and Linux both support
+process_start_epoch() {
+  local etime days=0 h=0 m=0 s=0
+  local -a parts
+  etime=$(ps -o etime= -p "$1" 2>/dev/null | tr -d ' ' || true)
+  [[ -n "$etime" ]] || return
+  if [[ "$etime" == *-* ]]; then
+    days="${etime%%-*}"
+    etime="${etime#*-}"
+  fi
+  IFS=: read -r -a parts <<<"$etime"
+  case ${#parts[@]} in
+    3) h=${parts[0]} m=${parts[1]} s=${parts[2]} ;;
+    2) m=${parts[0]} s=${parts[1]} ;;
+    *) return ;;
+  esac
+  printf '%s' "$(($(date +%s) - ((10#$days * 86400) + (10#$h * 3600) + (10#$m * 60) + 10#$s)))"
+}
+
+file_mtime() {
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || true
+}
+
+# Resolves the model the session is running as. /model saves its choice to settings, so a settings file written
+# after claude started wins; otherwise the precedence is the --model launch flag, ANTHROPIC_MODEL, then local,
+# project, and user settings.
+current_model() {
+  local cwd settings_file model pid start_epoch mtime settings_model=""
+  cwd=$(printf '%s' "$STDIN_DATA" | jq -r '.cwd // ""' 2>/dev/null || true)
+  pid=$(claude_pid)
+  start_epoch=""
+  [[ -n "$pid" ]] && start_epoch=$(process_start_epoch "$pid")
+
+  for settings_file in "$cwd/.claude/settings.local.json" "$cwd/.claude/settings.json" "$HOME/.claude/settings.json"; do
+    [[ -f "$settings_file" ]] || continue
+    model=$(jq -r '.model // ""' "$settings_file" 2>/dev/null || true)
+    [[ -n "$model" ]] || continue
+    mtime=$(file_mtime "$settings_file")
+    if [[ -n "$start_epoch" && -n "$mtime" && "$mtime" -gt "$start_epoch" ]]; then
+      printf '%s' "$model"
+      return
+    fi
+    [[ -z "$settings_model" ]] && settings_model="$model"
+  done
+
+  if [[ -n "$pid" ]]; then
+    model=$(launch_model "$pid")
+    if [[ -n "$model" ]]; then
+      printf '%s' "$model"
+      return
+    fi
+  fi
+  if [[ -n "${ANTHROPIC_MODEL:-}" ]]; then
+    printf '%s' "$ANTHROPIC_MODEL"
+    return
+  fi
+  printf '%s' "$settings_model"
+}
+
+CURRENT_MODEL=$(current_model | tr '[:upper:]' '[:lower:]')
+CURRENT_TIER=""
+for candidate in haiku sonnet opus; do
+  if [[ "$CURRENT_MODEL" == *"$candidate"* ]]; then
+    CURRENT_TIER="$candidate"
+    break
+  fi
+done
+
+# Known tier: let a match through silently and block a mismatch so the user can switch before the prompt runs.
+# The single-fire marker is already written, so resending the prompt (switched or not) goes through.
+if [[ -n "$CURRENT_TIER" ]]; then
+  if [[ "$CURRENT_TIER" == "$TIER" ]]; then
+    exit 0
+  fi
+  BLOCK_REASON="[model-fit-advisor] This task was rated '${TIER}' (${REASON}), but the session is on '${CURRENT_TIER}'. \
+Run '/model ${TIER}' and resend the prompt, or resend it as-is to keep '${CURRENT_TIER}'."
+  jq -n --arg reason "$BLOCK_REASON" '{decision: "block", reason: $reason}'
+  exit 0
+fi
+
+# Unknown tier (unset, "default", or an unrecognised model): fall back to asking the main model to compare
 CONTEXT="[model-fit-advisor] A Haiku classifier rated this session's first task as needing the '${TIER}' tier (${REASON}). \
 Compare this with the model you are running as. If they differ by a tier or more, open your reply with one short line \
 suggesting the user run '/model ${TIER}' (upgrade or downgrade), noting that switching later re-reads the context uncached. \

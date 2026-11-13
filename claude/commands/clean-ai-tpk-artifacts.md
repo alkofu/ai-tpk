@@ -5,8 +5,9 @@ description: Delete plan and lesson files older than N days from ~/.ai-tpk/ for 
 You are cleaning up stale artifact files from `~/.ai-tpk/`. Follow every step below in order.
 All Bash commands must follow `~/.claude/references/bash-style.md`.
 
-**Note for DM:** Steps that perform write operations (file deletions) must be delegated to
-Bitsmith per the DM delegation policy. Those steps are marked below.
+**Note for DM:** Steps that perform write operations (file deletions) are marked below. When DM
+is orchestrating, delegate them to Bitsmith per the DM delegation policy. Otherwise, execute them
+directly.
 
 ## Step 1 — Parse parameters
 
@@ -71,8 +72,8 @@ Ask the user:
 
 If the user answers `no` or anything other than `yes`, print: `"Aborted. No files deleted."` and stop.
 
-## Step 7 — Delete files [write operation — delegate to Bitsmith]
+## Step 7 — Delete files [write operation — delegate to Bitsmith when DM is orchestrating]
 
-Delegate to Bitsmith to delete each file using `rm` (one `rm` call per file, run as separate
-commands — do not chain). After all deletions, report:
+Delete each file using `rm` (one `rm` call per file, run as separate commands — do not chain).
+When DM is orchestrating, delegate these calls to Bitsmith instead. After all deletions, report:
 `"Deleted <count> artifact file(s)."`

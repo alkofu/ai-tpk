@@ -236,12 +236,14 @@ quoting issues.
 
 **5a.** Write the reply text to a temporary file:
 
-Run a write operation to create `/tmp/pr-reply-body.txt` containing the reply body.
+Use the Write tool to create `~/.ai-tpk/pr-review-comments/<session-ts>-pending-reply.md`
+containing the reply body. Use the absolute home path for the Write tool, since it does not expand
+`~`. The file is namespaced by `<session-ts>` from Step 1, so concurrent sessions never share it.
 
 **5b.** Invoke the reply script as a single Bash call:
 
 ```
-~/.claude/scripts/pr-comments-reply.sh <pr-number> <first-comment-full-database-id> /tmp/pr-reply-body.txt
+~/.claude/scripts/pr-comments-reply.sh <pr-number> <first-comment-full-database-id> ~/.ai-tpk/pr-review-comments/<session-ts>-pending-reply.md
 ```
 
 Where `<first-comment-full-database-id>` is the `first_comment_full_database_id` value for
@@ -268,7 +270,7 @@ this thread from the Step 2 JSON.
 
 **5d.** Remove the temporary file regardless of success or failure:
 
-Run: `rm /tmp/pr-reply-body.txt`
+Run: `rm ~/.ai-tpk/pr-review-comments/<session-ts>-pending-reply.md`
 
 ### Known limitation
 

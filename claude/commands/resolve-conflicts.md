@@ -7,9 +7,10 @@ command handles conflict detection, file-by-file resolution, staging, and `rebas
 cycling. All Bash commands must follow `~/.claude/references/bash-style.md`.
 
 **Note for DM:** This command performs write operations (file edits, git staging, rebase
-continuation). When invoked standalone, delegate execution to Bitsmith per the DM delegation
-policy. When inline-executed from `/sync-pr` (or another command that has already delegated to
-Bitsmith), no additional delegation is needed — Bitsmith is already the executor.
+continuation). When DM is orchestrating and this command is invoked standalone, delegate execution
+to Bitsmith per the DM delegation policy. Otherwise, execute the steps directly, one command per
+Bash call. When inline-executed from `/sync-pr` (or another command that has already delegated to
+Bitsmith), no additional delegation is needed.
 
 ## Step 1 — Guard: verify a rebase is in progress
 
